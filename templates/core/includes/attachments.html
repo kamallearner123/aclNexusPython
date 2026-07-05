@@ -1,0 +1,39 @@
+<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+    <div class="border-b border-gray-100 px-6 py-4 bg-white pt-4 pb-2 border-bottom">
+        <h6 class="m-0 font-bold text-brand-600"><i data-lucide="paperclip" class="w-4 h-4 mr-2"></i>Attachments</h6>
+    </div>
+    <div class="p-6 p-6">
+        <!-- Upload Form -->
+        <form method="post" action="{% url 'attachment_upload' %}" enctype="multipart/form-data" class="mb-6">
+            {% csrf_token %}
+            <input type="hidden" name="model_name" value="{{ model_name }}">
+            <input type="hidden" name="object_id" value="{{ object.pk }}">
+            <div class="input-group">
+                <input type="file" name="file" class="form-control form-control-sm" required>
+                <button class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm" type="submit">Upload</button>
+            </div>
+        </form>
+
+        <!-- Attachments List -->
+        <div class="border border-gray-100 rounded-lg overflow-hidden border border-gray-100 rounded-lg overflow-hidden-flush">
+            {% for attachment in object.attachments.all %}
+            <div class="block px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors px-0 flex justify-between items-center">
+                <div class="text-truncate mr-3">
+                    <a href="{{ attachment.file.url }}" target="_blank" class="text-decoration-none font-semibold">
+                        <i data-lucide="file-earmark" class="w-4 h-4 mr-2 text-secondary"></i>{{ attachment.filename }}
+                    </a>
+                    <div class="small text-gray-500 mt-4">
+                        Uploaded by {{ attachment.uploaded_by.first_name|default:attachment.uploaded_by.email }} &bull; {{ attachment.uploaded_at|date:"M d, Y" }}
+                    </div>
+                </div>
+                <form method="post" action="{% url 'attachment_delete' attachment.pk %}" onsubmit="return confirm('Delete this attachment?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger border-none"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </form>
+            </div>
+            {% empty %}
+            <div class="text-gray-500 small text-center py-2">No attachments yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

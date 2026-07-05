@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Kanban Board - PPEDP{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="flex justify-between items-center mb-4">
+    <div>
+        <h2 class="h3 mb-4 text-gray-800 font-bold">Kanban Board - {{ project.name }}</h2>
+        <a href="{% url 'tasks_kanban' %}" class="text-decoration-none small text-gray-500"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>Back to Projects</a>
+    </div>
+    <a href="{% url 'task_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Task</a>
+</div>
+
+<style>
+    .cursor-grab { cursor: grab; }
+    .cursor-grab:active { cursor: grabbing; }
+    .task-column { min-height: 200px; padding-bottom: 50px; }
+    .sortable-ghost { opacity: 0.4; }
+</style>
+
+<div class="flex gap-6 overflow-x-auto pb-6 items-start" style="min-height: 70vh;">
+    <!-- Backlog Column -->
+    <div class="w-80 flex-shrink-0 flex flex-col">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
+            <div class="border-b border-gray-100 px-6 py-4 bg-secondary text-white font-semibold rounded-top flex justify-between">
+                <span>Backlog</span>
+                <span class="badge bg-white text-secondary" id="count-BACKLOG">{{ backlog.count }}</span>
+            </div>
+            <div class="p-6 p-2 task-column" id="backlog-col" data-status="BACKLOG">
+                {% for task in backlog %}
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl mb-4 shadow-soft border-none cursor-grab task-card" data-task-id="{{ task.pk }}">
+                    <div class="p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <small class="text-gray-500 font-bold">{{ task.task_id }}</small>
+                            <span class="badge {% if task.priority == 'CRITICAL' %}bg-danger{% elif task.priority == 'HIGH' %}bg-warning text-dark{% else %}bg-info{% endif %}">{{ task.get_priority_display }}</span>
+                        </div>
+                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-dark">{{ task.title }}</a></h6>
+                        <div class="flex justify-between items-center mt-6">
+                            <span class="badge bg-gray-50 text-dark border">{{ task.story_points|default:"-" }} pt</span>
+                            {% if task.assignee %}
+                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-circle" title="{{ task.assignee.email }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- In Progress Column -->
+    <div class="w-80 flex-shrink-0 flex flex-col">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
+            <div class="border-b border-gray-100 px-6 py-4 bg-primary text-white font-semibold rounded-top flex justify-between">
+                <span>In Progress</span>
+                <span class="badge bg-white text-brand-600" id="count-IN_PROGRESS">{{ in_progress.count }}</span>
+            </div>
+            <div class="p-6 p-2 task-column" id="inprogress-col" data-status="IN_PROGRESS">
+                {% for task in in_progress %}
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl mb-4 shadow-soft border-none cursor-grab task-card" data-task-id="{{ task.pk }}">
+                    <div class="p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <small class="text-gray-500 font-bold">{{ task.task_id }}</small>
+                            <span class="badge {% if task.priority == 'CRITICAL' %}bg-danger{% elif task.priority == 'HIGH' %}bg-warning text-dark{% else %}bg-info{% endif %}">{{ task.get_priority_display }}</span>
+                        </div>
+                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-dark">{{ task.title }}</a></h6>
+                        <div class="flex justify-between items-center mt-6">
+                            <span class="badge bg-gray-50 text-dark border">{{ task.story_points|default:"-" }} pt</span>
+                            {% if task.assignee %}
+                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-circle" title="{{ task.assignee.email }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- In Review Column -->
+    <div class="w-80 flex-shrink-0 flex flex-col">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
+            <div class="border-b border-gray-100 px-6 py-4 bg-info text-dark font-semibold rounded-top flex justify-between">
+                <span>In Review</span>
+                <span class="badge bg-white text-info" id="count-REVIEW">{{ in_review.count }}</span>
+            </div>
+            <div class="p-6 p-2 task-column" id="inreview-col" data-status="REVIEW">
+                {% for task in in_review %}
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl mb-4 shadow-soft border-none cursor-grab task-card" data-task-id="{{ task.pk }}">
+                    <div class="p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <small class="text-gray-500 font-bold">{{ task.task_id }}</small>
+                            <span class="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">{{ task.get_priority_display }}</span>
+                        </div>
+                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-dark">{{ task.title }}</a></h6>
+                        <div class="flex justify-between items-center mt-6">
+                            <span class="badge bg-gray-50 text-dark border">{{ task.story_points|default:"-" }} pt</span>
+                            {% if task.assignee %}
+                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-circle" title="{{ task.assignee.email }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Column -->
+    <div class="w-80 flex-shrink-0 flex flex-col">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
+            <div class="border-b border-gray-100 px-6 py-4 bg-success text-white font-semibold rounded-top flex justify-between">
+                <span>Completed</span>
+                <span class="badge bg-white text-emerald-600" id="count-COMPLETED">{{ completed.count }}</span>
+            </div>
+            <div class="p-6 p-2 task-column" id="completed-col" data-status="COMPLETED">
+                {% for task in completed %}
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl mb-4 shadow-soft border-none cursor-grab task-card opacity-75" data-task-id="{{ task.pk }}">
+                    <div class="p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <small class="text-gray-500 font-bold text-decoration-line-through">{{ task.task_id }}</small>
+                        </div>
+                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-dark text-decoration-line-through">{{ task.title }}</a></h6>
+                        <div class="flex justify-between items-center mt-6">
+                            <span class="badge bg-gray-50 text-dark border">{{ task.story_points|default:"-" }} pt</span>
+                            {% if task.assignee %}
+                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-circle" title="{{ task.assignee.email }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SortableJS -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const columns = document.querySelectorAll('.task-column');
+        
+        columns.forEach(column => {
+            new Sortable(column, {
+                group: 'kanban',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    const itemEl = evt.item;  
+                    const toEl = evt.to;    
+                    const fromEl = evt.from;
+                    
+                    if (toEl === fromEl) return; // No change in status
+
+                    const taskId = itemEl.getAttribute('data-task-id');
+                    const newStatus = toEl.getAttribute('data-status');
+                    
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    
+                    // Update counts visually
+                    const toCountEl = document.getElementById('count-' + newStatus);
+                    const fromCountEl = document.getElementById('count-' + fromEl.getAttribute('data-status'));
+                    toCountEl.innerText = parseInt(toCountEl.innerText) + 1;
+                    fromCountEl.innerText = parseInt(fromCountEl.innerText) - 1;
+
+                    // Update backend
+                    fetch("{% url 'update_task_status' %}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken
+                        },
+                        body: JSON.stringify({
+                            task_id: taskId,
+                            status: newStatus
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if(!data.success) {
+                            console.error("Failed to update status:", data.error);
+                            alert("Error updating task status.");
+                        }
+                    })
+                    .catch(err => console.error("Error:", err));
+                },
+            });
+        });
+    });
+</script>
+{% endblock %}

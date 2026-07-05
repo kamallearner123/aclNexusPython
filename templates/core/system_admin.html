@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+
+{% block title %}System Admin Dashboard - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">System Administration</h2>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-pills mb-4" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active px-6 py-2" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees" type="button" role="tab" aria-controls="employees" aria-selected="true"><i data-lucide="person-badge" class="w-4 h-4 mr-2"></i>Employees</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link px-6 py-2" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams" type="button" role="tab" aria-controls="teams" aria-selected="false"><i data-lucide="people" class="w-4 h-4 mr-2"></i>Teams</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link px-6 py-2" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab" aria-controls="projects" aria-selected="false"><i data-lucide="briefcase" class="w-4 h-4 mr-2"></i>Projects</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link px-6 py-2" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab" aria-controls="stats" aria-selected="false"><i data-lucide="graph-up" class="w-4 h-4 mr-2"></i>Stats</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link px-6 py-2" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai" type="button" role="tab" aria-controls="ai" aria-selected="false"><i data-lucide="robot" class="w-4 h-4 mr-2"></i>AI View</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link px-6 py-2" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations" type="button" role="tab" aria-controls="recommendations" aria-selected="false"><i data-lucide="lightbulb" class="w-4 h-4 mr-2"></i>Recommendations</button>
+    </li>
+</ul>
+
+<!-- Tabs Content -->
+<div class="tab-content bg-transparent" id="adminTabsContent">
+    <!-- EMPLOYEES TAB -->
+    <div class="tab-pane fade show active" id="employees" role="tabpanel" aria-labelledby="employees-tab">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white pt-3 pb-2 flex justify-between items-center border-bottom-0">
+                <h6 class="m-0 font-bold text-brand-600">Registered Employees</h6>
+                <a href="{% url 'employee_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors"><i data-lucide="person-plus" class="w-4 h-4 mr-1"></i> Add Employee</a>
+            </div>
+            <div class="p-6 p-0">
+                <div class="min-w-full divide-y divide-gray-300-responsive">
+                    <table class="min-w-full divide-y divide-gray-300 table-hover align-middle mb-0">
+                        <thead class="min-w-full divide-y divide-gray-300-light">
+                            <tr>
+                                <th class="ps-4">Employee</th>
+                                <th>Email</th>
+                                <th>Roles</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="flex items-center">
+                                        <img src="https://ui-avatars.com/api/?name={{ u.email }}&background=random" class="rounded-circle mr-3" width="35" height="35">
+                                        <div>
+                                            <div class="font-bold">{{ u.first_name }} {{ u.last_name }}</div>
+                                            {% if u.is_superuser %}<span class="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20" style="font-size: 0.65em;">ADMIN</span>{% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ u.email }}</td>
+                                <td>
+                                    {% for role in u.roles.all %}
+                                        <span class="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20 text-dark">{{ role.name }}</span>
+                                    {% empty %}
+                                        <span class="text-gray-500 small">No Role</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if u.is_active %}
+                                        <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Active</span>
+                                    {% else %}
+                                        <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    {% if u != request.user %}
+                                    <form method="post" action="{% url 'employee_delete' u.pk %}" class="d-inline" onsubmit="return confirm('Delete this employee?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center py-6 text-gray-500">No employees registered.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEAMS TAB -->
+    <div class="tab-pane fade" id="teams" role="tabpanel" aria-labelledby="teams-tab">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white pt-3 pb-2 flex justify-between items-center border-bottom-0">
+                <h6 class="m-0 font-bold text-brand-600">Organizational Teams</h6>
+                <a href="{% url 'team_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> Create Team</a>
+            </div>
+            <div class="p-6 p-0">
+                <div class="min-w-full divide-y divide-gray-300-responsive">
+                    <table class="min-w-full divide-y divide-gray-300 table-hover align-middle mb-0">
+                        <thead class="min-w-full divide-y divide-gray-300-light">
+                            <tr>
+                                <th class="ps-4">Team Name</th>
+                                <th>Lead</th>
+                                <th>Members Count</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for team in teams %}
+                            <tr>
+                                <td class="ps-4 font-bold">{{ team.name }}</td>
+                                <td>{{ team.lead.first_name|default:team.lead.email|default:"None" }}</td>
+                                <td>{{ team.members.count }}</td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'team_detail' team.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-600 shadow-soft ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors mr-2">Manage</a>
+                                    <form method="post" action="{% url 'team_delete' team.pk %}" class="d-inline" onsubmit="return confirm('Delete this team?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-6 text-gray-500">No teams created yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROJECTS TAB -->
+    <div class="tab-pane fade" id="projects" role="tabpanel" aria-labelledby="projects-tab">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white pt-3 pb-2 flex justify-between items-center border-bottom-0">
+                <h6 class="m-0 font-bold text-brand-600">Projects Backend Control</h6>
+                <a href="{% url 'project_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors"><i data-lucide="folder-plus" class="w-4 h-4 mr-1"></i> New Project</a>
+            </div>
+            <div class="p-6 p-0">
+                <div class="min-w-full divide-y divide-gray-300-responsive">
+                    <table class="min-w-full divide-y divide-gray-300 table-hover align-middle mb-0">
+                        <thead class="min-w-full divide-y divide-gray-300-light">
+                            <tr>
+                                <th class="ps-4">Code</th>
+                                <th>Project Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Backend Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for project in projects %}
+                            <tr>
+                                <td class="ps-4 font-semibold text-secondary">{{ project.code }}</td>
+                                <td class="font-bold">{{ project.name }}</td>
+                                <td>{{ project.get_project_type_display }}</td>
+                                <td>
+                                    <span class="badge {% if project.status == 'ACTIVE' %}bg-success{% elif project.status == 'PLANNED' %}bg-primary{% else %}bg-secondary{% endif %}">{{ project.get_status_display }}</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'project_update' project.pk %}" class="btn btn-sm btn-outline-secondary mr-2"><i data-lucide="pencil" class="w-4 h-4"></i></a>
+                                    <form method="post" action="{% url 'project_delete' project.pk %}" class="d-inline" onsubmit="return confirm('WARNING: Are you sure you want to completely delete this project and all related tasks/issues?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center py-6 text-gray-500">No projects available.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATS TAB (Mockup) -->
+    <div class="tab-pane fade" id="stats" role="tabpanel" aria-labelledby="stats-tab">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 g-4 mb-4">
+            <div class="md:col-span-4">
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none h-100 bg-primary text-white">
+                    <div class="p-6">
+                        <h6 class="font-bold mb-3 opacity-75">Platform Velocity</h6>
+                        <h2 class="display-4 font-bold mb-0">84%</h2>
+                        <p class="mb-0 mt-4 opacity-75"><i data-lucide="arrow-up" class="w-4 h-4 mr-1"></i>12% increase from last sprint</p>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-4">
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none h-100 bg-success text-white">
+                    <div class="p-6">
+                        <h6 class="font-bold mb-3 opacity-75">Resource Utilization</h6>
+                        <h2 class="display-4 font-bold mb-0">92%</h2>
+                        <p class="mb-0 mt-4 opacity-75"><i data-lucide="check-circle" class="w-4 h-4 mr-1"></i>Optimal range</p>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-4">
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none h-100 bg-dark text-white">
+                    <div class="p-6">
+                        <h6 class="font-bold mb-3 opacity-75">Active Deployments</h6>
+                        <h2 class="display-4 font-bold mb-0">14</h2>
+                        <p class="mb-0 mt-4 text-amber-600"><i data-lucide="exclamation-triangle" class="w-4 h-4 mr-1"></i>2 require attention</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+            <div class="p-6 p-5 text-center text-gray-500">
+                <i data-lucide="bar-chart-steps" class="w-4 h-4 display-1 opacity-25 mb-3"></i>
+                <h5>Advanced Analytics</h5>
+                <p>Detailed performance charts and velocity trends will populate here once enough historical data is collected.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI VIEW TAB (Mockup) -->
+    <div class="tab-pane fade" id="ai" role="tabpanel" aria-labelledby="ai-tab">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4 bg-gray-50">
+            <div class="p-6 p-6 flex items-center">
+                <div class="bg-primary text-white rounded-circle p-6 me-4 shadow">
+                    <i data-lucide="robot" class="w-4 h-4 text-4xl"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-dark mb-4">Agentic AI Engine <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 ml-2">Online</span></h5>
+                    <p class="text-gray-500 mb-0">The AI engine is currently monitoring 5 active projects and 23 developers for workflow optimizations.</p>
+                </div>
+            </div>
+        </div>
+        
+        <h6 class="font-bold text-secondary mb-3 mt-4">Automated Task Generation Log</h6>
+        <div class="border border-gray-100 rounded-lg overflow-hidden border border-gray-100 rounded-lg overflow-hidden-flush shadow-soft rounded">
+            <div class="block px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors p-6 border-none mb-4 rounded bg-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20 text-dark mr-2">AI-GEN</span>
+                        <strong>Project Alpha:</strong> Generated 5 standard Agentic AI tasks
+                    </div>
+                    <small class="text-gray-500">2 hours ago</small>
+                </div>
+            </div>
+            <div class="block px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors p-6 border-none mb-4 rounded bg-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20 text-dark mr-2">AI-SCAN</span>
+                        <strong>Codebase Review:</strong> Scanned PR #142 for security risks
+                    </div>
+                    <small class="text-gray-500">5 hours ago</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECOMMENDATIONS TAB (Mockup) -->
+    <div class="tab-pane fade" id="recommendations" role="tabpanel" aria-labelledby="recommendations-tab">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 g-4">
+            <div class="md:col-span-6">
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none border-start border-4 border-warning h-100">
+                    <div class="p-6 p-6">
+                        <div class="flex justify-between mb-3">
+                            <h6 class="font-bold text-dark m-0"><i data-lucide="people" class="w-4 h-4 text-amber-600 mr-2"></i>Team Rebalancing</h6>
+                            <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20 text-dark">High Impact</span>
+                        </div>
+                        <p class="text-gray-500"><strong>Architecture Squad</strong> is currently over-utilized at 115% capacity. Consider moving one Senior Developer from the <strong>Frontend Team</strong> to balance the load for the upcoming sprint.</p>
+                        <button class="btn btn-sm btn-outline-warning text-dark font-semibold mt-4">Review Allocation</button>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-6">
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none border-start border-4 border-info h-100">
+                    <div class="p-6 p-6">
+                        <div class="flex justify-between mb-3">
+                            <h6 class="font-bold text-dark m-0"><i data-lucide="shield-check" class="w-4 h-4 text-info mr-2"></i>Risk Mitigation</h6>
+                            <span class="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20 text-dark">Medium Impact</span>
+                        </div>
+                        <p class="text-gray-500"><strong>Project Beta</strong> has 3 high-severity issues stuck in "In Progress" for over 5 days. We recommend scheduling a brief sync with the assigned engineers to unblock these items.</p>
+                        <button class="btn btn-sm btn-outline-info text-dark font-semibold mt-4">View Issues</button>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-6">
+                <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none border-start border-4 border-success h-100">
+                    <div class="p-6 p-6">
+                        <div class="flex justify-between mb-3">
+                            <h6 class="font-bold text-dark m-0"><i data-lucide="lightning" class="w-4 h-4 text-emerald-600 mr-2"></i>Process Optimization</h6>
+                            <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Low Impact</span>
+                        </div>
+                        <p class="text-gray-500">The average time to close a bug is currently 4 days. Introducing an automated testing pipeline for the <strong>Mobile App</strong> repository could reduce this by an estimated 30%.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

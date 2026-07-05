@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Issue Tracker - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">Issue Tracker</h2>
+    <a href="{% url 'issue_create' %}" class="inline-flex items-center justify-center rounded-md bg-rose-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-rose-500 transition-colors btn-sm"><i data-lucide="bug-fill" class="w-4 h-4 mr-1"></i> Log Issue</a>
+</div>
+
+<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+    <div class="p-6 p-0">
+        <div class="min-w-full divide-y divide-gray-300-responsive">
+            <table class="min-w-full divide-y divide-gray-300 table-hover align-middle mb-0">
+                <thead class="min-w-full divide-y divide-gray-300-light">
+                    <tr>
+                        <th class="ps-4">Title</th>
+                        <th>Project</th>
+                        <th>Type</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Logged By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for issue in issues %}
+                    <tr>
+                        <td class="ps-4 font-semibold text-brand-600">{{ issue.title }}</td>
+                        <td>{{ issue.project.code }}</td>
+                        <td>{{ issue.get_issue_type_display }}</td>
+                        <td>
+                            <span class="badge {% if issue.severity == 'CRITICAL' %}bg-danger{% elif issue.severity == 'MAJOR' %}bg-warning text-dark{% elif issue.severity == 'MINOR' %}bg-info{% else %}bg-secondary{% endif %}">
+                                {{ issue.get_severity_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if issue.status == 'OPEN' %}bg-danger{% elif issue.status == 'IN_PROGRESS' %}bg-warning text-dark{% elif issue.status == 'RESOLVED' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ issue.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if issue.created_by %}
+                                {{ issue.created_by.email }}
+                            {% else %}
+                                <span class="text-gray-500">System</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-6 text-gray-500">No issues found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

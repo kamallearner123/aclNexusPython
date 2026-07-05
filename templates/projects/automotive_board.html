@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Automotive Process Board - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <div>
+        <h2 class="h3 mb-4 text-gray-800 font-bold">Automotive Process Board - {{ project.name }}</h2>
+        <a href="{% url 'project_detail' project.pk %}" class="text-decoration-none small text-gray-500"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>Back to Project Detail</a>
+    </div>
+    <div>
+        <a href="{% url 'tasks_kanban' %}?project_id={{ project.pk }}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="kanban" class="w-4 h-4 mr-1"></i> Kanban Board</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 g-4">
+    <!-- Project Management Column -->
+    <div class="col-span-1 col-xl-3">
+        <h4 class="h5 border-bottom pb-2 mb-3 text-brand-600">Project Management</h4>
+        <div class="flex flex-column gap-6">
+            {% for milestone in pm_milestones %}
+            <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+                <div class="p-6 p-6">
+                    <h6 class="text-lg font-semibold text-gray-900 font-bold">{{ milestone.name }}</h6>
+                    <p class="text-sm text-gray-500 mt-2 small text-gray-500 mb-4">{{ milestone.description }}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="badge {% if milestone.is_completed %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if milestone.is_completed %}Completed{% else %}Pending{% endif %}
+                        </span>
+                        <a href="#" class="inline-flex items-center justify-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-brand-600 shadow-soft ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors py-0">View Tasks</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ASPICE Column -->
+    <div class="col-span-1 col-xl-3">
+        <h4 class="h5 border-bottom pb-2 mb-3 text-emerald-600">ASPICE Processes</h4>
+        <div class="flex flex-column gap-6">
+            {% for milestone in aspice_milestones %}
+            <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+                <div class="p-6 p-6">
+                    <h6 class="text-lg font-semibold text-gray-900 font-bold">{{ milestone.name }}</h6>
+                    <p class="text-sm text-gray-500 mt-2 small text-gray-500 mb-4">{{ milestone.description }}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="badge {% if milestone.is_completed %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if milestone.is_completed %}Completed{% else %}Pending{% endif %}
+                        </span>
+                        <a href="#" class="btn btn-sm btn-outline-success py-0">View Tasks</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Cybersecurity Column -->
+    <div class="col-span-1 col-xl-3">
+        <h4 class="h5 border-bottom pb-2 mb-3 text-rose-600">Cybersecurity (ISO 21434)</h4>
+        <div class="flex flex-column gap-6">
+            {% for milestone in cyber_milestones %}
+            <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+                <div class="p-6 p-6">
+                    <h6 class="text-lg font-semibold text-gray-900 font-bold">{{ milestone.name }}</h6>
+                    <p class="text-sm text-gray-500 mt-2 small text-gray-500 mb-4">{{ milestone.description }}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="badge {% if milestone.is_completed %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if milestone.is_completed %}Completed{% else %}Pending{% endif %}
+                        </span>
+                        <a href="#" class="btn btn-sm btn-outline-danger py-0">View Tasks</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- AUTOSAR Column -->
+    <div class="col-span-1 col-xl-3">
+        <h4 class="h5 border-bottom pb-2 mb-3 text-info">AUTOSAR</h4>
+        <div class="flex flex-column gap-6">
+            {% for milestone in autosar_milestones %}
+            <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+                <div class="p-6 p-6">
+                    <h6 class="text-lg font-semibold text-gray-900 font-bold">{{ milestone.name }}</h6>
+                    <p class="text-sm text-gray-500 mt-2 small text-gray-500 mb-4">{{ milestone.description }}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="badge {% if milestone.is_completed %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if milestone.is_completed %}Completed{% else %}Pending{% endif %}
+                        </span>
+                        <a href="#" class="btn btn-sm btn-outline-info py-0">View Tasks</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

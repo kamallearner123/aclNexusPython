@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Log Issue - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">Log New Issue</h2>
+    <a href="{% url 'issue_tracker' %}" class="btn btn-outline-secondary btn-sm"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Back to Issues</a>
+</div>
+
+<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+    <div class="p-6 p-6">
+        <form method="post">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div class="md:col-span-6 mb-3">
+                    {{ form.title|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.project|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.issue_type|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.severity|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.status|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.task|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.github_url|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.gdrive_url|as_crispy_field }}
+                </div>
+                <div class="col-span-1 mb-3">
+                    {{ form.impact|as_crispy_field }}
+                </div>
+                <div class="col-span-1 mb-3">
+                    {{ form.root_cause|as_crispy_field }}
+                </div>
+                <div class="col-span-1 mb-4">
+                    {{ form.resolution|as_crispy_field }}
+                </div>
+            </div>
+            <div class="d-grid gap-2 d-mflex justify-content-md-end">
+                <a href="{% url 'issue_tracker' %}" class="btn btn-light me-md-2">Cancel</a>
+                <button type="submit" class="inline-flex items-center justify-center rounded-md bg-rose-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-rose-500 transition-colors px-6 font-bold">Save Issue</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

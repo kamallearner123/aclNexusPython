@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Risk Register - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">Risk Register</h2>
+    <a href="{% url 'risk_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Risk</a>
+</div>
+
+<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+    <div class="p-6 p-0">
+        <div class="min-w-full divide-y divide-gray-300-responsive">
+            <table class="min-w-full divide-y divide-gray-300 table-hover align-middle mb-0">
+                <thead class="min-w-full divide-y divide-gray-300-light">
+                    <tr>
+                        <th class="ps-4">Risk ID</th>
+                        <th>Project</th>
+                        <th>Title</th>
+                        <th>Level</th>
+                        <th>Score</th>
+                        <th>Owner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for risk in risks %}
+                    <tr>
+                        <td class="ps-4 font-semibold text-brand-600">{{ risk.risk_id }}</td>
+                        <td>{{ risk.project.code }}</td>
+                        <td>{{ risk.title }}</td>
+                        <td>
+                            <span class="badge {% if risk.risk_level == 'CRITICAL' %}bg-danger{% elif risk.risk_level == 'HIGH' %}bg-warning text-dark{% elif risk.risk_level == 'MEDIUM' %}bg-info{% else %}bg-secondary{% endif %}">
+                                {{ risk.get_risk_level_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>{{ risk.risk_score }}</strong>
+                        </td>
+                        <td>
+                            {% if risk.owner %}
+                                {{ risk.owner.email }}
+                            {% else %}
+                                <span class="text-gray-500">Unassigned</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-6 text-gray-500">No risks found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

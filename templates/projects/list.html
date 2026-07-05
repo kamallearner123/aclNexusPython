@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Projects - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">Projects</h2>
+    <a href="{% url 'project_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Project</a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for project in projects %}
+    <div class="flex flex-col">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl flex flex-col h-full">
+            <div class="p-6 flex-1">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="badge bg-gray-50 text-brand-600 border font-semibold">{{ project.code }}</span>
+                    <span class="badge {% if project.status == 'ACTIVE' %}bg-success{% elif project.status == 'PLANNED' %}bg-info{% elif project.status == 'ON_HOLD' %}bg-warning text-dark{% elif project.status == 'CANCELLED' %}bg-danger{% else %}bg-secondary{% endif %}">
+                        {{ project.get_status_display }}
+                    </span>
+                </div>
+                
+                <h5 class="text-lg font-semibold text-gray-900 mb-2">{{ project.name }}</h5>
+                <p class="text-sm text-gray-500 mb-4 line-clamp-2">
+                    {{ project.description|default:"No description provided." }}
+                </p>
+
+                <div class="mb-6">
+                    <div class="flex justify-between small text-gray-500 mb-4">
+                        <span><i data-lucide="tag" class="w-4 h-4 mr-1"></i>{{ project.get_project_type_display }}</span>
+                        <span><i data-lucide="person" class="w-4 h-4 mr-1"></i>{{ project.owner.email|default:"Unassigned" }}</span>
+                    </div>
+                </div>
+
+            </div>
+            <div class="border-t border-gray-100 px-6 py-4 bg-gray-50 rounded-b-xl mt-auto">
+                <div class="flex justify-between items-center">
+                    <small class="text-gray-500 flex items-center"><i data-lucide="calendar" class="w-4 h-4 mr-1"></i>{{ project.start_date|date:"M d, Y"|default:"TBD" }}</small>
+                    <a href="{% url 'project_detail' project.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-brand-600 shadow-sm ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-1">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl border-none shadow-soft">
+            <div class="p-6 text-center py-12">
+                <div class="text-gray-500 mb-3"><i data-lucide="folder-open" class="w-4 h-4 text-4xl"></i></div>
+                <h5 class="font-bold">No Projects Found</h5>
+                <p class="text-gray-500">Get started by creating your first project.</p>
+                <a href="{% url 'project_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> Create Project</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

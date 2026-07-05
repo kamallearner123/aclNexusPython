@@ -1,0 +1,76 @@
+{% extends 'base_landing.html' %}
+
+{% block content %}
+<div class="w-full max-w-5xl mx-auto">
+    <div class="text-center mb-16">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">Welcome to Nexus Hub</h1>
+        <p class="text-lg text-gray-500 max-w-2xl mx-auto">Select a module to continue. Manage your projects, track your resources, and build customer relationships from one central unified platform.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- PMS Card (Active) -->
+        <a href="{% url 'dashboard' %}" class="group relative bg-white rounded-2xl p-8 shadow-soft ring-1 ring-gray-900/5 hover:shadow-glow hover:ring-brand-500/50 transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-brand-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
+            
+            <div class="relative z-10">
+                <div class="w-14 h-14 bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center mb-6">
+                    <i data-lucide="layout-dashboard" class="w-7 h-7"></i>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">Project Management</h3>
+                <p class="text-gray-500 mb-6 flex-1">Track tasks, manage risks, resolve issues, and monitor project health in real-time with our comprehensive PMS.</p>
+                
+                <div class="flex items-center text-brand-600 font-semibold group-hover:text-brand-700 mt-auto pt-4 border-t border-gray-50">
+                    Enter Module <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+        </a>
+
+        <!-- HRM Card (In Progress) -->
+        <div class="relative bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-sm ring-1 ring-gray-900/5 flex flex-col h-full opacity-75">
+            <div class="absolute top-4 right-4 z-20">
+                <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 shadow-sm">
+                    <i data-lucide="hammer" class="w-3 h-3 mr-1"></i> In Progress
+                </span>
+            </div>
+            
+            <div class="relative z-10 grayscale-[50%]">
+                <div class="w-14 h-14 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center mb-6">
+                    <i data-lucide="users" class="w-7 h-7"></i>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">Human Resources</h3>
+                <p class="text-gray-500 mb-6 flex-1">Manage employee profiles, track attendance, handle payroll, and streamline onboarding procedures.</p>
+                
+                <div class="flex items-center text-gray-400 font-semibold mt-auto pt-4 border-t border-gray-50">
+                    Coming Soon
+                </div>
+            </div>
+        </div>
+
+        <!-- CRM Card (In Progress) -->
+        <div class="relative bg-white/60 backdrop-blur-sm rounded-2xl p-8 shadow-sm ring-1 ring-gray-900/5 flex flex-col h-full opacity-75">
+            <div class="absolute top-4 right-4 z-20">
+                <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 shadow-sm">
+                    <i data-lucide="hammer" class="w-3 h-3 mr-1"></i> In Progress
+                </span>
+            </div>
+            
+            <div class="relative z-10 grayscale-[50%]">
+                <div class="w-14 h-14 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center mb-6">
+                    <i data-lucide="building-2" class="w-7 h-7"></i>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-gray-900 mb-3">CRM</h3>
+                <p class="text-gray-500 mb-6 flex-1">Build stronger client relationships, track sales pipelines, and manage customer communications.</p>
+                
+                <div class="flex items-center text-gray-400 font-semibold mt-auto pt-4 border-t border-gray-50">
+                    Coming Soon
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI-Powered Outbound Sales Automation Engine – Apt Computing Labs</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f9f8f5;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --border-light: #eeebe4;
+    --ink: #1a1a1a;
+    --ink-mid: #3d3d3d;
+    --ink-muted: #767676;
+    --accent: #1a56db;
+    --accent-light: #e8f0fe;
+    --rule: #c8c4bc;
+    --tag-bg: #f0ede6;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--ink);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 48px;
+    height: 48px;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .topbar-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: #fff;
+    text-decoration: none;
+  }
+  .topbar-section {
+    color: #a0a0a0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── ARTICLE HEADER ── */
+  .article-header {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 40px;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .category-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 4px 12px;
+    border-radius: 3px;
+    margin-bottom: 24px;
+  }
+
+  h1.article-title {
+    font-family: 'Merriweather', Georgia, serif;
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  .article-subtitle {
+    font-family: 'Merriweather', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--ink-mid);
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  .byline {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .byline-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .byline-info { display: flex; flex-direction: column; gap: 2px; }
+  .byline-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .byline-meta {
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── BODY ── */
+  article {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  article p {
+    font-family: 'Merriweather', Georgia, serif;
+    font-size: 1rem;
+    line-height: 1.9;
+    color: var(--ink-mid);
+    margin-bottom: 24px;
+  }
+
+  article h2 {
+    font-family: 'Merriweather', Georgia, serif;
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 56px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  article h3 {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 28px 0 8px;
+  }
+
+  /* ── LEAD PARAGRAPH ── */
+  .lead {
+    font-size: 1.1rem !important;
+    color: var(--ink) !important;
+    font-weight: 300;
+    line-height: 1.85 !important;
+    border-left: 3px solid var(--accent);
+    padding-left: 20px;
+    margin-bottom: 36px !important;
+  }
+
+  /* ── FIGURE ── */
+  figure {
+    margin: 40px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  figcaption {
+    padding: 12px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    border-top: 1px solid var(--border-light);
+    background: #fafaf8;
+    font-style: italic;
+  }
+  figcaption strong {
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ink-mid);
+    margin-right: 6px;
+  }
+
+  /* ── WORKFLOW LIST ── */
+  .workflow-list {
+    list-style: none;
+    margin: 28px 0 36px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .workflow-list li {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 16px;
+    align-items: start;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    color: var(--ink-mid);
+    background: var(--surface);
+  }
+  .workflow-list li:last-child { border-bottom: none; }
+  .workflow-list li:hover { background: #f4f3ef; }
+  .wf-step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+  .wf-text strong {
+    display: block;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+    font-size: 14px;
+  }
+
+  /* ── TECH TABLE ── */
+  .tech-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 28px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+  }
+  .tech-table th {
+    background: var(--ink);
+    color: #fff;
+    text-align: left;
+    padding: 10px 16px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  .tech-table td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--ink-mid);
+    background: var(--surface);
+  }
+  .tech-table tr:hover td { background: #f4f3ef; }
+  .tech-table td:first-child {
+    font-weight: 600;
+    color: var(--ink);
+    width: 38%;
+  }
+
+  /* ── CALLOUT ── */
+  .callout {
+    background: var(--accent-light);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    padding: 20px 24px;
+    margin: 32px 0;
+  }
+  .callout p {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.95rem !important;
+    color: #1e3a6e !important;
+    margin-bottom: 0 !important;
+    line-height: 1.7 !important;
+  }
+
+  /* ── HORIZONTAL RULE ── */
+  .section-rule {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 52px 0 0;
+  }
+
+  /* ── FOOTER ── */
+  .article-footer {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+    border-top: 2px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .footer-author {
+    font-size: 14px;
+    color: var(--ink-mid);
+    line-height: 1.7;
+  }
+  .footer-author strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .footer-copy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 600px) {
+    .topbar { padding: 0 20px; }
+    .article-header, article, .article-footer { padding-left: 16px; padding-right: 16px; }
+    .article-footer { flex-direction: column; }
+    .footer-copy { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <a class="topbar-brand" href="#">Apt Computing Labs</a>
+  <span class="topbar-section">Engineering Blog</span>
+</div>
+
+<!-- ARTICLE HEADER -->
+<header class="article-header">
+  <div class="category-tag">AI Automation · Sales Engineering</div>
+  <h1 class="article-title">AI-Powered Outbound Sales Automation Engine</h1>
+  <p class="article-subtitle">
+    How we built a fully automated, end-to-end outbound sales pipeline that researches leads, scores them with AI, writes personalized cold emails, sends them through Gmail, and follows up — all without human intervention.
+  </p>
+  <div class="byline">
+    <div class="byline-avatar">BD</div>
+    <div class="byline-info">
+      <span class="byline-name">B. Dhanush</span>
+      <span class="byline-meta">Engineer, Apt Computing Labs &nbsp;·&nbsp; June 2026</span>
+    </div>
+  </div>
+</header>
+
+<!-- ARTICLE BODY -->
+<article>
+
+  <p class="lead">
+    Sales teams spend enormous time on repetitive, manual tasks — researching companies, qualifying leads, writing personalized emails, tracking replies, and sending follow-ups. At Apt Computing Labs, we set out to explore how far intelligent automation could take us: not just templated mail merges, but a genuinely context-aware, AI-driven outreach system that scales without sacrificing quality.
+  </p>
+
+  <p>
+    After studying the patterns of outbound sales workflows, we noticed that the most time-consuming parts — company research and personalized writing — were also the most amenable to modern AI. With access to large language models and live web research APIs, it became possible to automate not just the delivery of emails, but the intelligence behind them.
+  </p>
+
+  <p>
+    The result is the <strong>AI-Powered Outbound Sales Automation Engine</strong> — an end-to-end workflow built on n8n, OpenAI GPT, Perplexity AI, the Gmail API, and Google Sheets that handles the entire outbound sales lifecycle automatically.
+  </p>
+
+  <h2>Background & Motivation</h2>
+
+  <p>
+    In a typical sales workflow, a representative manually looks up a company, reads recent news, estimates whether they are a good fit, writes a semi-personalized email, sends it, sets a reminder, and repeats this hundreds of times a week. This approach is slow, inconsistent, and scales poorly as prospect lists grow.
+  </p>
+
+  <p>
+    The goal of this project was to replace that manual loop with an automated pipeline that preserves — and in many cases improves — the quality of outreach, while removing the repetitive human effort entirely. With the rise of AI and vibe coding, the risk of poor-quality outreach at scale has also increased; a well-structured, intelligent system addresses that directly.
+  </p>
+
+  <h2>How the System Works</h2>
+
+  <p>
+    The workflow runs entirely inside <strong>n8n</strong>, an open-source workflow automation platform. Each node performs a specific function, and together they form a pipeline that processes leads from import through to reply-aware follow-up.
+  </p>
+
+  <figure>
+    <img src="n8n_automation.JPG" alt="n8n workflow canvas showing the full automation pipeline" />
+    <figcaption><strong>Fig. 1.1 –</strong> The complete n8n workflow canvas. The left section handles scoring and qualification, the middle handles email generation and delivery, and the right branch manages reply detection and AI follow-up.</figcaption>
+  </figure>
+
+  <p>
+    The pipeline processes each lead through the following sequence of steps:
+  </p>
+
+  <ul class="workflow-list">
+    <li>
+      <span class="wf-step-num">01</span>
+      <span class="wf-text"><strong>Lead Import from Apollo</strong>Contact and company data — name, email, title, industry, company size, tech stack, and location — is pulled from Apollo into Google Sheets, which acts as the central data store throughout the workflow.</span>
+    </li>
+    <li>
+      <span class="wf-step-num">02</span>
+      <span class="wf-text"><strong>Duplicate Check</strong>Before any processing begins, the workflow checks whether that lead has already been contacted. If a prior email exists, the lead is skipped to prevent duplicate outreach.</span>
+    </li>
+    <li>
+      <span class="wf-step-num">03</span>
+      <span class="wf-text"><strong>Fit Score Calculation</strong>A custom JavaScript scoring engine evaluates role seniority, company size, geography, industry vertical, and technology stack, producing a Fit Score from 0 to 100.</span>
+    </li>
+    <li>
+      <span class="wf-step-num">04</span>
+      <span class="wf-text"><strong>AI Company Research via Perplexity</strong>For leads that pass the Fit Score threshold, Perplexity AI performs live web research — gathering business model, funding history, sales team structure, hiring signals, and competitor tools in real time.</span>
+    </li>
+    <li>
+      <span class="wf-step-num">05</span>
+      <span class="wf-text"><strong>Intent Score & Lead Prioritization</strong>Research findings are analyzed to generate an Intent Score. Combined with the Fit Score, each lead is assigned a priority tier: Priority 1 (Act Now), Priority 2 (Follow Up), Priority 3 (Nurture), or Do Not Contact.</span>
+    </li>
+    <li>
+      <span class="wf-step-num">06</span>
+      <span class="wf-text"><strong>Personalized Email Generation</strong>An AI Agent writes a unique cold email for each high-priority lead, using company research, buying signals, contact role, and growth indicators — not a template with a name swapped in.</span>
+    </li>
+    <li>
+      <span class="wf-step-num">07</span>
+      <span class="wf-text"><strong>Gmail Send & Thread Storage</strong>The generated email is sent via the Gmail API. The Message ID and Thread ID are written back to Google Sheets for accurate reply tracking.</span>
+    </li>
+    <li>
+      <span class="wf-step-num">08</span>
+      <span class="wf-text"><strong>Reply Detection & AI Follow-Up</strong>The workflow polls the Gmail thread. If no reply is detected, a second AI Agent writes a contextual follow-up with a fresh angle and sends it inside the same thread to maintain conversation continuity.</span>
+    </li>
+  </ul>
+
+  <h2>Output: What the AI Writes</h2>
+
+  <p>
+    The practical test of any system like this is the quality of its output. The email below was generated entirely by the AI pipeline and delivered automatically to a decision-maker at a financial services company, using live Perplexity research on that organization.
+  </p>
+
+  <figure>
+    <img src="automated_mail.JPG" alt="AI-generated personalized cold email sent to Union Bank of VT & NH" />
+    <figcaption><strong>Fig. 1.2 –</strong> A real email generated and sent automatically by the pipeline. The AI referenced RollWorks, SharpSpring, Glia, and SalesMove — tools actually in use at the target company — discovered entirely through live research.</figcaption>
+  </figure>
+
+  <p>
+    Notice the specificity in the email body. The system correctly identified that the company uses RollWorks, SharpSpring, Glia, and SalesMove, inferred the likely gap in their sales structure (no dedicated SDR/BDR team), and framed the pitch around the recipient's actual workflow friction. This level of personalization is generated programmatically, at scale, for every qualifying lead.
+  </p>
+
+  <div class="callout">
+    <p>
+      The key distinction between this system and a basic mail merge is the live research layer. Rather than filling in variables from a static database, the AI agent actively researches each company before writing, producing output that reads as genuinely human and context-aware.
+    </p>
+  </div>
+
+  <h2>Technologies Used</h2>
+
+  <p>
+    The system is composed of several integrated components, each responsible for a specific layer of the pipeline:
+  </p>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>Technology</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Workflow Automation</td><td>n8n</td></tr>
+      <tr><td>Large Language Model</td><td>OpenAI GPT</td></tr>
+      <tr><td>Live Company Research</td><td>Perplexity AI</td></tr>
+      <tr><td>Lead Source</td><td>Apollo</td></tr>
+      <tr><td>Email Delivery</td><td>Gmail API</td></tr>
+      <tr><td>Data Storage</td><td>Google Sheets</td></tr>
+      <tr><td>Scoring Logic</td><td>Custom JavaScript</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Key Technical Challenges</h2>
+
+  <p>
+    Building this system surfaced several non-obvious engineering challenges. The most significant was <strong>email thread continuity</strong>. For follow-up emails to land inside the original Gmail conversation rather than starting a new thread, the workflow must correctly reference the <code>message_id</code> of the prior email in the reply headers — a detail that required careful handling of the Gmail API's threading model.
+  </p>
+
+  <p>
+    A second challenge was the <strong>structured output contract between the LLM and the downstream nodes</strong>. The AI-generated email needs to arrive in a predictable JSON structure so that n8n can reliably extract the subject line and body before sending. Using a Structured Output Parser with a defined schema resolved this, but required careful schema design to handle edge cases such as emails with or without explicit subject lines.
+  </p>
+
+  <p>
+    A third area of complexity was <strong>node execution mode</strong> in n8n. Some nodes process all items at once, while others run once per item — and mixing these behaviors incorrectly caused silent failures where only the first lead in a batch was processed. Understanding and explicitly setting execution mode for each node was essential to correctness at scale.
+  </p>
+
+  <h2>Business Impact</h2>
+
+  <p>
+    The system addresses several concrete inefficiencies in outbound sales operations. Manual prospect research is eliminated — every company is studied automatically via live AI before any email is written. Only leads that clear the Fit Score threshold proceed to the research and email stages, preventing wasted effort on poor-fit accounts. Follow-up emails are sent automatically within the same thread, with no reliance on calendar reminders or manual scheduling.
+  </p>
+
+  <p>
+    The result is a system that allows sales teams to focus on building relationships and closing deals rather than administrative work, while maintaining a level of personalization that generic automation tools cannot achieve.
+  </p>
+
+  <h2>Conclusion</h2>
+
+  <p>
+    This project demonstrates how workflow automation, live business intelligence, and large language models can be composed into a practical, production-grade AI sales system. By integrating lead qualification, real-time company research, intelligent scoring, personalized email generation, automated delivery, reply tracking, and contextual follow-ups into a single orchestrated workflow, the system streamlines outbound sales and enables teams to engage prospects more efficiently and effectively.
+  </p>
+
+  <p>
+    At Apt Computing Labs, we continue to explore how agentic AI systems can replace repetitive knowledge work across business functions — and this project stands as a concrete proof of what is possible today.
+  </p>
+
+</article>
+
+<!-- FOOTER -->
+<footer class="article-footer">
+  <div class="footer-author">
+    <strong>B. Dhanush</strong>
+    Engineer, Apt Computing Labs
+  </div>
+  <div class="footer-copy">
+    ©Apt Computing Labs. All rights reserved.<br />
+    Engineering Blog &nbsp;·&nbsp; AI Automation Series
+  </div>
+</footer>
+
+</body>
+</html>

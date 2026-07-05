@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ issue.title }} - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <div>
+        <a href="{% url 'issue_tracker' %}" class="text-decoration-none text-gray-500 mb-4 d-inline-block"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Issues</a>
+        <h2 class="h3 mb-0 text-gray-800 font-bold">
+            <span class="text-rose-600 mr-2">[{{ issue.get_issue_type_display }}]</span>{{ issue.title }}
+        </h2>
+    </div>
+    <div class="flex items-center">
+        <a href="{% url 'issue_update' issue.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-6 py-2 text-sm font-semibold text-brand-600 shadow-soft ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors btn-sm"><i data-lucide="pencil" class="w-4 h-4 mr-1"></i> Edit Issue</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Left Column: Details -->
+    <div class="lg:col-span-8">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white border-bottom-0 pt-4 pb-0">
+                <h6 class="m-0 font-bold text-brand-600">Issue Details</h6>
+            </div>
+            <div class="p-6">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Status</div>
+                        <div class="font-semibold">
+                            <span class="badge {% if issue.status == 'OPEN' %}bg-danger{% elif issue.status == 'IN_PROGRESS' %}bg-warning text-dark{% elif issue.status == 'RESOLVED' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ issue.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Severity</div>
+                        <div class="font-semibold">
+                            <span class="badge {% if issue.severity == 'CRITICAL' %}bg-danger{% elif issue.severity == 'MAJOR' %}bg-warning text-dark{% elif issue.severity == 'MINOR' %}bg-info{% else %}bg-secondary{% endif %}">
+                                {{ issue.get_severity_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Project</div>
+                        <div class="font-semibold">{{ issue.project.name|default:"-" }}</div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Linked Task</div>
+                        <div class="font-semibold">{{ issue.task.title|default:"-" }}</div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                
+                <h6 class="font-bold text-secondary mb-3">Links</h6>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-4">
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm mb-2">GitHub Link</div>
+                        {% if issue.github_url %}
+                            <a href="{{ issue.github_url }}" target="_blank" class="font-semibold text-brand-600 flex items-center"><i data-lucide="github" class="w-4 h-4 mr-1"></i>View Repository/PR</a>
+                        {% else %}
+                            <span class="text-gray-500 italic">Not specified</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm mb-2">Google Drive Link</div>
+                        {% if issue.gdrive_url %}
+                            <a href="{{ issue.gdrive_url }}" target="_blank" class="font-semibold text-brand-600 flex items-center"><i data-lucide="google" class="w-4 h-4 mr-1"></i>View Document</a>
+                        {% else %}
+                            <span class="text-gray-500 italic">Not specified</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <h6 class="font-bold text-secondary mb-4">Impact</h6>
+                <p class="mb-6">{{ issue.impact|default:"Not specified."|linebreaks }}</p>
+                
+                <h6 class="font-bold text-secondary mb-4">Root Cause</h6>
+                <p class="mb-6">{{ issue.root_cause|default:"Not identified yet."|linebreaks }}</p>
+                
+                <h6 class="font-bold text-secondary mb-4">Resolution</h6>
+                <p class="mb-6">{{ issue.resolution|default:"No resolution provided yet."|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Activity Log & Attachments -->
+    <div class="lg:col-span-4">
+        {% include 'core/includes/attachments.html' with object=issue model_name='Issue' %}
+
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none h-100">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white pt-4 pb-2 border-bottom">
+                <h6 class="m-0 font-bold text-brand-600"><i data-lucide="clock-history" class="w-4 h-4 mr-2"></i>Activity History</h6>
+            </div>
+            <div class="p-6 p-0">
+                <div class="border border-gray-100 rounded-lg overflow-hidden border border-gray-100 rounded-lg overflow-hidden-flush" style="max-height: 600px; overflow-y: auto;">
+                    {% for activity in activities %}
+                    <div class="block px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors p-6">
+                        <div class="flex w-100 justify-between mb-4">
+                            <h6 class="mb-0 font-semibold text-dark">
+                                {% if activity.action == 'CREATE' %}
+                                    <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 rounded-full mr-1">Created</span>
+                                {% elif activity.action == 'UPDATE' %}
+                                    <span class="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-600/20 rounded-full mr-1">Updated</span>
+                                {% else %}
+                                    <span class="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20 rounded-full mr-1">{{ activity.action }}</span>
+                                {% endif %}
+                                {{ activity.user.first_name|default:activity.user.email|default:"System" }}
+                            </h6>
+                            <small class="text-gray-500">{{ activity.timestamp|timesince }} ago</small>
+                        </div>
+                        <div class="small text-gray-500 mt-4">
+                            {% if activity.action == 'CREATE' %}
+                                Initial issue creation.
+                            {% else %}
+                                {% if activity.changes.edit_comment %}
+                                    <div class="mb-3 p-3 bg-brand-50 rounded-lg border border-brand-100 text-brand-800 text-sm italic">
+                                        "{{ activity.changes.edit_comment.new }}"
+                                    </div>
+                                {% endif %}
+                                <ul class="mb-0 ps-3">
+                                {% for field, change in activity.changes.items %}
+                                    {% if field != 'edit_comment' %}
+                                    <li><strong>{{ field|title }}</strong> changed from <span class="text-rose-600 text-decoration-line-through">{{ change.old }}</span> to <span class="text-emerald-600">{{ change.new }}</span></li>
+                                    {% endif %}
+                                {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-gray-500 p-6">No activity history yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

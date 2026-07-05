@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}New Project - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">Create New Project</h2>
+    <a href="{% url 'project_list' %}" class="btn btn-outline-secondary btn-sm"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Back to Projects</a>
+</div>
+
+<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+    <div class="p-6 p-6">
+        <form method="post">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div class="md:col-span-6 mb-3">
+                    {{ form.code|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.name|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.project_type|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.status|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.priority|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.client|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.category|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.owner|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.start_date|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.end_date|as_crispy_field }}
+                </div>
+                <div class="col-md-12 mb-3">
+                    {{ form.budget|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.github_url|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.gdrive_url|as_crispy_field }}
+                </div>
+                <div class="col-span-1 mb-4">
+                    {{ form.description|as_crispy_field }}
+                </div>
+            </div>
+            <div class="d-grid gap-2 d-mflex justify-content-md-end">
+                <a href="{% url 'project_list' %}" class="btn btn-light me-md-2">Cancel</a>
+                <button type="submit" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors px-6 font-bold">Save Project</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

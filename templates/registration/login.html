@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Apt Computing Labs Nexus</title>
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa',
+                            500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        'elevated': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans antialiased text-gray-900">
+
+<div class="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl shadow-elevated ring-1 ring-gray-900/5">
+    <div>
+        <div class="flex justify-center items-center gap-3">
+            <img src="/static/img/logo.png" alt="Logo" class="h-10 w-auto object-contain">
+            <span class="text-xl font-bold tracking-tight text-gray-900">Apt Computing Labs</span>
+        </div>
+        <h2 class="mt-6 text-center text-2xl font-bold tracking-tight text-gray-900">Sign in to your account</h2>
+    </div>
+    
+    <form class="mt-8 space-y-6" method="post">
+        {% csrf_token %}
+        {% if form.errors %}
+            <div class="rounded-md bg-red-50 p-4">
+                <div class="flex">
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Invalid email or password.</h3>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium leading-6 text-gray-900">Email address</label>
+                <div class="mt-2">
+                    <input id="username" name="username" type="email" autocomplete="email" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 px-3">
+                </div>
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium leading-6 text-gray-900">Password</label>
+                <div class="mt-2">
+                    <input id="password" name="password" type="password" autocomplete="current-password" required class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 px-3">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <button type="submit" class="flex w-full justify-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-colors">Sign In</button>
+        </div>
+        <input type="hidden" name="next" value="{{ next|default:'' }}">
+    </form>
+
+    <p class="mt-10 text-center text-sm text-gray-500">
+        Don't have an account?
+        <a href="{% url 'register' %}" class="font-semibold leading-6 text-brand-600 hover:text-brand-500 transition-colors">Register here</a>
+    </p>
+</div>
+
+</body>
+</html>

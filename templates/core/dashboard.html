@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Apt Computing Labs Nexus{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">Overview</h1>
+        <p class="text-sm text-gray-500 mt-1">Monitor your project health and team activities.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{% url 'project_create' %}" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+            New Project
+        </a>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="mb-6 border-b border-gray-200">
+    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <button onclick="switchTab('overview')" id="tab-overview" class="whitespace-nowrap border-b-2 border-brand-500 py-3 px-1 text-sm font-medium text-brand-600 transition-colors">
+            <div class="flex items-center gap-2">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                Overview
+            </div>
+        </button>
+        <button onclick="switchTab('team')" id="tab-team" class="whitespace-nowrap border-b-2 border-transparent py-3 px-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+            <div class="flex items-center gap-2">
+                <i data-lucide="users-2" class="w-4 h-4"></i>
+                My Team
+            </div>
+        </button>
+    </nav>
+</div>
+
+<!-- TAB CONTENT: OVERVIEW -->
+<div id="content-overview" class="space-y-6">
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        
+        <!-- Active Projects -->
+        <div class="relative overflow-hidden rounded-xl bg-white p-5 shadow-soft ring-1 ring-gray-900/5 flex flex-col justify-between hover:shadow-elevated transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500">Active Projects</p>
+                <div class="p-2 bg-blue-50 rounded-lg">
+                    <i data-lucide="briefcase" class="w-4 h-4 text-blue-600"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-baseline gap-2">
+                <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ active_projects }}</p>
+            </div>
+        </div>
+
+        <!-- Completed Tasks -->
+        <div class="relative overflow-hidden rounded-xl bg-white p-5 shadow-soft ring-1 ring-gray-900/5 flex flex-col justify-between hover:shadow-elevated transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500">Completed Tasks</p>
+                <div class="p-2 bg-emerald-50 rounded-lg">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-baseline gap-2">
+                <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ completed_tasks }}</p>
+            </div>
+        </div>
+
+        <!-- Open Issues -->
+        <div class="relative overflow-hidden rounded-xl bg-white p-5 shadow-soft ring-1 ring-gray-900/5 flex flex-col justify-between hover:shadow-elevated transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500">Open Issues</p>
+                <div class="p-2 bg-amber-50 rounded-lg">
+                    <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-baseline gap-2">
+                <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ open_issues }}</p>
+            </div>
+        </div>
+
+        <!-- High Risks -->
+        <div class="relative overflow-hidden rounded-xl bg-white p-5 shadow-soft ring-1 ring-gray-900/5 flex flex-col justify-between hover:shadow-elevated transition-shadow">
+            <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-500">High Risks</p>
+                <div class="p-2 bg-rose-50 rounded-lg">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600"></i>
+                </div>
+            </div>
+            <div class="mt-4 flex items-baseline gap-2">
+                <p class="text-3xl font-semibold text-gray-900 tracking-tight">{{ high_risks }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts & Activity Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Project Health Chart -->
+        <div class="lg:col-span-2 rounded-xl bg-white shadow-soft ring-1 ring-gray-900/5 flex flex-col">
+            <div class="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-base font-semibold text-gray-900">Project Health Overview</h3>
+                <button class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 flex-1 w-full h-[300px]">
+                <canvas id="projectHealthChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="rounded-xl bg-white shadow-soft ring-1 ring-gray-900/5 flex flex-col">
+            <div class="border-b border-gray-100 px-6 py-4">
+                <h3 class="text-base font-semibold text-gray-900">Recent Activities</h3>
+            </div>
+            
+            <div class="p-0 flex-1 flex flex-col">
+                <!-- Empty State -->
+                <div class="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <div class="p-3 bg-gray-50 rounded-full mb-3 ring-1 ring-gray-200">
+                        <i data-lucide="activity" class="w-6 h-6 text-gray-400"></i>
+                    </div>
+                    <h4 class="text-sm font-medium text-gray-900">No recent activities</h4>
+                    <p class="text-xs text-gray-500 mt-1">There are no new updates to show.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB CONTENT: MY TEAM -->
+<div id="content-team" class="hidden">
+    {% if request.user.team %}
+    <div class="rounded-xl bg-white shadow-soft ring-1 ring-gray-900/5 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">{{ request.user.team.name }}</h3>
+            <p class="text-sm text-gray-500 mt-1">Team Overview and Members</p>
+        </div>
+        
+        <div class="p-6 bg-gray-50 border-b border-gray-100">
+            <dl class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                <div class="px-4 py-4 bg-white shadow-sm rounded-lg ring-1 ring-gray-900/5">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Team Lead</dt>
+                    <dd class="mt-1 text-sm font-semibold text-gray-900">{{ request.user.team.lead.first_name|default:request.user.team.lead.email|default:"Not Assigned" }}</dd>
+                </div>
+                <div class="px-4 py-4 bg-white shadow-sm rounded-lg ring-1 ring-gray-900/5">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total Capacity</dt>
+                    <dd class="mt-1 text-sm font-semibold text-gray-900">{{ request.user.team.capacity }} pts</dd>
+                </div>
+                <div class="px-4 py-4 bg-white shadow-sm rounded-lg ring-1 ring-gray-900/5">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Average Velocity</dt>
+                    <dd class="mt-1 text-sm font-semibold text-gray-900">{{ request.user.team.velocity }} pts</dd>
+                </div>
+            </dl>
+        </div>
+
+        <ul role="list" class="divide-y divide-gray-100">
+            {% for member in request.user.team.team_users.all %}
+            <li class="px-6 py-5 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                <div class="flex items-center min-w-0 gap-x-4">
+                    <img class="h-10 w-10 flex-none rounded-full bg-gray-50 ring-1 ring-gray-900/10" src="https://ui-avatars.com/api/?name={{ member.email }}&background=random" alt="">
+                    <div class="min-w-0 flex-auto">
+                        <p class="text-sm font-semibold leading-6 text-gray-900 flex items-center gap-2">
+                            {{ member.first_name }} {{ member.last_name }}
+                            {% if member == request.user %}
+                            <span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">You</span>
+                            {% endif %}
+                        </p>
+                        <p class="mt-1 truncate text-xs leading-5 text-gray-500">{{ member.email }}</p>
+                    </div>
+                </div>
+                <div class="hidden sm:flex sm:flex-col sm:items-end">
+                    <div class="flex gap-2">
+                        {% for role in member.roles.all %}
+                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">{{ role.name }}</span>
+                        {% empty %}
+                        <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">No Role</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% else %}
+    <div class="text-center rounded-xl bg-white shadow-soft ring-1 ring-gray-900/5 py-16 px-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 ring-1 ring-gray-900/5 mb-4">
+            <i data-lucide="user-x" class="w-8 h-8 text-gray-400"></i>
+        </div>
+        <h3 class="text-base font-semibold text-gray-900">No Team Assigned</h3>
+        <p class="mt-2 text-sm text-gray-500 max-w-sm mx-auto">You have not been assigned to an organizational team yet. Please contact your system administrator.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function switchTab(tab) {
+        // Reset styles
+        document.getElementById('tab-overview').className = "whitespace-nowrap border-b-2 border-transparent py-3 px-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors";
+        document.getElementById('tab-team').className = "whitespace-nowrap border-b-2 border-transparent py-3 px-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors";
+        
+        // Hide content
+        document.getElementById('content-overview').classList.add('hidden');
+        document.getElementById('content-team').classList.add('hidden');
+        
+        // Activate selected
+        if (tab === 'overview') {
+            document.getElementById('tab-overview').className = "whitespace-nowrap border-b-2 border-brand-500 py-3 px-1 text-sm font-medium text-brand-600 transition-colors";
+            document.getElementById('content-overview').classList.remove('hidden');
+            document.getElementById('content-overview').classList.add('space-y-6');
+        } else {
+            document.getElementById('tab-team').className = "whitespace-nowrap border-b-2 border-brand-500 py-3 px-1 text-sm font-medium text-brand-600 transition-colors";
+            document.getElementById('content-team').classList.remove('hidden');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Re-initialize icons just in case
+        if(window.lucide) lucide.createIcons();
+
+        // Chart setup
+        var ctx = document.getElementById('projectHealthChart');
+        if (ctx) {
+            ctx = ctx.getContext('2d');
+            
+            // Set default font for chart
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#6b7280';
+
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Completed Tasks',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: '#10b981', // emerald-500
+                        borderRadius: 4,
+                        barThickness: 16,
+                    },
+                    {
+                        label: 'Open Issues',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: '#f43f5e', // rose-500
+                        borderRadius: 4,
+                        barThickness: 16,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                padding: 20,
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            border: { display: false },
+                            grid: {
+                                color: '#f3f4f6', // gray-100
+                            },
+                            ticks: {
+                                padding: 10
+                            }
+                        },
+                        x: {
+                            border: { display: false },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index',
+                    },
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

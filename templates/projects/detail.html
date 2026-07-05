@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.name }} - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <div>
+        <a href="{% url 'project_list' %}" class="text-decoration-none text-gray-500 mb-4 d-inline-block"><i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Projects</a>
+        <h2 class="h3 mb-0 text-gray-800 font-bold">
+            <span class="text-brand-600 mr-2">[{{ project.code }}]</span>{{ project.name }}
+        </h2>
+    </div>
+    <a href="{% url 'project_update' project.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-6 py-2 text-sm font-semibold text-brand-600 shadow-soft ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors btn-sm"><i data-lucide="pencil" class="w-4 h-4 mr-1"></i> Edit Project</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Left Column: Details -->
+    <div class="lg:col-span-8">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white border-bottom-0 pt-4 pb-0">
+                <h6 class="m-0 font-bold text-brand-600">Overview</h6>
+            </div>
+            <div class="p-6">
+                <p class="mb-6">{{ project.description|default:"No description provided." }}</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Status</div>
+                        <div class="font-semibold">{{ project.get_status_display }}</div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Priority</div>
+                        <div class="font-semibold">{{ project.get_priority_display }}</div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Type</div>
+                        <div class="font-semibold">{{ project.get_project_type_display }}</div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Client</div>
+                        <div class="font-semibold">{{ project.client|default:"-" }}</div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Owner</div>
+                        <div class="font-semibold">{{ project.owner.email|default:"Unassigned" }}</div>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Budget</div>
+                        <div class="font-semibold">{% if project.budget %}${{ project.budget }}{% else %}-{% endif %}</div>
+                    </div>
+                    <div class="flex flex-col sm:col-span-2 md:col-span-3">
+                        <div class="text-gray-500 text-sm">Timeline</div>
+                        <div class="font-semibold">
+                            {{ project.start_date|date:"M d, Y"|default:"TBD" }} - {{ project.end_date|date:"M d, Y"|default:"TBD" }}
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                
+                <h6 class="font-bold text-secondary mb-3">Repositories & Documents</h6>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 g-3">
+                    <div class="md:col-span-6">
+                        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none">
+                            <div class="p-6 p-6 flex items-center">
+                                <i data-lucide="github" class="w-4 h-4 text-2xl text-dark mr-3"></i>
+                                <div>
+                                    <div class="text-gray-500 small mb-4">GitHub Path</div>
+                                    {% if project.github_url %}
+                                        <a href="{{ project.github_url }}" target="_blank" class="font-semibold text-decoration-none text-brand-600 text-break">View Repository <i data-lucide="box-arrow-up-right" class="w-4 h-4 ml-1 small"></i></a>
+                                    {% else %}
+                                        <span class="text-gray-500 fst-italic">Not specified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-6">
+                        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none">
+                            <div class="p-6 p-6 flex items-center">
+                                <i data-lucide="google" class="w-4 h-4 text-brand-600 text-2xl mr-3"></i>
+                                <div>
+                                    <div class="text-gray-500 small mb-4">Google Drive (Req, Design, Impl, Test, Deploy)</div>
+                                    {% if project.gdrive_url %}
+                                        <a href="{{ project.gdrive_url }}" target="_blank" class="font-semibold text-decoration-none text-brand-600 text-break">View Folders <i data-lucide="box-arrow-up-right" class="w-4 h-4 ml-1 small"></i></a>
+                                    {% else %}
+                                        <span class="text-gray-500 fst-italic">Not specified</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tasks Section -->
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white border-bottom-0 pt-4 pb-0">
+                <h6 class="m-0 font-bold text-brand-600">Tasks</h6>
+            </div>
+            <div class="p-6 p-0">
+                <div class="border border-gray-100 rounded-lg overflow-hidden border border-gray-100 rounded-lg overflow-hidden-flush">
+                    {% for task in tasks %}
+                    <a href="{% url 'task_detail' task.pk %}" class="flex justify-between items-center p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <div>
+                            <h6 class="mb-4 font-semibold text-dark">{{ task.title }}</h6>
+                            <small class="text-gray-500"><span class="badge bg-gray-50 text-dark border mr-1">{{ task.task_id }}</span> Assigned to: {{ task.assignee.email|default:"Unassigned" }}</small>
+                        </div>
+                        <span class="badge {% if task.status == 'BACKLOG' %}bg-secondary{% elif task.status == 'IN_PROGRESS' %}bg-primary{% elif task.status == 'REVIEW' %}bg-info{% else %}bg-success{% endif %} rounded-full">
+                            {{ task.get_status_display }}
+                        </span>
+                    </a>
+                    {% empty %}
+                    <div class="p-6 text-center text-gray-500">No tasks associated with this project.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Issues Section -->
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white border-bottom-0 pt-4 pb-0">
+                <h6 class="m-0 font-bold text-rose-600">Issues</h6>
+            </div>
+            <div class="p-6 p-0">
+                <div class="border border-gray-100 rounded-lg overflow-hidden border border-gray-100 rounded-lg overflow-hidden-flush">
+                    {% for issue in issues %}
+                    <a href="{% url 'issue_tracker' %}" class="flex justify-between items-center p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <div>
+                            <h6 class="mb-4 font-semibold text-dark">{{ issue.title }}</h6>
+                            <small class="text-gray-500"><span class="badge {% if issue.severity == 'CRITICAL' %}bg-danger{% elif issue.severity == 'MAJOR' %}bg-warning text-dark{% elif issue.severity == 'MINOR' %}bg-info{% else %}bg-secondary{% endif %} mr-1">{{ issue.get_severity_display }}</span> {{ issue.get_issue_type_display }}</small>
+                        </div>
+                        <span class="badge {% if issue.status == 'OPEN' %}bg-danger{% elif issue.status == 'IN_PROGRESS' %}bg-warning text-dark{% elif issue.status == 'RESOLVED' %}bg-success{% else %}bg-secondary{% endif %} rounded-full">
+                            {{ issue.get_status_display }}
+                        </span>
+                    </a>
+                    {% empty %}
+                    <div class="p-6 text-center text-gray-500">No issues associated with this project.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Activity Log & Attachments -->
+    <div class="lg:col-span-4">
+        {% include 'core/includes/attachments.html' with object=project model_name='Project' %}
+
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none h-100">
+            <div class="border-b border-gray-100 px-6 py-4 bg-white pt-4 pb-2 border-bottom">
+                <h6 class="m-0 font-bold text-brand-600"><i data-lucide="clock-history" class="w-4 h-4 mr-2"></i>Activity History</h6>
+            </div>
+            <div class="p-6 p-0">
+                <div class="border border-gray-100 rounded-lg overflow-hidden border border-gray-100 rounded-lg overflow-hidden-flush" style="max-height: 600px; overflow-y: auto;">
+                    {% for activity in activities %}
+                    <div class="block px-4 py-3 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors p-6">
+                        <div class="flex w-100 justify-between mb-4">
+                            <h6 class="mb-0 font-semibold text-dark">
+                                {% if activity.action == 'CREATE' %}
+                                    <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20 rounded-full mr-1">Created</span>
+                                {% elif activity.action == 'UPDATE' %}
+                                    <span class="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-600/20 rounded-full mr-1">Updated</span>
+                                {% else %}
+                                    <span class="inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20 rounded-full mr-1">{{ activity.action }}</span>
+                                {% endif %}
+                                {{ activity.user.first_name|default:activity.user.email|default:"System" }}
+                            </h6>
+                            <small class="text-gray-500">{{ activity.timestamp|timesince }} ago</small>
+                        </div>
+                        <div class="small text-gray-500 mt-4">
+                            {% if activity.action == 'CREATE' %}
+                                Initial project creation.
+                            {% else %}
+                                <ul class="mb-0 ps-3">
+                                {% for field, change in activity.changes.items %}
+                                    <li><strong>{{ field|title }}</strong> changed from <span class="text-rose-600 text-decoration-line-through">{{ change.old }}</span> to <span class="text-emerald-600">{{ change.new }}</span></li>
+                                {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-gray-500 p-6">No activity history yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
