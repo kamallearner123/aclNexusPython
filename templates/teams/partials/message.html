@@ -1,0 +1,31 @@
+{% if msg.sender == request.user %}
+<div class="flex justify-end mb-4 group">
+    <div class="max-w-[70%]">
+        <div class="flex items-center justify-end mb-1">
+            <span class="text-xs text-gray-400 font-medium mr-2">{{ msg.created_at|date:"g:i A" }}</span>
+            <span class="text-xs font-bold text-gray-700">You</span>
+        </div>
+        <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-soft relative">
+            <div class="text-sm msg-content">{{ msg.content|safe }}</div>
+        </div>
+    </div>
+    <div class="ml-2 flex-shrink-0 flex items-end">
+        <img src="https://ui-avatars.com/api/?name={{ msg.sender.email }}&background=random" class="w-8 h-8 rounded-full shadow-sm ring-2 ring-white" alt="Avatar">
+    </div>
+</div>
+{% else %}
+<div class="flex justify-start mb-4 group">
+    <div class="mr-2 flex-shrink-0 flex items-end">
+        <img src="https://ui-avatars.com/api/?name={{ msg.sender.email }}&background=random" class="w-8 h-8 rounded-full shadow-sm ring-2 ring-white" alt="Avatar">
+    </div>
+    <div class="max-w-[70%]">
+        <div class="flex items-center mb-1">
+            <span class="text-xs font-bold text-gray-700 mr-2">{{ msg.sender.first_name|default:msg.sender.email }}</span>
+            <span class="text-xs text-gray-400 font-medium">{{ msg.created_at|date:"g:i A" }}</span>
+        </div>
+        <div class="bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-soft relative">
+            <div class="text-sm msg-content">{{ msg.content|safe }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}

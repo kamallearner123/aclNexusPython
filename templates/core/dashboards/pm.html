@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}PM Dashboard - Apt Computing Labs Nexus{% endblock %}
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">{{ role_title }}</h1>
+    <p class="text-sm text-gray-500 mt-1">Overview of your projects.</p>
+</div>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">My Active Projects</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ active_projects }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Open Tasks in My Projects</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ open_tasks }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">High Risks in My Projects</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ high_risks }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Open Issues in My Projects</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ open_issues }}</p>
+    </div>
+</div>
+{% endblock %}

@@ -9,7 +9,9 @@
         <h2 class="h3 mb-4 text-gray-800 font-bold">Kanban Board - {{ project.name }}</h2>
         <a href="{% url 'tasks_kanban' %}" class="text-decoration-none small text-gray-500"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>Back to Projects</a>
     </div>
+    {% if can_create_task %}
     <a href="{% url 'task_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Task</a>
+    {% endif %}
 </div>
 
 <style>

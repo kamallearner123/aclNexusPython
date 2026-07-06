@@ -4,15 +4,36 @@ from core.models import AuditLog
 from .models import Project
 from .forms import ProjectForm
 
+from django.db.models import Q
+
 @login_required
 def project_list(request):
     """
-    View displaying all projects.
+    View displaying all projects depending on role.
     """
-    projects = Project.objects.all().order_by('-created_at')
+    user = request.user
+    if user.is_superuser or user.is_staff:
+        projects = Project.objects.all()
+    elif user.roles.filter(name='Project Manager').exists():
+        projects = Project.objects.filter(owner=user)
+    elif user.roles.filter(name='Architect').exists():
+        projects = Project.objects.filter(
+            Q(tasks__assignee=user) | 
+            Q(team__members__user=user)
+        ).distinct()
+    else:
+        projects = Project.objects.filter(
+            Q(tasks__assignee=user) |
+            Q(team__members__user=user)
+        ).distinct()
+        
+    projects = projects.order_by('-created_at')
     return render(request, 'projects/list.html', {'projects': projects})
 
+from django.contrib.auth.decorators import user_passes_test
+
 @login_required
+@user_passes_test(lambda u: u.is_staff or u.is_superuser)
 def project_create(request):
     """
     View for creating a new project.
@@ -74,10 +95,25 @@ def is_admin(user):
 @login_required
 @user_passes_test(is_admin)
 def project_delete(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
     if request.method == 'POST':
-        project = get_object_or_404(Project, pk=pk)
+        reason = request.POST.get('reason', '')
+        
+        # Log the deletion and reason
+        from core.models import AuditLog
+        AuditLog.objects.create(
+            action='DELETE',
+            model_name='Project',
+            object_id=str(project.pk),
+            user=request.user,
+            changes={'reason': reason, 'project_name': project.name, 'project_code': project.code}
+        )
+        
         project.delete()
-    return redirect('system_admin_dashboard')
+        return redirect('project_list')
+        
+    return render(request, 'projects/confirm_delete.html', {'project': project})
 
 @login_required
 def automotive_process_board(request, pk):

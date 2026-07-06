@@ -47,6 +47,7 @@ class Project(BaseModel):
     github_url = models.URLField(blank=True, null=True, help_text="Link to GitHub repository")
     gdrive_url = models.URLField(blank=True, null=True, help_text="Link to Google Drive folder (containing Requirement, Design, Implementation, Testing, Deployment)")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='owned_projects')
+    team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True, related_name='projects')
     attachments = GenericRelation('core.Attachment')
 
     def __init__(self, *args, **kwargs):
@@ -55,13 +56,13 @@ class Project(BaseModel):
 
     def _get_current_state(self):
         return {
-            'name': getattr(self, 'name', None),
-            'status': getattr(self, 'status', None),
-            'priority': getattr(self, 'priority', None),
-            'owner_id': getattr(self, 'owner_id', None),
-            'budget': getattr(self, 'budget', None),
-            'start_date': getattr(self, 'start_date', None),
-            'end_date': getattr(self, 'end_date', None),
+            'name': self.__dict__.get('name'),
+            'status': self.__dict__.get('status'),
+            'priority': self.__dict__.get('priority'),
+            'owner_id': self.__dict__.get('owner_id'),
+            'budget': self.__dict__.get('budget'),
+            'start_date': self.__dict__.get('start_date'),
+            'end_date': self.__dict__.get('end_date'),
         }
 
     def save(self, *args, **kwargs):

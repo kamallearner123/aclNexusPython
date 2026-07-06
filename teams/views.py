@@ -47,4 +47,43 @@ def team_detail(request, pk):
     form = TeamMemberForm(team=team)
     return render(request, 'teams/detail.html', {'team': team, 'form': form})
 
-# Create your views here.
+@login_required
+def my_team(request):
+    """
+    View for developers to see their team members and chat.
+    """
+    membership = request.user.team_memberships.first()
+    team = membership.team if membership else None
+    
+    # We need to get the User objects from the TeamMember relationship
+    members = []
+    if team:
+        # Get all users who are members of this team
+        members = [m.user for m in team.members.all()]
+        
+    messages = team.messages.all() if team else []
+    
+    return render(request, 'teams/my_team.html', {
+        'team': team,
+        'members': members,
+        'messages': messages,
+    })
+
+from django.http import HttpResponse
+
+@login_required
+def post_team_message(request):
+    membership = request.user.team_memberships.first()
+    team = membership.team if membership else None
+    
+    if request.method == 'POST' and team:
+        content = request.POST.get('content', '').strip()
+        if content:
+            from .models import TeamMessage
+            msg = TeamMessage.objects.create(
+                team=team,
+                sender=request.user,
+                content=content
+            )
+            return render(request, 'teams/partials/message.html', {'msg': msg})
+    return HttpResponse(status=204)

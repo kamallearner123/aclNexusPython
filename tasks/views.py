@@ -26,6 +26,7 @@ def kanban_board(request):
             'testing': tasks.filter(status='TESTING'),
             'blocked': tasks.filter(status='BLOCKED'),
             'completed': tasks.filter(status='COMPLETED'),
+            'can_create_task': can_create_task(request.user),
         }
         return render(request, 'tasks/kanban.html', context)
     else:
@@ -33,7 +34,20 @@ def kanban_board(request):
         projects = Project.objects.all()
         return render(request, 'tasks/kanban_projects.html', {'projects': projects})
 
+from django.contrib.auth.decorators import user_passes_test
+
+def can_create_task(user):
+    if user.is_staff or user.is_superuser:
+        return True
+    roles = user.roles.values_list('name', flat=True)
+    if 'Project Manager' in roles or 'Architect' in roles:
+        return True
+    if user.led_teams.exists():
+        return True
+    return False
+
 @login_required
+@user_passes_test(can_create_task)
 def task_create(request):
     """
     View for creating a new task.

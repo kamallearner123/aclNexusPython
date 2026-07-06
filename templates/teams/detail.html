@@ -6,12 +6,12 @@
 {% block content %}
 <div class="flex justify-between items-center mb-4">
     <h2 class="h3 mb-0 text-gray-800 font-bold">Manage Team: {{ team.name }}</h2>
-    <a href="{% url 'system_admin_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Admin Board</a>
+    <a href="{% url 'system_admin_dashboard' %}" class="inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Admin Board</a>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
     <!-- Left Column: Team Details & Members -->
-    <div class="col-lg-8">
+    <div class="md:col-span-8">
         <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
             <div class="border-b border-gray-100 px-6 py-4 bg-white border-bottom-0 pt-4 pb-0">
                 <h6 class="m-0 font-bold text-brand-600">Team Members ({{ team.members.count }})</h6>
@@ -44,10 +44,10 @@
                                 </td>
                                 <td>{{ member.joined_date }}</td>
                                 <td class="text-end pe-4">
-                                    <form method="post" class="d-inline" onsubmit="return confirm('Remove user from team?');">
+                                    <form method="post" class="inline-block" onsubmit="return confirm('Remove user from team?');">
                                         {% csrf_token %}
                                         <input type="hidden" name="member_id" value="{{ member.pk }}">
-                                        <button type="submit" name="remove_member" class="btn btn-sm btn-outline-danger">Remove</button>
+                                        <button type="submit" name="remove_member" class="inline-flex items-center justify-center rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-red-600 shadow-sm hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">Remove</button>
                                     </form>
                                 </td>
                             </tr>
@@ -64,7 +64,7 @@
     </div>
 
     <!-- Right Column: Add Member -->
-    <div class="col-lg-4">
+    <div class="md:col-span-4">
         <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
             <div class="border-b border-gray-100 px-6 py-4 bg-white border-bottom-0 pt-4 pb-0">
                 <h6 class="m-0 font-bold text-brand-600">Add Member</h6>

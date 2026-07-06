@@ -39,12 +39,15 @@
                     {{ form.owner|as_crispy_field }}
                 </div>
                 <div class="md:col-span-6 mb-3">
+                    {{ form.team|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
                     {{ form.start_date|as_crispy_field }}
                 </div>
                 <div class="md:col-span-6 mb-3">
                     {{ form.end_date|as_crispy_field }}
                 </div>
-                <div class="col-md-12 mb-3">
+                <div class="md:col-span-6 mb-3">
                     {{ form.budget|as_crispy_field }}
                 </div>
                 <div class="md:col-span-6 mb-3">
@@ -57,8 +60,8 @@
                     {{ form.description|as_crispy_field }}
                 </div>
             </div>
-            <div class="d-grid gap-2 d-mflex justify-content-md-end">
-                <a href="{% url 'project_list' %}" class="btn btn-light me-md-2">Cancel</a>
+            <div class="flex justify-end gap-2 mt-4">
+                <a href="{% url 'project_list' %}" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors">Cancel</a>
                 <button type="submit" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors px-6 font-bold">Save Project</button>
             </div>
         </form>

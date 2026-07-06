@@ -29,3 +29,17 @@ class TeamMember(BaseModel):
 
     def __str__(self):
         return f"{self.user} - {self.team}"
+
+class TeamMessage(BaseModel):
+    """
+    Messages sent within a team channel.
+    """
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_team_messages')
+    content = models.TextField()
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"Message from {self.sender} in {self.team}"

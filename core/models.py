@@ -62,9 +62,9 @@ class User(AbstractUser, BaseModel):
     username = None # Remove username field
     email = models.EmailField(_('email address'), unique=True)
     
-    # Overriding the groups/user_permissions to avoid clash with AbstractUser, though normally we'd just use groups.
     roles = models.ManyToManyField(Role, blank=True, related_name='users')
     team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True, related_name='team_users')
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

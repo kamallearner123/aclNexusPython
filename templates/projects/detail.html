@@ -48,6 +48,10 @@
                         <div class="text-gray-500 text-sm">Budget</div>
                         <div class="font-semibold">{% if project.budget %}${{ project.budget }}{% else %}-{% endif %}</div>
                     </div>
+                    <div class="flex flex-col">
+                        <div class="text-gray-500 text-sm">Assigned Team</div>
+                        <div class="font-semibold">{{ project.team.name|default:"Unassigned" }}</div>
+                    </div>
                     <div class="flex flex-col sm:col-span-2 md:col-span-3">
                         <div class="text-gray-500 text-sm">Timeline</div>
                         <div class="font-semibold">

@@ -47,12 +47,12 @@ class Task(BaseModel):
 
     def _get_current_state(self):
         return {
-            'title': getattr(self, 'title', None),
-            'status': getattr(self, 'status', None),
-            'priority': getattr(self, 'priority', None),
-            'assignee_id': getattr(self, 'assignee_id', None),
-            'story_points': getattr(self, 'story_points', None),
-            'due_date': getattr(self, 'due_date', None),
+            'title': self.__dict__.get('title'),
+            'status': self.__dict__.get('status'),
+            'priority': self.__dict__.get('priority'),
+            'assignee_id': self.__dict__.get('assignee_id'),
+            'story_points': self.__dict__.get('story_points'),
+            'due_date': self.__dict__.get('due_date'),
         }
 
     def save(self, *args, **kwargs):

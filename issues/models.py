@@ -49,10 +49,10 @@ class Issue(BaseModel):
 
     def _get_current_state(self):
         return {
-            'title': getattr(self, 'title', None),
-            'status': getattr(self, 'status', None),
-            'severity': getattr(self, 'severity', None),
-            'issue_type': getattr(self, 'issue_type', None),
+            'title': self.__dict__.get('title'),
+            'status': self.__dict__.get('status'),
+            'severity': self.__dict__.get('severity'),
+            'issue_type': self.__dict__.get('issue_type'),
         }
 
     def save(self, *args, **kwargs):
