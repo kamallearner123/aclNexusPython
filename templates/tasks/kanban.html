@@ -25,9 +25,9 @@
     <!-- Backlog Column -->
     <div class="w-80 flex-shrink-0 flex flex-col">
         <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
-            <div class="border-b border-gray-100 px-6 py-4 bg-secondary text-white font-semibold rounded-top flex justify-between">
+            <div class="border-b border-gray-100 px-6 py-4 bg-gray-100 text-gray-900 font-semibold rounded-t-xl flex justify-between">
                 <span>Backlog</span>
-                <span class="badge bg-white text-secondary" id="count-BACKLOG">{{ backlog.count }}</span>
+                <span class="inline-flex items-center rounded-full bg-white px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-200" id="count-BACKLOG">{{ backlog.count }}</span>
             </div>
             <div class="p-6 p-2 task-column" id="backlog-col" data-status="BACKLOG">
                 {% for task in backlog %}
@@ -35,13 +35,13 @@
                     <div class="p-4">
                         <div class="flex justify-between items-center mb-4">
                             <small class="text-gray-500 font-bold">{{ task.task_id }}</small>
-                            <span class="badge {% if task.priority == 'CRITICAL' %}bg-danger{% elif task.priority == 'HIGH' %}bg-warning text-dark{% else %}bg-info{% endif %}">{{ task.get_priority_display }}</span>
+                            <span class="inline-flex items-center rounded-md {% if task.priority == 'CRITICAL' %}bg-red-50 text-red-700 ring-red-600/20{% elif task.priority == 'HIGH' %}bg-amber-50 text-amber-700 ring-amber-600/20{% else %}bg-blue-50 text-blue-700 ring-blue-600/20{% endif %} px-2 py-1 text-xs font-medium ring-1 ring-inset">{{ task.get_priority_display }}</span>
                         </div>
-                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-dark">{{ task.title }}</a></h6>
+                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
                         <div class="flex justify-between items-center mt-6">
-                            <span class="badge bg-gray-50 text-dark border">{{ task.story_points|default:"-" }} pt</span>
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ task.story_points|default:"-" }} pt</span>
                             {% if task.assignee %}
-                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-circle" title="{{ task.assignee.email }}">
+                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-full" title="{{ task.assignee.email }}">
                             {% endif %}
                         </div>
                     </div>
@@ -55,9 +55,9 @@
     <!-- In Progress Column -->
     <div class="w-80 flex-shrink-0 flex flex-col">
         <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
-            <div class="border-b border-gray-100 px-6 py-4 bg-primary text-white font-semibold rounded-top flex justify-between">
+            <div class="border-b border-gray-100 px-6 py-4 bg-brand-50 text-brand-700 font-semibold rounded-t-xl flex justify-between">
                 <span>In Progress</span>
-                <span class="badge bg-white text-brand-600" id="count-IN_PROGRESS">{{ in_progress.count }}</span>
+                <span class="inline-flex items-center rounded-full bg-white px-2 py-1 text-xs font-medium text-brand-600 ring-1 ring-inset ring-brand-200" id="count-IN_PROGRESS">{{ in_progress.count }}</span>
             </div>
             <div class="p-6 p-2 task-column" id="inprogress-col" data-status="IN_PROGRESS">
                 {% for task in in_progress %}
@@ -65,13 +65,13 @@
                     <div class="p-4">
                         <div class="flex justify-between items-center mb-4">
                             <small class="text-gray-500 font-bold">{{ task.task_id }}</small>
-                            <span class="badge {% if task.priority == 'CRITICAL' %}bg-danger{% elif task.priority == 'HIGH' %}bg-warning text-dark{% else %}bg-info{% endif %}">{{ task.get_priority_display }}</span>
+                            <span class="inline-flex items-center rounded-md {% if task.priority == 'CRITICAL' %}bg-red-50 text-red-700 ring-red-600/20{% elif task.priority == 'HIGH' %}bg-amber-50 text-amber-700 ring-amber-600/20{% else %}bg-blue-50 text-blue-700 ring-blue-600/20{% endif %} px-2 py-1 text-xs font-medium ring-1 ring-inset">{{ task.get_priority_display }}</span>
                         </div>
-                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-dark">{{ task.title }}</a></h6>
+                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
                         <div class="flex justify-between items-center mt-6">
-                            <span class="badge bg-gray-50 text-dark border">{{ task.story_points|default:"-" }} pt</span>
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ task.story_points|default:"-" }} pt</span>
                             {% if task.assignee %}
-                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-circle" title="{{ task.assignee.email }}">
+                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-full" title="{{ task.assignee.email }}">
                             {% endif %}
                         </div>
                     </div>
@@ -85,9 +85,9 @@
     <!-- In Review Column -->
     <div class="w-80 flex-shrink-0 flex flex-col">
         <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
-            <div class="border-b border-gray-100 px-6 py-4 bg-info text-dark font-semibold rounded-top flex justify-between">
+            <div class="border-b border-gray-100 px-6 py-4 bg-amber-50 text-amber-700 font-semibold rounded-t-xl flex justify-between">
                 <span>In Review</span>
-                <span class="badge bg-white text-info" id="count-REVIEW">{{ in_review.count }}</span>
+                <span class="inline-flex items-center rounded-full bg-white px-2 py-1 text-xs font-medium text-amber-600 ring-1 ring-inset ring-amber-200" id="count-REVIEW">{{ in_review.count }}</span>
             </div>
             <div class="p-6 p-2 task-column" id="inreview-col" data-status="REVIEW">
                 {% for task in in_review %}
@@ -95,13 +95,13 @@
                     <div class="p-4">
                         <div class="flex justify-between items-center mb-4">
                             <small class="text-gray-500 font-bold">{{ task.task_id }}</small>
-                            <span class="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">{{ task.get_priority_display }}</span>
+                            <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20">{{ task.get_priority_display }}</span>
                         </div>
-                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="text-decoration-none text-dark">{{ task.title }}</a></h6>
+                        <h6 class="text-base font-semibold text-gray-900 mb-2"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
                         <div class="flex justify-between items-center mt-6">
-                            <span class="badge bg-gray-50 text-dark border">{{ task.story_points|default:"-" }} pt</span>
+                            <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ task.story_points|default:"-" }} pt</span>
                             {% if task.assignee %}
-                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-circle" title="{{ task.assignee.email }}">
+                                <img src="https://ui-avatars.com/api/?name={{ task.assignee.email }}&background=random" width="24" height="24" class="rounded-full" title="{{ task.assignee.email }}">
                             {% endif %}
                         </div>
                     </div>
@@ -115,9 +115,9 @@
     <!-- Completed Column -->
     <div class="w-80 flex-shrink-0 flex flex-col">
         <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl bg-gray-50 border-none shadow-soft h-100">
-            <div class="border-b border-gray-100 px-6 py-4 bg-success text-white font-semibold rounded-top flex justify-between">
+            <div class="border-b border-gray-100 px-6 py-4 bg-emerald-50 text-emerald-700 font-semibold rounded-t-xl flex justify-between">
                 <span>Completed</span>
-                <span class="badge bg-white text-emerald-600" id="count-COMPLETED">{{ completed.count }}</span>
+                <span class="inline-flex items-center rounded-full bg-white px-2 py-1 text-xs font-medium text-emerald-600 ring-1 ring-inset ring-emerald-200" id="count-COMPLETED">{{ completed.count }}</span>
             </div>
             <div class="p-6 p-2 task-column" id="completed-col" data-status="COMPLETED">
                 {% for task in completed %}

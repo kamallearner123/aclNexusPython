@@ -67,8 +67,8 @@
                 </div>
                 
                 <h5 class="text-lg font-semibold text-gray-900 mb-2">{{ project.name }}</h5>
-                <p class="text-sm text-gray-500 mb-4 line-clamp-2">
-                    {{ project.description|default:"No description provided." }}
+                <p class="text-sm text-gray-500 mb-6 flex-1">
+                    {{ project.description|default:"No description provided."|safe }}
                 </p>
 
                 <div class="mb-6">

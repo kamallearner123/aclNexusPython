@@ -43,7 +43,7 @@
                 <h6 class="m-0 font-bold text-brand-600">Task Details</h6>
             </div>
             <div class="p-6">
-                <p class="mb-6">{{ task.description|default:"No description provided." }}</p>
+                <div class="mb-6">{% if task.description %}{{ task.description|safe }}{% else %}No description provided.{% endif %}</div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                     <div class="flex flex-col">

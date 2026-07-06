@@ -59,6 +59,21 @@ def task_create(request):
             task.created_by = request.user
             task.reporter = request.user
             task.save()
+            
+            # Handle attachments
+            from core.models import Attachment
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(Task)
+            
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=task.pk
+                )
+                
             return redirect('tasks_kanban')
     else:
         form = TaskForm()
@@ -89,6 +104,21 @@ def task_update(request, pk):
             if form.cleaned_data.get('edit_comment'):
                 updated_task._edit_comment = form.cleaned_data.get('edit_comment')
             updated_task.save()
+            
+            # Handle attachments
+            from core.models import Attachment
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(Task)
+            
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=updated_task.pk
+                )
+                
             return redirect('task_detail', pk=task.pk)
     else:
         form = TaskForm(instance=task)

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}New Note Topic - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">Create Note Topic</h2>
+    <a href="{% url 'notes_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Back to Notes</a>
+</div>
+
+<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none max-w-2xl">
+    <div class="p-6 p-6">
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <div class="mt-6 flex justify-end">
+                <a href="{% url 'notes_dashboard' %}" class="btn btn-light me-2">Cancel</a>
+                <button type="submit" class="btn btn-primary"><i data-lucide="save" class="w-4 h-4 mr-1 inline"></i> Create Topic</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

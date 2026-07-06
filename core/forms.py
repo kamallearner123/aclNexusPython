@@ -1,6 +1,25 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Role
+from .models import User, Role, NoteTopic, Note
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class NoteTopicForm(forms.ModelForm):
+    class Meta:
+        model = NoteTopic
+        fields = ['name']
+
+class NoteForm(forms.ModelForm):
+    attachments = forms.FileField(
+        widget=MultipleFileInput(attrs={'multiple': True}),
+        required=False,
+        help_text="Upload multiple files or images to attach to this note."
+    )
+
+    class Meta:
+        model = Note
+        fields = ['topic', 'title', 'content']
 
 class EmployeeCreationForm(UserCreationForm):
     first_name = forms.CharField(max_length=150, required=True)
@@ -24,4 +43,4 @@ class CustomUserCreationForm(UserCreationForm):
 class ProfileEditForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'avatar')
+        fields = ('first_name', 'last_name', 'interested_topics', 'avatar')

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
 class BaseModel(models.Model):
     """
@@ -65,6 +65,11 @@ class User(AbstractUser, BaseModel):
     roles = models.ManyToManyField(Role, blank=True, related_name='users')
     team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True, related_name='team_users')
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    
+    # AI Daily Tech News fields
+    interested_topics = models.CharField(max_length=255, blank=True, help_text="Comma-separated topics of interest")
+    daily_news_cache = models.JSONField(default=list, blank=True)
+    news_last_fetched = models.DateField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -110,3 +115,37 @@ class Attachment(models.Model):
 
     def __str__(self):
         return self.filename
+
+class NoteTopic(BaseModel):
+    """
+    Topic category for personal user notes.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='note_topics')
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+class Note(BaseModel):
+    """
+    Personal user note.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notes')
+    topic = models.ForeignKey(NoteTopic, on_delete=models.CASCADE, related_name='notes')
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    attachments = GenericRelation('core.Attachment')
+
+    def __str__(self):
+        return self.title
+
+class NoteEntry(BaseModel):
+    """
+    An additional entry or update appended to an existing note.
+    """
+    note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name='entries')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    content = models.TextField()
+    
+    def __str__(self):
+        return f"Entry on {self.note.title}"

@@ -11,7 +11,7 @@
 
 <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
     <div class="p-6 p-6">
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div class="md:col-span-6 mb-3">
@@ -38,21 +38,69 @@
                 <div class="md:col-span-6 mb-3">
                     {{ form.gdrive_url|as_crispy_field }}
                 </div>
-                <div class="col-span-1 mb-3">
+                <div class="md:col-span-12 mb-3">
                     {{ form.impact|as_crispy_field }}
                 </div>
-                <div class="col-span-1 mb-3">
+                <div class="md:col-span-12 mb-3">
                     {{ form.root_cause|as_crispy_field }}
                 </div>
-                <div class="col-span-1 mb-4">
-                    {{ form.resolution|as_crispy_field }}
+                <div class="md:col-span-12 mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Resolution</label>
+                    <div class="border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-rose-500 focus-within:border-rose-500 transition-all bg-white">
+                        <div id="quill-editor" class="min-h-[200px]"></div>
+                    </div>
+                    <div class="hidden">
+                        {{ form.resolution|as_crispy_field }}
+                    </div>
+                </div>
+                <div class="md:col-span-12 mb-4">
+                    {{ form.attachments|as_crispy_field }}
                 </div>
             </div>
-            <div class="d-grid gap-2 d-mflex justify-content-md-end">
-                <a href="{% url 'issue_tracker' %}" class="btn btn-light me-md-2">Cancel</a>
-                <button type="submit" class="inline-flex items-center justify-center rounded-md bg-rose-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-rose-500 transition-colors px-6 font-bold">Save Issue</button>
+            <div class="flex justify-end gap-2 mt-4">
+                <a href="{% url 'issue_tracker' %}" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-6 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition-colors">Cancel</a>
+                <button type="submit" class="inline-flex items-center justify-center rounded-md bg-rose-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition-colors font-bold">Save Issue</button>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Quill Integration -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<style>
+    .ql-toolbar.ql-snow { border: none; border-bottom: 1px solid #e5e7eb; background: #f9fafb; border-radius: 0.5rem 0.5rem 0 0; }
+    .ql-container.ql-snow { border: none; font-family: inherit; font-size: 0.875rem; border-radius: 0 0 0.5rem 0.5rem; }
+    .ql-editor { min-height: 200px; padding: 1rem; }
+    .ql-editor.ql-blank::before { color: #9ca3af; font-style: normal; left: 1rem; }
+</style>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var quill = new Quill('#quill-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image', 'code-block'],
+                    ['clean']
+                ]
+            },
+            placeholder: 'Provide detailed resolution, paste images, etc...'
+        });
+        
+        var hiddenTextarea = document.getElementById('id_resolution');
+        if (hiddenTextarea && hiddenTextarea.value) {
+            quill.root.innerHTML = hiddenTextarea.value;
+        }
+        
+        document.querySelector('form').addEventListener('submit', function() {
+            if (hiddenTextarea) {
+                hiddenTextarea.value = quill.root.innerHTML;
+            }
+        });
+    });
+</script>
 {% endblock %}

@@ -8,6 +8,7 @@ from teams.models import Team
 from django.contrib.contenttypes.models import ContentType
 from .models import User, Attachment
 from .forms import CustomUserCreationForm, EmployeeCreationForm
+from .utils import get_daily_ai_news
 
 @login_required
 def landing_page(request):
@@ -58,6 +59,7 @@ def pm_dashboard(request):
         'high_risks': Risk.objects.filter(project__in=projects, risk_level__in=['HIGH', 'CRITICAL']).count(),
         'open_issues': Issue.objects.filter(project__in=projects, status__in=['OPEN', 'IN_PROGRESS']).count(),
         'projects': projects,
+        'ai_news': get_daily_ai_news(request.user),
     }
     return render(request, 'core/dashboards/pm.html', context)
 
@@ -79,6 +81,7 @@ def architect_dashboard(request):
         'team': team,
         'team_tasks_open': team_tasks.count(),
         'my_tasks': my_tasks,
+        'ai_news': get_daily_ai_news(request.user),
     }
     return render(request, 'core/dashboards/architect.html', context)
 
@@ -93,6 +96,7 @@ def engineer_dashboard(request):
         'my_projects_count': my_projects.count(),
         'my_tasks': my_tasks.order_by('-created_at')[:10],
         'my_projects': my_projects,
+        'ai_news': get_daily_ai_news(request.user),
     }
     return render(request, 'core/dashboards/engineer.html', context)
 
@@ -187,3 +191,115 @@ def profile_edit(request):
     else:
         form = ProfileEditForm(instance=request.user)
     return render(request, 'core/profile_edit.html', {'form': form})
+
+from django.shortcuts import get_object_or_404
+from .models import NoteTopic, Note
+from .forms import NoteTopicForm, NoteForm
+
+@login_required
+def notes_dashboard(request):
+    topics = NoteTopic.objects.filter(user=request.user)
+    selected_topic_id = request.GET.get('topic')
+    if selected_topic_id:
+        notes = Note.objects.filter(user=request.user, topic_id=selected_topic_id)
+    else:
+        notes = Note.objects.filter(user=request.user)
+    
+    return render(request, 'core/notes/dashboard.html', {
+        'topics': topics,
+        'notes': notes,
+        'selected_topic_id': int(selected_topic_id) if selected_topic_id else None
+    })
+
+@login_required
+def note_topic_create(request):
+    if request.method == 'POST':
+        form = NoteTopicForm(request.POST)
+        if form.is_valid():
+            topic = form.save(commit=False)
+            topic.user = request.user
+            topic.save()
+            return redirect('notes_dashboard')
+    else:
+        form = NoteTopicForm()
+    return render(request, 'core/notes/topic_form.html', {'form': form})
+
+@login_required
+def note_create(request):
+    if request.method == 'POST':
+        form = NoteForm(request.POST, request.FILES)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.user = request.user
+            note.save()
+            
+            # Handle attachments
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(Note)
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=note.pk
+                )
+            return redirect('notes_dashboard')
+    else:
+        form = NoteForm()
+    
+    # limit topic choices to current user
+    form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
+        
+    return render(request, 'core/notes/note_form.html', {'form': form})
+
+@login_required
+def note_detail(request, pk):
+    note = get_object_or_404(Note, pk=pk, user=request.user)
+    
+    if request.method == 'POST':
+        content = request.POST.get('entry_content')
+        if content and content.strip() and content != '<p><br></p>':
+            from .models import NoteEntry
+            NoteEntry.objects.create(note=note, user=request.user, content=content)
+            return redirect('note_detail', pk=pk)
+            
+    return render(request, 'core/notes/note_detail.html', {'note': note})
+
+@login_required
+def note_edit(request, pk):
+    note = get_object_or_404(Note, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = NoteForm(request.POST, request.FILES, instance=note)
+        if form.is_valid():
+            note = form.save()
+            
+            # Handle attachments
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(Note)
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=note.pk
+                )
+            return redirect('note_detail', pk=note.pk)
+    else:
+        form = NoteForm(instance=note)
+    
+    # limit topic choices to current user
+    form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
+        
+    return render(request, 'core/notes/note_form.html', {'form': form, 'is_edit': True, 'note': note})
+
+@login_required
+def note_delete(request, pk):
+    note = get_object_or_404(Note, pk=pk, user=request.user)
+    if request.method == 'POST':
+        note.delete()
+        return redirect('notes_dashboard')
+    # Use detail page for deletion or a new template. We will just redirect if GET for safety or render confirm.
+    # To keep it simple without another template, we'll just allow POST to delete.
+    return redirect('note_detail', pk=pk)

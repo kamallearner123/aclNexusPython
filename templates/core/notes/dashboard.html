@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Notes Dashboard - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="h3 mb-0 text-gray-800 font-bold">My Personal Notes</h2>
+    <div>
+        <a href="{% url 'note_topic_create' %}" class="btn btn-outline-primary btn-sm me-2"><i data-lucide="folder-plus" class="w-4 h-4 mr-1"></i> New Topic</a>
+        <a href="{% url 'note_create' %}" class="btn btn-primary btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Note</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+    <!-- Topics Sidebar -->
+    <div class="md:col-span-3">
+        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl border-none p-4">
+            <h6 class="font-bold text-gray-700 mb-4 uppercase text-xs tracking-wider">Topics</h6>
+            <div class="flex flex-col space-y-2">
+                <a href="{% url 'notes_dashboard' %}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors {% if not selected_topic_id %}bg-brand-50 text-brand-700{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                    All Notes
+                </a>
+                {% for topic in topics %}
+                <a href="?topic={{ topic.pk }}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors flex justify-between items-center {% if selected_topic_id == topic.pk %}bg-brand-50 text-brand-700{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                    <span>{{ topic.name }}</span>
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">{{ topic.notes.count }}</span>
+                </a>
+                {% empty %}
+                <p class="text-sm text-gray-400 italic px-3">No topics yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes List -->
+    <div class="md:col-span-9">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for note in notes %}
+            <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl border-none p-5 transition-transform hover:-translate-y-1 hover:shadow-lg flex flex-col">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ note.topic.name }}</span>
+                    <small class="text-gray-400">{{ note.created_at|date:"M d, Y" }}</small>
+                </div>
+                <h5 class="text-lg font-bold text-gray-900 mb-2 line-clamp-1"><a href="{% url 'note_detail' note.pk %}" class="text-dark text-decoration-none hover:text-brand-600">{{ note.title }}</a></h5>
+                <div class="text-sm text-gray-600 mb-4 line-clamp-3 overflow-hidden">
+                    {{ note.content|striptags|safe|truncatewords:20 }}
+                </div>
+                <div class="mt-auto flex items-center justify-between border-t border-gray-100 pt-3">
+                    <a href="{% url 'note_detail' note.pk %}" class="text-sm font-semibold text-brand-600 hover:text-brand-500">View Note <span aria-hidden="true">&rarr;</span></a>
+                    {% if note.attachments.count > 0 %}
+                    <span class="inline-flex items-center text-xs text-gray-500"><i data-lucide="paperclip" class="w-3 h-3 mr-1"></i> {{ note.attachments.count }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-2 text-center py-12 bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl border-none">
+                <i data-lucide="file-text" class="w-12 h-12 mx-auto text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900">No notes found</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by creating a new topic and adding your first note.</p>
+                <div class="mt-6">
+                    <a href="{% url 'note_create' %}" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Note
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

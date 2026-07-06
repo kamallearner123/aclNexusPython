@@ -14,4 +14,10 @@ urlpatterns = [
     path('attachments/upload/', views.attachment_upload, name='attachment_upload'),
     path('attachments/<int:pk>/delete/', views.attachment_delete, name='attachment_delete'),
     path('profile/edit/', views.profile_edit, name='profile_edit'),
+    path('notes/', views.notes_dashboard, name='notes_dashboard'),
+    path('notes/topics/new/', views.note_topic_create, name='note_topic_create'),
+    path('notes/new/', views.note_create, name='note_create'),
+    path('notes/<int:pk>/', views.note_detail, name='note_detail'),
+    path('notes/<int:pk>/edit/', views.note_edit, name='note_edit'),
+    path('notes/<int:pk>/delete/', views.note_delete, name='note_delete'),
 ]

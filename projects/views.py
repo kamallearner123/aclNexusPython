@@ -44,6 +44,20 @@ def project_create(request):
             project = form.save(commit=False)
             project.created_by = request.user
             project.save()
+            
+            # Handle attachments
+            from core.models import Attachment
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(Project)
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=project.pk
+                )
+                
             return redirect('project_list')
     else:
         form = ProjectForm()
@@ -82,6 +96,20 @@ def project_update(request, pk):
             updated_project = form.save(commit=False)
             updated_project.updated_by = request.user
             updated_project.save()
+            
+            # Handle attachments
+            from core.models import Attachment
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(Project)
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=updated_project.pk
+                )
+                
             return redirect('project_detail', pk=project.pk)
     else:
         form = ProjectForm(instance=project)

@@ -112,6 +112,10 @@
                     <i data-lucide="shield-alert" class="w-4 h-4 mr-3 {% if 'risks' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     Risks
                 </a>
+                <a href="{% url 'notes_dashboard' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if 'notes' in request.path %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-3 {% if 'notes' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
+                    Notes
+                </a>
                 {% else %}
                 <a href="{% url 'dashboard' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
                     <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3 {% if request.resolver_match.url_name == 'dashboard' %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
@@ -136,6 +140,10 @@
                 <a href="{% url 'risks_register' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if 'risks' in request.path %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
                     <i data-lucide="shield-alert" class="w-4 h-4 mr-3 {% if 'risks' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     Risks
+                </a>
+                <a href="{% url 'notes_dashboard' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if 'notes' in request.path %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-3 {% if 'notes' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
+                    Notes
                 </a>
                 {% endif %}
             </nav>
@@ -163,6 +171,7 @@
                 <div class="absolute bottom-full left-0 w-full mb-4 bg-white border border-gray-100 shadow-elevated rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     <div class="p-1">
                         <a href="{% url 'profile_edit' %}" class="block px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Edit Profile</a>
+                        <a href="{% url 'password_change' %}" class="block px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Change Password</a>
                         <form action="{% url 'logout' %}" method="post" class="m-0">
                             {% csrf_token %}
                             <button type="submit" class="w-full text-left px-6 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">Logout</button>

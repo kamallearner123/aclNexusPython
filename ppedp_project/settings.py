@@ -146,3 +146,7 @@ CRISPY_TEMPLATE_PACK = "tailwind"
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+# Increase memory limits for large rich-text payloads (Base64 images) and large file uploads
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520  # 20 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20971520  # 20 MB
