@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from django.core.exceptions import PermissionDenied
 
 from . import tools
+from .llm import LLMReportError, generate_project_report, is_llm_configured
 
 
 REPORT_PRESETS = {
@@ -40,11 +41,14 @@ REPORT_PRESETS = {
 class AgentResult:
     title: str
     executive_summary: str
+    narrative: str
     findings: list
     recommendations: list
     sections: list
     trace: list
     tool_outputs: list
+    generation_mode: str = 'Deterministic Engine'
+    llm_error: str = ''
 
 
 class ProjectIntelligenceAgent:
@@ -59,7 +63,7 @@ class ProjectIntelligenceAgent:
     def __init__(self, user):
         self.user = user
 
-    def analyze(self, prompt, report_type='project_health', project_id=None):
+    def analyze(self, prompt, report_type='project_health', project_id=None, use_llm=True):
         prompt = (prompt or '').strip()
         report_type = report_type or self._infer_report_type(prompt)
         preset = REPORT_PRESETS.get(report_type, REPORT_PRESETS['project_health'])
@@ -90,7 +94,16 @@ class ProjectIntelligenceAgent:
             'detail': 'Use verified JSON tool outputs to prepare an analyst-grade response.',
         })
 
-        return self._compose_report(preset['label'], prompt, tool_outputs, trace)
+        deterministic_result = self._compose_report(preset['label'], prompt, tool_outputs, trace)
+        if not use_llm:
+            return deterministic_result
+
+        return self._enhance_with_llm(
+            deterministic_result=deterministic_result,
+            prompt=prompt,
+            report_type=report_type,
+            tool_outputs=tool_outputs,
+        )
 
     def _infer_report_type(self, prompt):
         text = prompt.lower()
@@ -262,11 +275,52 @@ class ProjectIntelligenceAgent:
         return AgentResult(
             title=title,
             executive_summary=executive_summary,
+            narrative='',
             findings=findings[:8],
             recommendations=list(dict.fromkeys(recommendations))[:8],
             sections=sections,
             trace=trace,
             tool_outputs=tool_outputs,
+        )
+
+    def _enhance_with_llm(self, deterministic_result, prompt, report_type, tool_outputs):
+        if not is_llm_configured():
+            deterministic_result.trace.append({
+                'step': 'Write',
+                'detail': 'OpenAI API key was not found, so PIA used the deterministic report writer.',
+            })
+            return deterministic_result
+
+        deterministic_result.trace.append({
+            'step': 'Write',
+            'detail': 'Send verified JSON tool outputs to OpenAI for professional report writing.',
+        })
+
+        try:
+            llm_report = generate_project_report(
+                prompt=prompt,
+                report_type=report_type,
+                tool_outputs=tool_outputs,
+                deterministic_report=deterministic_result,
+            )
+        except LLMReportError as exc:
+            deterministic_result.llm_error = str(exc)
+            deterministic_result.trace.append({
+                'step': 'Fallback',
+                'detail': 'OpenAI report writing failed, so PIA returned the deterministic report.',
+            })
+            return deterministic_result
+
+        return AgentResult(
+            title=llm_report['title'],
+            executive_summary=llm_report['executive_summary'],
+            narrative=llm_report['narrative'],
+            findings=llm_report['findings'][:10],
+            recommendations=llm_report['recommendations'][:10],
+            sections=llm_report['sections'],
+            trace=deterministic_result.trace,
+            tool_outputs=tool_outputs,
+            generation_mode='OpenAI Enhanced',
         )
 
     def _find_tool(self, outputs, tool_name):

@@ -58,6 +58,9 @@ def pia_analyze_api(request):
             'sections': result.sections,
             'trace': result.trace,
             'tool_outputs': result.tool_outputs,
+            'generation_mode': result.generation_mode,
+            'llm_error': result.llm_error,
+            'narrative': result.narrative,
         })
     except Exception as exc:
         return JsonResponse({'error': str(exc)}, status=400)

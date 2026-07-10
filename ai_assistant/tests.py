@@ -1,4 +1,5 @@
 from django.test import TestCase
+from unittest.mock import patch
 
 from core.models import User
 from issues.models import Issue
@@ -7,6 +8,7 @@ from risks.models import Risk
 from tasks.models import Task
 
 from .agent import ProjectIntelligenceAgent
+from .llm import normalize_llm_report
 from .tools import project_health
 
 
@@ -69,9 +71,48 @@ class ProjectIntelligenceAgentTests(TestCase):
             'prepare a health report',
             'project_health',
             project_id=self.project.pk,
+            use_llm=False,
         )
 
         self.assertEqual(result.title, 'Project Health Assessment')
         self.assertTrue(result.findings)
         self.assertTrue(result.recommendations)
         self.assertIn('project_health', [item['tool'] for item in result.tool_outputs])
+
+    def test_agent_can_use_llm_report_writer_after_tools_run(self):
+        llm_payload = {
+            'title': 'AI Project Health Report',
+            'executive_summary': 'The project requires management attention.',
+            'narrative': 'The verified tool outputs show blocked work, a major issue, and a critical risk.',
+            'findings': ['Blocked work is affecting delivery.'],
+            'recommendations': ['Assign a recovery owner for the blocked task.'],
+            'sections': [{'heading': 'Delivery Outlook', 'items': ['Health score is pressure-sensitive.']}],
+        }
+
+        with patch('ai_assistant.agent.is_llm_configured', return_value=True), \
+             patch('ai_assistant.agent.generate_project_report', return_value=llm_payload) as mock_writer:
+            result = ProjectIntelligenceAgent(self.user).analyze(
+                'prepare an executive report',
+                'project_health',
+                project_id=self.project.pk,
+            )
+
+        self.assertEqual(result.generation_mode, 'OpenAI Enhanced')
+        self.assertEqual(result.title, 'AI Project Health Report')
+        self.assertTrue(result.narrative)
+        self.assertIn('project_health', [item['tool'] for item in result.tool_outputs])
+        self.assertTrue(mock_writer.called)
+
+    def test_llm_report_normalization_falls_back_for_missing_fields(self):
+        baseline = ProjectIntelligenceAgent(self.user).analyze(
+            'prepare a health report',
+            'project_health',
+            project_id=self.project.pk,
+            use_llm=False,
+        )
+
+        normalized = normalize_llm_report({'title': 'Partial Report'}, baseline)
+
+        self.assertEqual(normalized['title'], 'Partial Report')
+        self.assertEqual(normalized['executive_summary'], baseline.executive_summary)
+        self.assertEqual(normalized['findings'], baseline.findings)
