@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'tasks',
     'issues',
     'risks',
+    'ai_assistant',
 ]
 
 MIDDLEWARE = [

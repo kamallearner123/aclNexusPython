@@ -11,5 +11,6 @@ urlpatterns = [
     path('issues/', include('issues.urls')),
     path('projects/', include('projects.urls')),
     path('teams/', include('teams.urls')),
+    path('pia/', include('ai_assistant.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

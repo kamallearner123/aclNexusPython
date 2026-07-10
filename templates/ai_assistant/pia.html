@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Project Intelligence Agent{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-brand-600">AI Project Intelligence</p>
+            <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-900">Project Intelligence Agent</h1>
+            <p class="mt-2 max-w-3xl text-sm text-gray-500">
+                Analyze verified project data through ORM-backed business tools and generate decision-ready delivery intelligence.
+            </p>
+        </div>
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            ReAct mode: Reason -> Act -> Observe
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[380px_1fr]">
+        <section class="rounded-lg border border-gray-200 bg-white p-6 shadow-soft">
+            <h2 class="text-base font-semibold text-gray-900">Request Analysis</h2>
+            <form method="post" class="mt-5 space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label for="{{ form.report_type.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">Report type</label>
+                    <select name="{{ form.report_type.name }}" id="{{ form.report_type.id_for_label }}" class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                        {% for value, label in form.report_type.field.choices %}
+                        <option value="{{ value }}" {% if form.report_type.value == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="{{ form.project.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">Project scope</label>
+                    <select name="{{ form.project.name }}" id="{{ form.project.id_for_label }}" class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500">
+                        {% for value, label in form.project.field.choices %}
+                        <option value="{{ value }}" {% if form.project.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="{{ form.prompt.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">Analyst request</label>
+                    <textarea name="{{ form.prompt.name }}" id="{{ form.prompt.id_for_label }}" rows="4" class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500" placeholder="{{ form.prompt.field.widget.attrs.placeholder }}">{{ form.prompt.value|default:'' }}</textarea>
+                </div>
+
+                <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-brand-700">
+                    <i data-lucide="sparkles" class="mr-2 h-4 w-4"></i>
+                    Generate Intelligence
+                </button>
+            </form>
+
+            <div class="mt-6 border-t border-gray-100 pt-5">
+                <h3 class="text-sm font-semibold text-gray-900">Available analyses</h3>
+                <div class="mt-3 space-y-2 text-sm text-gray-600">
+                    {% for key, preset in presets.items %}
+                    <div class="flex items-center rounded-md bg-gray-50 px-3 py-2">
+                        <i data-lucide="check-circle-2" class="mr-2 h-4 w-4 text-brand-600"></i>
+                        {{ preset.label }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="min-h-[520px] rounded-lg border border-gray-200 bg-white p-6 shadow-soft">
+            {% if error %}
+            <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {{ error }}
+            </div>
+            {% elif result %}
+            <div class="flex flex-col gap-3 border-b border-gray-100 pb-5 md:flex-row md:items-start md:justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold tracking-tight text-gray-900">{{ result.title }}</h2>
+                    <p class="mt-2 text-sm leading-6 text-gray-600">{{ result.executive_summary }}</p>
+                </div>
+                <span class="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 ring-1 ring-brand-200">
+                    Verified ORM Data
+                </span>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div>
+                    <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Key Findings</h3>
+                    <ul class="mt-3 space-y-3">
+                        {% for finding in result.findings %}
+                        <li class="rounded-lg bg-gray-50 p-4 text-sm leading-6 text-gray-700">{{ finding }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Recommendations</h3>
+                    <ul class="mt-3 space-y-3">
+                        {% for recommendation in result.recommendations %}
+                        <li class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">{{ recommendation }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+                {% for section in result.sections %}
+                <div class="rounded-lg border border-gray-200 p-5">
+                    <h3 class="text-base font-semibold text-gray-900">{{ section.heading }}</h3>
+                    <ul class="mt-3 space-y-2 text-sm text-gray-600">
+                        {% for item in section.items %}
+                        <li class="flex gap-2">
+                            <i data-lucide="dot" class="h-5 w-5 flex-none text-brand-600"></i>
+                            <span>{{ item }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+                <div class="rounded-lg border border-gray-200 p-5">
+                    <h3 class="text-base font-semibold text-gray-900">ReAct Trace</h3>
+                    <div class="mt-4 space-y-3">
+                        {% for item in result.trace %}
+                        <div class="rounded-md bg-slate-50 p-3">
+                            <div class="text-xs font-bold uppercase tracking-wide text-slate-500">{{ item.step }}</div>
+                            <div class="mt-1 text-sm leading-6 text-slate-700">{{ item.detail }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="rounded-lg border border-gray-200 p-5">
+                    <h3 class="text-base font-semibold text-gray-900">Business Tools Used</h3>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        {% for output in result.tool_outputs %}
+                        <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+                            <i data-lucide="database" class="mr-1.5 h-3.5 w-3.5 text-gray-500"></i>
+                            {{ output.tool }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    <p class="mt-4 text-sm leading-6 text-gray-500">
+                        The agent receives structured JSON from these business tools. It does not generate SQL or query the database directly.
+                    </p>
+                </div>
+            </div>
+            {% else %}
+            <div class="flex min-h-[460px] flex-col items-center justify-center text-center">
+                <div class="flex h-16 w-16 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                    <i data-lucide="brain-circuit" class="h-8 w-8"></i>
+                </div>
+                <h2 class="mt-5 text-xl font-bold text-gray-900">Ready to analyze delivery data</h2>
+                <p class="mt-2 max-w-lg text-sm leading-6 text-gray-500">
+                    Select a report type, choose a project when needed, and PIA will call approved business tools to produce a professional project intelligence report.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}
