@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from core.models import BaseModel
 from projects.models import Project
 from tasks.models import Task
@@ -98,3 +99,14 @@ class Issue(BaseModel):
 
     def __str__(self):
         return f"[{self.get_issue_type_display()}] {self.title}"
+
+class IssueComment(BaseModel):
+    """
+    Comments on issues.
+    """
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='issue_comments')
+    content = models.TextField()
+
+    def __str__(self):
+        return f"Comment by {self.author} on {self.issue.pk}"

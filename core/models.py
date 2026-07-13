@@ -131,7 +131,7 @@ class Note(BaseModel):
     Personal user note.
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notes')
-    topic = models.ForeignKey(NoteTopic, on_delete=models.CASCADE, related_name='notes')
+    topic = models.ForeignKey(NoteTopic, on_delete=models.SET_NULL, null=True, blank=True, related_name='notes')
     title = models.CharField(max_length=255)
     content = models.TextField()
     attachments = GenericRelation('core.Attachment')

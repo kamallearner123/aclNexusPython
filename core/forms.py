@@ -11,6 +11,11 @@ class NoteTopicForm(forms.ModelForm):
         fields = ['name']
 
 class NoteForm(forms.ModelForm):
+    topic = forms.ModelChoiceField(
+        queryset=NoteTopic.objects.none(),
+        required=False,
+        empty_label="Uncategorized"
+    )
     attachments = forms.FileField(
         widget=MultipleFileInput(attrs={'multiple': True}),
         required=False,
@@ -20,6 +25,11 @@ class NoteForm(forms.ModelForm):
     class Meta:
         model = Note
         fields = ['topic', 'title', 'content']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # We will set the queryset in the view, but we can also set required=False here just in case.
+        self.fields['topic'].required = False
 
 class EmployeeCreationForm(UserCreationForm):
     first_name = forms.CharField(max_length=150, required=True)

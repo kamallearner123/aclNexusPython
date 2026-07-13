@@ -43,3 +43,18 @@ class TeamMessage(BaseModel):
 
     def __str__(self):
         return f"Message from {self.sender} in {self.team}"
+
+class DirectMessage(BaseModel):
+    """
+    Direct 1-on-1 messages between users.
+    """
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_direct_messages')
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_direct_messages')
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"From {self.sender} to {self.recipient}"

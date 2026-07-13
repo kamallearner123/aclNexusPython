@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('kanban/', views.kanban_board, name='tasks_kanban'),
+    path('calendar/', views.user_calendar, name='user_calendar'),
     path('new/', views.task_create, name='task_create'),
     path('<int:pk>/', views.task_detail, name='task_detail'),
     path('<int:pk>/edit/', views.task_update, name='task_update'),

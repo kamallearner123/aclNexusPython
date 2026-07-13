@@ -1,4 +1,4 @@
-<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-4">
     <div class="border-b border-gray-100 px-6 py-4 bg-white pt-4 pb-2 border-bottom">
         <h6 class="m-0 font-bold text-brand-600"><i data-lucide="paperclip" class="w-4 h-4 mr-2"></i>Attachments</h6>
     </div>
@@ -8,9 +8,15 @@
             {% csrf_token %}
             <input type="hidden" name="model_name" value="{{ model_name }}">
             <input type="hidden" name="object_id" value="{{ object.pk }}">
-            <div class="input-group">
-                <input type="file" name="file" class="form-control form-control-sm" required>
-                <button class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm" type="submit">Upload</button>
+            <div class="flex items-center gap-3">
+                <div class="relative flex-1">
+                    <input type="file" name="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required onchange="document.getElementById('file-name-display-{{ object.pk }}').innerText = this.files[0].name;">
+                    <div class="bg-gray-50 border border-dashed border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-500 flex items-center justify-between pointer-events-none w-full group-hover:bg-gray-100 transition-colors">
+                        <span id="file-name-display-{{ object.pk }}" class="truncate">Select a file to upload...</span>
+                        <i data-lucide="upload-cloud" class="w-4 h-4 ml-2 text-brand-500"></i>
+                    </div>
+                </div>
+                <button class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors flex-shrink-0" type="submit">Upload</button>
             </div>
         </form>
 
