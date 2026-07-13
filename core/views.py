@@ -51,7 +51,19 @@ def dashboard(request):
 @login_required
 @user_passes_test(is_pm)
 def pm_dashboard(request):
-    projects = Project.objects.filter(owner=request.user)
+    user = request.user
+    from teams.models import Team
+    user_teams = list(user.team_memberships.values_list('team', flat=True))
+    if user.team_id:
+        user_teams.append(user.team_id)
+    teams_as_lead = list(Team.objects.filter(lead=user).values_list('id', flat=True))
+    user_teams.extend(teams_as_lead)
+        
+    q_proj = Q(owner=user) | Q(created_by=user)
+    if user_teams:
+        q_proj |= Q(team__in=user_teams)
+    projects = Project.objects.filter(q_proj).distinct()
+    
     context = {
         'role_title': 'Project Manager Dashboard',
         'active_projects': projects.filter(status='ACTIVE').count(),
@@ -63,18 +75,28 @@ def pm_dashboard(request):
     }
     return render(request, 'core/dashboards/pm.html', context)
 
+from django.db.models import Q
+
 @login_required
 @user_passes_test(is_architect)
 def architect_dashboard(request):
-    team = request.user.team
+    user = request.user
+    from teams.models import Team
+    user_teams = list(user.team_memberships.values_list('team', flat=True))
+    if user.team_id:
+        user_teams.append(user.team_id)
+    teams_as_lead = list(Team.objects.filter(lead=user).values_list('id', flat=True))
+    user_teams.extend(teams_as_lead)
+        
+    team = user.team
     team_users = team.team_users.all() if team else []
     
-    if team:
-        team_tasks = Task.objects.filter(assignee__in=team_users).exclude(status='COMPLETED')
+    if user_teams:
+        team_tasks = Task.objects.filter(Q(assignee__in=team_users) | Q(project__team__in=user_teams)).exclude(status='COMPLETED').distinct()
     else:
         team_tasks = Task.objects.none()
         
-    my_tasks = Task.objects.filter(assignee=request.user).exclude(status='COMPLETED')
+    my_tasks = Task.objects.filter(Q(assignee=request.user) | Q(created_by=request.user)).exclude(status='COMPLETED').distinct()
     
     context = {
         'role_title': 'Architect Dashboard',
@@ -85,17 +107,48 @@ def architect_dashboard(request):
     }
     return render(request, 'core/dashboards/architect.html', context)
 
+from django.db.models import Count
+
 @login_required
 @user_passes_test(is_engineer)
 def engineer_dashboard(request):
-    my_tasks = Task.objects.filter(assignee=request.user)
-    my_projects = Project.objects.filter(tasks__assignee=request.user).distinct()
+    user = request.user
+    from teams.models import Team
+    
+    user_teams = list(user.team_memberships.values_list('team', flat=True))
+    if user.team_id:
+        user_teams.append(user.team_id)
+    teams_as_lead = list(Team.objects.filter(lead=user).values_list('id', flat=True))
+    user_teams.extend(teams_as_lead)
+    
+    q_task = Q(assignee=user) | Q(created_by=user)
+    if user_teams:
+        q_task |= Q(project__team__in=user_teams)
+    my_tasks = Task.objects.filter(q_task).distinct()
+    
+    q_proj = Q(tasks__assignee=user) | Q(owner=user) | Q(created_by=user)
+    if user_teams:
+        q_proj |= Q(team__in=user_teams)
+    my_projects = Project.objects.filter(q_proj).distinct()
+    
+    task_statuses = my_tasks.values('status').annotate(count=Count('status'))
+    status_labels = []
+    status_counts = []
+    status_dict = dict(Task.STATUS_CHOICES)
+    for item in task_statuses:
+        status_labels.append(status_dict.get(item['status'], item['status']))
+        status_counts.append(item['count'])
+        
+    import json
+    
     context = {
         'role_title': 'Engineer Dashboard',
         'open_tasks': my_tasks.exclude(status='COMPLETED').count(),
         'my_projects_count': my_projects.count(),
         'my_tasks': my_tasks.order_by('-created_at')[:10],
         'my_projects': my_projects,
+        'task_status_labels': json.dumps(status_labels),
+        'task_status_counts': json.dumps(status_counts),
         'ai_news': get_daily_ai_news(request.user),
     }
     return render(request, 'core/dashboards/engineer.html', context)
@@ -228,6 +281,7 @@ def note_topic_create(request):
 def note_create(request):
     if request.method == 'POST':
         form = NoteForm(request.POST, request.FILES)
+        form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
         if form.is_valid():
             note = form.save(commit=False)
             note.user = request.user
@@ -247,9 +301,7 @@ def note_create(request):
             return redirect('notes_dashboard')
     else:
         form = NoteForm()
-    
-    # limit topic choices to current user
-    form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
+        form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
         
     return render(request, 'core/notes/note_form.html', {'form': form})
 
@@ -271,6 +323,7 @@ def note_edit(request, pk):
     note = get_object_or_404(Note, pk=pk, user=request.user)
     if request.method == 'POST':
         form = NoteForm(request.POST, request.FILES, instance=note)
+        form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
         if form.is_valid():
             note = form.save()
             
@@ -288,9 +341,7 @@ def note_edit(request, pk):
             return redirect('note_detail', pk=note.pk)
     else:
         form = NoteForm(instance=note)
-    
-    # limit topic choices to current user
-    form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
+        form.fields['topic'].queryset = NoteTopic.objects.filter(user=request.user)
         
     return render(request, 'core/notes/note_form.html', {'form': form, 'is_edit': True, 'note': note})
 

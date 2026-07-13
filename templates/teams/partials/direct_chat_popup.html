@@ -1,0 +1,53 @@
+<div class="direct-chat-popup fixed bottom-0 right-10 w-80 bg-white shadow-elevated rounded-t-xl border border-gray-200 z-50 flex flex-col" style="height: 400px;">
+    <!-- Header -->
+    <div class="bg-brand-600 text-white p-3 rounded-t-xl flex justify-between items-center cursor-pointer">
+        <div class="flex items-center gap-2 font-semibold text-sm">
+            <div class="relative">
+                <img src="https://ui-avatars.com/api/?name={{ other_user.email }}&background=random" class="w-6 h-6 rounded-full" alt="Avatar">
+                <div class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full"></div>
+            </div>
+            {{ other_user.first_name|default:other_user.email }}
+        </div>
+        <button class="text-white hover:text-gray-200" onclick="this.closest('.fixed').remove()">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+    </div>
+    
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto p-3 flex flex-col gap-3 bg-gray-50" id="dm-messages-{{ other_user.pk }}">
+        <div class="text-xs text-center text-gray-400 mb-2">Direct message history</div>
+        {% for msg in messages %}
+            {% include 'teams/partials/message.html' with is_direct=True %}
+        {% empty %}
+            <div class="text-center text-gray-400 text-xs my-auto">
+                No messages yet. Say hi!
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Input -->
+    <div class="p-2 bg-white border-t border-gray-200">
+        <form hx-post="{% url 'post_direct_message' other_user.pk %}" hx-target="#dm-messages-{{ other_user.pk }}" hx-swap="beforeend" class="flex gap-2" onsubmit="setTimeout(() => { this.reset(); const container = document.getElementById('dm-messages-{{ other_user.pk }}'); container.scrollTop = container.scrollHeight; }, 50);">
+            {% csrf_token %}
+            <input type="text" name="content" class="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-brand-500 focus:border-brand-500" placeholder="Type a message..." required autocomplete="off">
+            <button type="submit" class="bg-brand-600 text-white p-1.5 rounded-lg hover:bg-brand-500">
+                <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
+        </form>
+    </div>
+</div>
+<!-- Re-init lucide icons for the new HTML -->
+<script>
+    // Remove previous popups if they exist so we only have one active at a time
+    document.querySelectorAll('.direct-chat-popup').forEach((el, index, arr) => {
+        if(index < arr.length - 1) el.remove();
+    });
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    setTimeout(() => {
+        const dmContainer = document.getElementById('dm-messages-{{ other_user.pk }}');
+        if (dmContainer) dmContainer.scrollTop = dmContainer.scrollHeight;
+    }, 100);
+</script>

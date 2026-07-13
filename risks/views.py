@@ -3,12 +3,22 @@ from django.contrib.auth.decorators import login_required
 from .models import Risk
 from .forms import RiskForm
 
+from django.db.models import Q
+
 @login_required
 def risk_register(request):
     """
-    Risk Register view displaying all risks.
+    Risk Register view displaying risks for user's projects.
     """
-    risks = Risk.objects.all().order_by('-risk_score')
+    user = request.user
+    if user.is_superuser or user.is_staff:
+        risks = Risk.objects.all().order_by('-risk_score')
+    else:
+        q = Q(project__owner=user) | Q(project__tasks__assignee=user)
+        if user.team:
+            q |= Q(project__team=user.team)
+        risks = Risk.objects.filter(q).distinct().order_by('-risk_score')
+        
     return render(request, 'risks/register.html', {'risks': risks})
 
 @login_required

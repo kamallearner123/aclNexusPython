@@ -35,7 +35,7 @@
             <div class="border-t border-gray-100 px-6 py-4 bg-gray-50 rounded-b-xl mt-auto">
                 <div class="flex justify-between items-center">
                     <small class="text-gray-500 flex items-center"><i data-lucide="calendar" class="w-4 h-4 mr-1"></i>{{ project.start_date|date:"M d, Y"|default:"TBD" }}</small>
-                    <a href="{% url 'tasks_kanban' %}?project_id={{ project.pk }}" class="inline-flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-brand-600 shadow-sm ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors">View Kanban</a>
+                    <a href="{% url 'tasks_kanban' %}?project_id={{ project.pk }}" class="inline-flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-brand-600 shadow-sm ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors"><i data-lucide="trello" class="w-4 h-4 mr-1"></i> Tasks Board</a>
                 </div>
             </div>
         </div>

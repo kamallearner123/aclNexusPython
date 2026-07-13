@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Calendar - PPEDP{% endblock %}
+
+{% block content %}
+<!-- FullCalendar CSS and JS -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+
+<div class="flex justify-between items-center mb-6">
+    <div>
+        <h2 class="h3 mb-1 text-gray-800 font-bold">My Calendar</h2>
+        <p class="text-sm text-gray-500">Track your assigned tasks and deadlines.</p>
+    </div>
+    <div>
+        <a href="{% url 'tasks_kanban' %}" class="btn btn-outline-secondary btn-sm"><i data-lucide="trello" class="w-4 h-4 mr-1 inline"></i> Kanban View</a>
+    </div>
+</div>
+
+<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl border-none p-6">
+    <div id='calendar'></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var eventsData = JSON.parse('{{ events_json|escapejs }}');
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            themeSystem: 'standard',
+            height: 'auto',
+            events: eventsData,
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                    info.jsEvent.preventDefault(); // Don't let the browser navigate normally
+                }
+            },
+            eventDidMount: function(info) {
+                // Add a subtle border radius and shadow to events
+                info.el.style.borderRadius = '4px';
+                info.el.style.border = 'none';
+                info.el.style.padding = '2px 4px';
+                info.el.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+            }
+        });
+
+        calendar.render();
+    });
+</script>
+
+<style>
+    /* FullCalendar custom styling to match brand */
+    .fc-theme-standard td, .fc-theme-standard th {
+        border-color: #e5e7eb;
+    }
+    .fc .fc-button-primary {
+        background-color: #2563eb;
+        border-color: #2563eb;
+    }
+    .fc .fc-button-primary:hover {
+        background-color: #1d4ed8;
+        border-color: #1d4ed8;
+    }
+    .fc .fc-button-primary:disabled {
+        background-color: #93c5fd;
+        border-color: #93c5fd;
+    }
+    .fc .fc-button-active {
+        background-color: #1e40af !important;
+        border-color: #1e40af !important;
+    }
+    .fc-event {
+        cursor: pointer;
+        transition: transform 0.1s ease-in-out;
+    }
+    .fc-event:hover {
+        transform: scale(1.02);
+    }
+    .fc-daygrid-event-dot {
+        border-color: white;
+    }
+</style>
+{% endblock %}

@@ -74,15 +74,28 @@ def task_create(request):
                     object_id=task.pk
                 )
                 
+            if task.project:
+                return redirect(f"/tasks/kanban/?project_id={task.project.pk}")
             return redirect('tasks_kanban')
     else:
-        form = TaskForm()
+        initial_data = {}
+        if request.GET.get('project_id'):
+            initial_data['project'] = request.GET.get('project_id')
+        form = TaskForm(initial=initial_data)
     
     return render(request, 'tasks/form.html', {'form': form})
 
 @login_required
 def task_detail(request, pk):
     task = get_object_or_404(Task, pk=pk)
+    
+    if request.method == 'POST':
+        content = request.POST.get('comment_content')
+        if content and content.strip() and content != '<p><br></p>':
+            from .models import TaskComment
+            TaskComment.objects.create(task=task, author=request.user, content=content)
+            return redirect('task_detail', pk=pk)
+            
     activities = AuditLog.objects.filter(
         model_name='Task', 
         object_id=str(task.pk)
@@ -155,3 +168,44 @@ def task_ai_action(request, pk):
     messages.success(request, f"AI Action '{action}' triggered for task {task.task_id}. (AI Integration Placeholder)")
     
     return redirect('task_detail', pk=task.pk)
+
+@login_required
+def user_calendar(request):
+    """
+    User Calendar View displaying assigned tasks using FullCalendar.
+    """
+    from django.db.models import Q
+    import json
+    
+    # Get tasks assigned to the user or created by the user
+    user = request.user
+    q_task = Q(assignee=user) | Q(created_by=user)
+    if user.team:
+        q_task |= Q(project__team=user.team)
+    
+    my_tasks = Task.objects.filter(q_task).distinct()
+    
+    events = []
+    for task in my_tasks:
+        if task.due_date:
+            # Color coding based on status
+            color = '#3b82f6' # Blue (default)
+            if task.status == 'COMPLETED':
+                color = '#10b981' # Green
+            elif task.status in ['BLOCKED']:
+                color = '#ef4444' # Red
+            elif task.status in ['IN_PROGRESS']:
+                color = '#f59e0b' # Amber
+                
+            events.append({
+                'title': f"[{task.task_id}] {task.title}",
+                'start': task.due_date.isoformat(),
+                'url': f"/tasks/{task.pk}/",
+                'color': color,
+                'allDay': True
+            })
+            
+    context = {
+        'events_json': json.dumps(events)
+    }
+    return render(request, 'tasks/calendar.html', context)

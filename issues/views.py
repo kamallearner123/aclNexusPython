@@ -3,12 +3,22 @@ from django.contrib.auth.decorators import login_required
 from .models import Issue
 from .forms import IssueForm
 
+from django.db.models import Q
+
 @login_required
 def issue_tracker(request):
     """
-    Issue Tracker view displaying all issues.
+    Issue Tracker view displaying issues for user's projects.
     """
-    issues = Issue.objects.all().order_by('-created_at')
+    user = request.user
+    if user.is_superuser or user.is_staff:
+        issues = Issue.objects.all().order_by('-created_at')
+    else:
+        q = Q(project__owner=user) | Q(project__tasks__assignee=user)
+        if user.team:
+            q |= Q(project__team=user.team)
+        issues = Issue.objects.filter(q).distinct().order_by('-created_at')
+        
     return render(request, 'issues/list.html', {'issues': issues})
 
 @login_required
@@ -34,6 +44,14 @@ from core.models import AuditLog
 @login_required
 def issue_detail(request, pk):
     issue = get_object_or_404(Issue, pk=pk)
+    
+    if request.method == 'POST':
+        content = request.POST.get('comment_content')
+        if content and content.strip() and content != '<p><br></p>':
+            from .models import IssueComment
+            IssueComment.objects.create(issue=issue, author=request.user, content=content)
+            return redirect('issue_detail', pk=pk)
+            
     activities = AuditLog.objects.filter(
         model_name='Issue', 
         object_id=str(issue.pk)

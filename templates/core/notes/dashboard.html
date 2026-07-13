@@ -39,7 +39,7 @@
             {% for note in notes %}
             <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl border-none p-5 transition-transform hover:-translate-y-1 hover:shadow-lg flex flex-col">
                 <div class="flex justify-between items-start mb-3">
-                    <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ note.topic.name }}</span>
+                    <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{% if note.topic %}{{ note.topic.name }}{% else %}Uncategorized{% endif %}</span>
                     <small class="text-gray-400">{{ note.created_at|date:"M d, Y" }}</small>
                 </div>
                 <h5 class="text-lg font-bold text-gray-900 mb-2 line-clamp-1"><a href="{% url 'note_detail' note.pk %}" class="text-dark text-decoration-none hover:text-brand-600">{{ note.title }}</a></h5>
