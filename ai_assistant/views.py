@@ -8,9 +8,11 @@ from django.views.decorators.http import require_POST
 
 from .agent import ProjectIntelligenceAgent, REPORT_PRESETS
 from .forms import PIAAnalysisForm
+from .permissions import pia_system_admin_required
 
 
 @login_required
+@pia_system_admin_required
 def pia_home(request):
     result = None
     error = None
@@ -41,6 +43,7 @@ def pia_home(request):
 
 
 @login_required
+@pia_system_admin_required
 @require_POST
 def pia_analyze_api(request):
     try:

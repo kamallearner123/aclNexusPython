@@ -1,62 +1,67 @@
-import json
-import os
-from pathlib import Path
-
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-DEFAULT_MODEL = 'gpt-4o-mini'
-
-
-def load_local_env():
-    """
-    Lightweight .env loader for local development.
-
-    This keeps the project independent from python-dotenv while still allowing
-    OPENAI_API_KEY and OPENAI_MODEL to be stored in the project-level .env file.
-    Existing environment variables always win.
-    """
-    env_path = BASE_DIR / '.env'
-    if not env_path.exists():
-        return
-
-    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, value = line.split('=', 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key:
-            os.environ.setdefault(key, value)
+from .llm_config import DEFAULT_MODELS, get_llm_config, load_local_env
+from .llm_providers import LLMFactory
+from .llm_providers.base import LLMProviderError
 
 
 def is_llm_configured():
-    load_local_env()
-    return bool(os.environ.get('OPENAI_API_KEY'))
+    try:
+        return LLMFactory.create().is_configured()
+    except LLMProviderError:
+        return False
 
 
 def get_openai_model():
-    load_local_env()
-    return os.environ.get('OPENAI_MODEL') or DEFAULT_MODEL
+    return get_llm_config('OPENAI').model or DEFAULT_MODELS['OPENAI']
 
 
 class LLMReportError(Exception):
     pass
 
 
+REPORT_JSON_SCHEMA = {
+    'type': 'object',
+    'additionalProperties': False,
+    'properties': {
+        'title': {'type': 'string'},
+        'executive_summary': {'type': 'string'},
+        'narrative': {'type': 'string'},
+        'findings': {
+            'type': 'array',
+            'items': {'type': 'string'},
+        },
+        'recommendations': {
+            'type': 'array',
+            'items': {'type': 'string'},
+        },
+        'sections': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'additionalProperties': False,
+                'properties': {
+                    'heading': {'type': 'string'},
+                    'items': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                    },
+                },
+                'required': ['heading', 'items'],
+            },
+        },
+    },
+    'required': [
+        'title',
+        'executive_summary',
+        'narrative',
+        'findings',
+        'recommendations',
+        'sections',
+    ],
+}
+
+
 def generate_project_report(prompt, report_type, tool_outputs, deterministic_report):
     load_local_env()
-
-    if not os.environ.get('OPENAI_API_KEY'):
-        raise LLMReportError('OPENAI_API_KEY is not configured.')
-
-    try:
-        from openai import OpenAI
-    except ImportError as exc:
-        raise LLMReportError('The openai package is not installed.') from exc
-
-    model = get_openai_model()
-    client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 
     system_prompt = (
         "You are PIA, the AI Project Intelligence Agent for a Django-based "
@@ -90,25 +95,35 @@ def generate_project_report(prompt, report_type, tool_outputs, deterministic_rep
     }
 
     try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {'role': 'system', 'content': system_prompt},
-                {'role': 'user', 'content': json.dumps(user_payload, default=str)},
-            ],
-            response_format={'type': 'json_object'},
-            temperature=0.2,
+        data = LLMFactory.create().structured_output(
+            system_prompt=system_prompt,
+            user_payload=user_payload,
+            schema=REPORT_JSON_SCHEMA,
+            schema_name='pia_project_intelligence_report',
         )
-    except Exception as exc:
+    except LLMProviderError as exc:
         raise LLMReportError(str(exc)) from exc
 
-    content = response.choices[0].message.content
-    try:
-        data = json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise LLMReportError('OpenAI returned a non-JSON report.') from exc
-
     return normalize_llm_report(data, deterministic_report)
+
+
+def extract_response_text(response):
+    output_text = getattr(response, 'output_text', None)
+    if output_text:
+        return output_text
+
+    output = getattr(response, 'output', None) or []
+    chunks = []
+    for item in output:
+        for content_item in getattr(item, 'content', []) or []:
+            text = getattr(content_item, 'text', None)
+            if text:
+                chunks.append(text)
+
+    if chunks:
+        return ''.join(chunks)
+
+    raise LLMReportError('LLM provider returned an empty response.')
 
 
 def normalize_llm_report(data, fallback):

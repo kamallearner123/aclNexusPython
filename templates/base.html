@@ -69,6 +69,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     {% load static %}
+    {% load pia_permissions %}
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans antialiased flex h-screen overflow-hidden">
     
@@ -108,10 +109,12 @@
                     <i data-lucide="check-square" class="w-4 h-4 mr-3 {% if 'tasks' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     Tasks
                 </a>
+                {% if request.user|is_pia_system_admin_user %}
                 <a href="{% url 'pia_home' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if 'pia' in request.path %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
                     <i data-lucide="brain-circuit" class="w-4 h-4 mr-3 {% if 'pia' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     PIA
                 </a>
+                {% endif %}
                 <a href="{% url 'risks_register' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if 'risks' in request.path %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
                     <i data-lucide="shield-alert" class="w-4 h-4 mr-3 {% if 'risks' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     Risks
@@ -133,10 +136,12 @@
                     <i data-lucide="check-square" class="w-4 h-4 mr-3 {% if 'tasks' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     Tasks
                 </a>
+                {% if request.user|is_pia_system_admin_user %}
                 <a href="{% url 'pia_home' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if 'pia' in request.path %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
                     <i data-lucide="brain-circuit" class="w-4 h-4 mr-3 {% if 'pia' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     PIA
                 </a>
+                {% endif %}
                 <a href="{% url 'my_team' %}" class="flex items-center px-6 py-2 rounded-lg text-sm font-medium transition-colors {% if 'team' in request.path %}bg-brand-50 text-brand-600{% else %}text-gray-600 hover:bg-gray-50 hover:text-gray-900{% endif %}">
                     <i data-lucide="users" class="w-4 h-4 mr-3 {% if 'team' in request.path %}text-brand-600{% else %}text-gray-400{% endif %}"></i>
                     Team
