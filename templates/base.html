@@ -87,6 +87,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     {% load static %}
+    {% load pia_permissions %}
 </head>
 
 <body class="bg-gray-50 text-gray-900 font-sans antialiased flex h-screen overflow-hidden">
@@ -151,6 +152,7 @@
                     </div>
                     Calendar
                 </a>
+                {% if request.user|is_pia_system_admin_user %}
                 <a href="{% url 'pia_home' %}"
                     class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'pia' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
                     <div
@@ -159,6 +161,7 @@
                     </div>
                     PIA
                 </a>
+                {% endif %}
                 <a href="{% url 'risks_register' %}"
                     class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'risks' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
                     <div
@@ -200,6 +203,7 @@
                     </div>
                     Calendar
                 </a>
+                {% if request.user|is_pia_system_admin_user %}
                 <a href="{% url 'pia_home' %}"
                     class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'pia' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
                     <div
@@ -208,6 +212,7 @@
                     </div>
                     PIA
                 </a>
+                {% endif %}
                 <a href="{% url 'my_team' %}"
                     class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'team' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
                     <div
