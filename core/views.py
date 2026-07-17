@@ -7,7 +7,7 @@ from risks.models import Risk
 from teams.models import Team
 from django.contrib.contenttypes.models import ContentType
 from .models import User, Attachment
-from .forms import CustomUserCreationForm, EmployeeCreationForm
+from .forms import CustomUserCreationForm, EmployeeCreationForm, EmployeeEditForm
 from .utils import get_daily_ai_news
 
 @login_required
@@ -54,14 +54,12 @@ def pm_dashboard(request):
     user = request.user
     from teams.models import Team
     user_teams = list(user.team_memberships.values_list('team', flat=True))
-    if user.team_id:
-        user_teams.append(user.team_id)
     teams_as_lead = list(Team.objects.filter(lead=user).values_list('id', flat=True))
     user_teams.extend(teams_as_lead)
         
     q_proj = Q(owner=user) | Q(created_by=user)
     if user_teams:
-        q_proj |= Q(team__in=user_teams)
+        q_proj |= Q(teams__in=user_teams)
     projects = Project.objects.filter(q_proj).distinct()
     
     context = {
@@ -83,16 +81,14 @@ def architect_dashboard(request):
     user = request.user
     from teams.models import Team
     user_teams = list(user.team_memberships.values_list('team', flat=True))
-    if user.team_id:
-        user_teams.append(user.team_id)
     teams_as_lead = list(Team.objects.filter(lead=user).values_list('id', flat=True))
     user_teams.extend(teams_as_lead)
         
-    team = user.team
-    team_users = team.team_users.all() if team else []
+    team = user.teams.first()
+    team_users = team.core_users.all() if team else []
     
     if user_teams:
-        team_tasks = Task.objects.filter(Q(assignee__in=team_users) | Q(project__team__in=user_teams)).exclude(status='COMPLETED').distinct()
+        team_tasks = Task.objects.filter(Q(assignee__in=team_users) | Q(project__teams__in=user_teams)).exclude(status='COMPLETED').distinct()
     else:
         team_tasks = Task.objects.none()
         
@@ -116,19 +112,17 @@ def engineer_dashboard(request):
     from teams.models import Team
     
     user_teams = list(user.team_memberships.values_list('team', flat=True))
-    if user.team_id:
-        user_teams.append(user.team_id)
     teams_as_lead = list(Team.objects.filter(lead=user).values_list('id', flat=True))
     user_teams.extend(teams_as_lead)
     
     q_task = Q(assignee=user) | Q(created_by=user)
     if user_teams:
-        q_task |= Q(project__team__in=user_teams)
+        q_task |= Q(project__teams__in=user_teams)
     my_tasks = Task.objects.filter(q_task).distinct()
     
     q_proj = Q(tasks__assignee=user) | Q(owner=user) | Q(created_by=user)
     if user_teams:
-        q_proj |= Q(team__in=user_teams)
+        q_proj |= Q(teams__in=user_teams)
     my_projects = Project.objects.filter(q_proj).distinct()
     
     task_statuses = my_tasks.values('status').annotate(count=Count('status'))
@@ -195,6 +189,19 @@ def employee_create(request):
     else:
         form = EmployeeCreationForm()
     return render(request, 'core/employee_form.html', {'form': form})
+
+@login_required
+@user_passes_test(is_admin)
+def employee_edit(request, pk):
+    employee = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        form = EmployeeEditForm(request.POST, instance=employee)
+        if form.is_valid():
+            form.save()
+            return redirect('/system-admin/?tab=engineers')
+    else:
+        form = EmployeeEditForm(instance=employee)
+    return render(request, 'core/employee_form.html', {'form': form, 'is_edit': True, 'employee': employee})
 
 @login_required
 @user_passes_test(is_admin)

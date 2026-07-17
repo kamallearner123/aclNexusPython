@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}Add Employee - Admin Board{% endblock %}
+{% block title %}{% if is_edit %}Edit Employee{% else %}Add Employee{% endif %} - Admin Board{% endblock %}
 
 {% block content %}
 <div class="flex justify-between items-center mb-4">
-    <h2 class="h3 mb-0 text-gray-800 font-bold">Add New Employee</h2>
+    <h2 class="h3 mb-0 text-gray-800 font-bold">{% if is_edit %}Edit Employee: {{ employee.email }}{% else %}Add New Employee{% endif %}</h2>
     <a href="{% url 'system_admin_dashboard' %}" class="btn btn-outline-secondary btn-sm"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i> Back to Admin Board</a>
 </div>
 
@@ -15,8 +15,8 @@
             {% csrf_token %}
             {{ form|crispy }}
             <div class="d-grid gap-2 d-mflex justify-content-md-end mt-4">
-                <a href="{% url 'system_admin_dashboard' %}" class="btn btn-light me-md-2">Cancel</a>
-                <button type="submit" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors px-6 font-bold">Create Employee</button>
+                <a href="{% url 'system_admin_dashboard' %}?tab=engineers" class="btn btn-light me-md-2">Cancel</a>
+                <button type="submit" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors px-6 font-bold">{% if is_edit %}Save Changes{% else %}Create Employee{% endif %}</button>
             </div>
         </form>
     </div>

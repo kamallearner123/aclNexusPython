@@ -15,16 +15,20 @@ def project_list(request):
     if user.is_superuser or user.is_staff:
         projects = Project.objects.all()
     elif user.roles.filter(name='Project Manager').exists():
-        projects = Project.objects.filter(owner=user)
+        projects = Project.objects.filter(
+            Q(owner=user) | 
+            Q(created_by=user) | 
+            Q(teams__members__user=user)
+        ).distinct()
     elif user.roles.filter(name='Architect').exists():
         projects = Project.objects.filter(
             Q(tasks__assignee=user) | 
-            Q(team__members__user=user)
+            Q(teams__members__user=user)
         ).distinct()
     else:
         projects = Project.objects.filter(
             Q(tasks__assignee=user) |
-            Q(team__members__user=user)
+            Q(teams__members__user=user)
         ).distinct()
         
     projects = projects.order_by('-created_at')
@@ -44,6 +48,7 @@ def project_create(request):
             project = form.save(commit=False)
             project.created_by = request.user
             project.save()
+            form.save_m2m()
             
             # Handle attachments
             from core.models import Attachment
@@ -96,6 +101,7 @@ def project_update(request, pk):
             updated_project = form.save(commit=False)
             updated_project.updated_by = request.user
             updated_project.save()
+            form.save_m2m()
             
             # Handle attachments
             from core.models import Attachment

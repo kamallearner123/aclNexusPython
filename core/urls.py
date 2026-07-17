@@ -10,6 +10,7 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('system-admin/', views.system_admin_dashboard, name='system_admin_dashboard'),
     path('system-admin/employees/new/', views.employee_create, name='employee_create'),
+    path('system-admin/employees/<int:pk>/edit/', views.employee_edit, name='employee_edit'),
     path('system-admin/employees/<int:pk>/delete/', views.employee_delete, name='employee_delete'),
     path('attachments/upload/', views.attachment_upload, name='attachment_upload'),
     path('attachments/<int:pk>/delete/', views.attachment_delete, name='attachment_delete'),

@@ -15,8 +15,9 @@ def risk_register(request):
         risks = Risk.objects.all().order_by('-risk_score')
     else:
         q = Q(project__owner=user) | Q(project__tasks__assignee=user)
-        if user.team:
-            q |= Q(project__team=user.team)
+        user_teams = list(user.teams.values_list('id', flat=True))
+        if user_teams:
+            q |= Q(project__teams__in=user_teams)
         risks = Risk.objects.filter(q).distinct().order_by('-risk_score')
         
     return render(request, 'risks/register.html', {'risks': risks})

@@ -6,9 +6,9 @@
 {% block content %}
 <div class="flex justify-between items-center mb-6">
     <h2 class="h3 mb-0 text-gray-800 font-bold">My Personal Notes</h2>
-    <div>
-        <a href="{% url 'note_topic_create' %}" class="btn btn-outline-primary btn-sm me-2"><i data-lucide="folder-plus" class="w-4 h-4 mr-1"></i> New Topic</a>
-        <a href="{% url 'note_create' %}" class="btn btn-primary btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Note</a>
+    <div class="flex items-center space-x-3">
+        <a href="{% url 'note_topic_create' %}" class="inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"><i data-lucide="folder-plus" class="w-4 h-4 mr-1.5"></i> New Topic</a>
+        <a href="{% url 'note_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"><i data-lucide="plus" class="w-4 h-4 mr-1.5"></i> New Note</a>
     </div>
 </div>
 

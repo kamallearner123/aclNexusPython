@@ -180,8 +180,9 @@ def user_calendar(request):
     # Get tasks assigned to the user or created by the user
     user = request.user
     q_task = Q(assignee=user) | Q(created_by=user)
-    if user.team:
-        q_task |= Q(project__team=user.team)
+    user_teams = list(user.teams.values_list('id', flat=True))
+    if user_teams:
+        q_task |= Q(project__teams__in=user_teams)
     
     my_tasks = Task.objects.filter(q_task).distinct()
     

@@ -64,7 +64,13 @@
                     </div>
                     <div class="flex flex-col">
                         <div class="text-brand-600 text-xs font-bold uppercase tracking-wider mb-1">Assigned Team</div>
-                        <div class="font-bold text-gray-800">{{ project.team.name|default:"Unassigned" }}</div>
+                        <div class="font-bold text-gray-800">
+                            {% for t in project.teams.all %}
+                                {{ t.name }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                Unassigned
+                            {% endfor %}
+                        </div>
                     </div>
                     <div class="flex flex-col sm:col-span-2 md:col-span-3">
                         <div class="text-brand-600 text-xs font-bold uppercase tracking-wider mb-1">Timeline</div>

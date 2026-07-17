@@ -47,7 +47,7 @@ class Project(BaseModel):
     github_url = models.URLField(blank=True, null=True, help_text="Link to GitHub repository")
     gdrive_url = models.URLField(blank=True, null=True, help_text="Link to Google Drive folder (containing Requirement, Design, Implementation, Testing, Deployment)")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='owned_projects')
-    team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True, related_name='projects')
+    teams = models.ManyToManyField('teams.Team', blank=True, related_name='projects')
     attachments = GenericRelation('core.Attachment')
 
     def __init__(self, *args, **kwargs):

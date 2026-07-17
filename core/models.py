@@ -63,7 +63,7 @@ class User(AbstractUser, BaseModel):
     email = models.EmailField(_('email address'), unique=True)
     
     roles = models.ManyToManyField(Role, blank=True, related_name='users')
-    team = models.ForeignKey('teams.Team', on_delete=models.SET_NULL, null=True, blank=True, related_name='team_users')
+    teams = models.ManyToManyField('teams.Team', through='teams.TeamMember', through_fields=('user', 'team'), blank=True, related_name='core_users')
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     
     # AI Daily Tech News fields

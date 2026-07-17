@@ -15,7 +15,7 @@ class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ['name', 'code', 'description', 'status', 'priority', 'project_type', 
-                  'client', 'category', 'owner', 'team', 'start_date', 'end_date', 'budget',
+                  'client', 'category', 'owner', 'teams', 'start_date', 'end_date', 'budget',
                   'github_url', 'gdrive_url']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}),

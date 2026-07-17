@@ -59,12 +59,17 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                {% if u != request.user %}
-                                <form method="post" action="{% url 'employee_delete' u.pk %}" class="inline-block m-0" onsubmit="return confirm('Delete this employee?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="text-gray-400 hover:text-red-600 transition-colors p-1" title="Delete Employee"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                </form>
-                                {% endif %}
+                                <div class="flex justify-end items-center space-x-2">
+                                    <a href="{% url 'employee_edit' u.pk %}" class="text-gray-400 hover:text-brand-600 transition-colors p-1" title="Edit Employee">
+                                        <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                    </a>
+                                    {% if u != request.user %}
+                                    <form method="post" action="{% url 'employee_delete' u.pk %}" class="inline-block m-0" onsubmit="return confirm('Delete this employee?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-gray-400 hover:text-red-600 transition-colors p-1" title="Delete Employee"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
@@ -94,6 +99,7 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Team Name</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Lead</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Members Count</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Assigned Projects</th>
                             <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -115,6 +121,15 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">{{ team.members.count }} Members</span>
                             </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                <div class="flex flex-wrap gap-1">
+                                    {% for project in team.projects.all %}
+                                        <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-600/20" title="{{ project.name }}">{{ project.code }}</span>
+                                    {% empty %}
+                                        <span class="text-gray-400 text-sm italic">No Projects</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex justify-end gap-2 items-center">
                                     <a href="{% url 'team_detail' team.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-brand-600 shadow-sm ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors mr-2">Manage</a>
@@ -126,7 +141,7 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500 font-medium">No teams created yet.</td></tr>
+                        <tr><td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500 font-medium">No teams created yet.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
