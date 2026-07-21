@@ -141,7 +141,7 @@
             <dl class="grid grid-cols-1 gap-5 sm:grid-cols-3">
                 <div class="px-4 py-4 bg-white shadow-sm rounded-lg ring-1 ring-gray-900/5">
                     <dt class="text-sm font-medium text-gray-500 truncate">Team Lead</dt>
-                    <dd class="mt-1 text-sm font-semibold text-gray-900">{{ request.user.team.lead.first_name|default:request.user.team.lead.email|default:"Not Assigned" }}</dd>
+                    <dd class="mt-1 text-sm font-semibold text-gray-900">{% if request.user.team and request.user.team.lead %}{{ request.user.team.lead.first_name|default:request.user.team.lead.email }}{% else %}Not Assigned{% endif %}</dd>
                 </div>
                 <div class="px-4 py-4 bg-white shadow-sm rounded-lg ring-1 ring-gray-900/5">
                     <dt class="text-sm font-medium text-gray-500 truncate">Total Capacity</dt>

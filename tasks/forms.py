@@ -26,3 +26,8 @@ class TaskForm(forms.ModelForm):
             'due_date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 4}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.initial.get('project') or (self.instance and self.instance.pk and self.instance.project_id):
+            self.fields['project'].disabled = True

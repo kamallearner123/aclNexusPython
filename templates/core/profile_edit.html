@@ -57,6 +57,28 @@
                     <p class="mt-1 text-xs text-gray-500">Email address cannot be changed.</p>
                 </div>
 
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <h3 class="text-sm font-bold text-gray-800 mb-4">Interested Topics (Optional)</h3>
+                    <p class="text-xs text-gray-500 mb-4">Enter up to 5 topics you are interested in for your daily tech news.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <input type="text" name="{{ form.topic_1.html_name }}" id="{{ form.topic_1.id_for_label }}" value="{{ form.topic_1.value|default:'' }}" placeholder="Topic 1" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border p-2.5 bg-gray-50">
+                        </div>
+                        <div>
+                            <input type="text" name="{{ form.topic_2.html_name }}" id="{{ form.topic_2.id_for_label }}" value="{{ form.topic_2.value|default:'' }}" placeholder="Topic 2" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border p-2.5 bg-gray-50">
+                        </div>
+                        <div>
+                            <input type="text" name="{{ form.topic_3.html_name }}" id="{{ form.topic_3.id_for_label }}" value="{{ form.topic_3.value|default:'' }}" placeholder="Topic 3" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border p-2.5 bg-gray-50">
+                        </div>
+                        <div>
+                            <input type="text" name="{{ form.topic_4.html_name }}" id="{{ form.topic_4.id_for_label }}" value="{{ form.topic_4.value|default:'' }}" placeholder="Topic 4" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border p-2.5 bg-gray-50">
+                        </div>
+                        <div>
+                            <input type="text" name="{{ form.topic_5.html_name }}" id="{{ form.topic_5.id_for_label }}" value="{{ form.topic_5.value|default:'' }}" placeholder="Topic 5" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm border p-2.5 bg-gray-50">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mt-10 flex justify-end gap-3">
                     <a href="javascript:history.back()" class="inline-flex justify-center items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
                         Cancel

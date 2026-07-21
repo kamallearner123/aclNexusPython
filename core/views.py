@@ -205,12 +205,13 @@ def employee_edit(request, pk):
 
 @login_required
 @user_passes_test(is_admin)
-def employee_delete(request, pk):
+def employee_toggle_status(request, pk):
     if request.method == 'POST':
         user = User.objects.get(pk=pk)
-        if user != request.user: # Prevent self-deletion
-            user.delete()
-    return redirect('system_admin_dashboard')
+        if user != request.user: # Prevent self-toggling
+            user.is_active = not user.is_active
+            user.save()
+    return redirect('/system-admin/?tab=engineers')
 
 @login_required
 def attachment_upload(request):

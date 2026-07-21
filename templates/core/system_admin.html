@@ -64,9 +64,15 @@
                                         <i data-lucide="edit-2" class="w-4 h-4"></i>
                                     </a>
                                     {% if u != request.user %}
-                                    <form method="post" action="{% url 'employee_delete' u.pk %}" class="inline-block m-0" onsubmit="return confirm('Delete this employee?');">
+                                    <form method="post" action="{% url 'employee_toggle_status' u.pk %}" class="inline-block m-0" onsubmit="return confirm('{% if u.is_active %}Disable{% else %}Enable{% endif %} this employee?');">
                                         {% csrf_token %}
-                                        <button type="submit" class="text-gray-400 hover:text-red-600 transition-colors p-1" title="Delete Employee"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        <button type="submit" class="text-gray-400 hover:text-red-600 transition-colors p-1" title="{% if u.is_active %}Disable Employee{% else %}Enable Employee{% endif %}">
+                                            {% if u.is_active %}
+                                                <i data-lucide="user-minus" class="w-4 h-4"></i>
+                                            {% else %}
+                                                <i data-lucide="user-check" class="w-4 h-4"></i>
+                                            {% endif %}
+                                        </button>
                                     </form>
                                     {% endif %}
                                 </div>
@@ -115,7 +121,11 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <div class="flex items-center">
                                     <i data-lucide="user-check" class="w-4 h-4 mr-2 text-gray-400"></i>
-                                    {{ team.lead.first_name|default:team.lead.email|default:"None" }}
+                                    {% if team.lead %}
+                                        {{ team.lead.first_name|default:team.lead.email }}
+                                    {% else %}
+                                        None
+                                    {% endif %}
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">

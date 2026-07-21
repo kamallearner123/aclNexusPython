@@ -48,7 +48,7 @@
                         {{ team.name }}
                     </h2>
                     <p class="text-xs text-gray-500 mt-1 flex items-center">
-                        <i data-lucide="user-check" class="w-3 h-3 mr-1"></i> Lead: {{ team.lead.first_name|default:team.lead.email|default:"None" }}
+                        <i data-lucide="user-check" class="w-3 h-3 mr-1"></i> Lead: {% if team.lead %}{{ team.lead.first_name|default:team.lead.email }}{% else %}None{% endif %}
                     </p>
                 </div>
                 {% if all_my_teams|length > 1 %}

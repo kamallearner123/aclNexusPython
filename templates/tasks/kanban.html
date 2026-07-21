@@ -10,7 +10,7 @@
         <a href="{% url 'tasks_kanban' %}" class="text-decoration-none small text-gray-500"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>Back to Projects</a>
     </div>
     {% if can_create_task %}
-    <a href="{% url 'task_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Task</a>
+    <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Task</a>
     {% endif %}
 </div>
 
@@ -76,6 +76,45 @@
         </div>
     </div>
 
+    <!-- Planned Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
+        <div class="px-4 py-3 bg-[#a855f7] text-white text-center font-bold text-lg">
+            Planned
+        </div>
+        <div class="p-3 task-column" id="planned-col" data-status="PLANNED">
+            {% for task in planned %}
+            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#a855f7] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
+                <div class="p-3">
+                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
+                    <div class="flex items-center text-xs text-gray-500 mb-3">
+                        {% if task.assignee %}
+                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
+                        {% else %}
+                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
+                        {% endif %}
+                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
+                        <span>Planned</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
+                        <div class="bg-[#a855f7] h-1.5 rounded-full" style="width: 25%"></div>
+                    </div>
+                    <div class="flex justify-end gap-2 text-gray-400">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            {% endfor %}
+            
+            {% if can_create_task %}
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+                + Add Task
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- In Progress Column -->
     <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
         <div class="px-4 py-3 bg-[#4bb1f4] text-white text-center font-bold text-lg">
@@ -120,7 +159,7 @@
         <div class="px-4 py-3 bg-[#f2a741] text-white text-center font-bold text-lg">
             In Review
         </div>
-        <div class="p-3 task-column" id="inreview-col" data-status="REVIEW">
+        <div class="p-3 task-column" id="inreview-col" data-status="IN_REVIEW">
             {% for task in in_review %}
             <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#f2a741] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
                 <div class="p-3">
@@ -135,7 +174,46 @@
                         <span>Reviewing</span>
                     </div>
                     <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#8ac63a] h-1.5 rounded-full" style="width: 80%"></div>
+                        <div class="bg-[#f2a741] h-1.5 rounded-full" style="width: 80%"></div>
+                    </div>
+                    <div class="flex justify-end gap-2 text-gray-400">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            {% endfor %}
+            
+            {% if can_create_task %}
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+                + Add Task
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Testing Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
+        <div class="px-4 py-3 bg-[#eab308] text-white text-center font-bold text-lg">
+            Testing
+        </div>
+        <div class="p-3 task-column" id="testing-col" data-status="TESTING">
+            {% for task in testing %}
+            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#eab308] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
+                <div class="p-3">
+                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
+                    <div class="flex items-center text-xs text-gray-500 mb-3">
+                        {% if task.assignee %}
+                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
+                        {% else %}
+                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
+                        {% endif %}
+                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
+                        <span>Testing</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
+                        <div class="bg-[#eab308] h-1.5 rounded-full" style="width: 90%"></div>
                     </div>
                     <div class="flex justify-end gap-2 text-gray-400">
                         <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
@@ -175,6 +253,45 @@
                     </div>
                     <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
                         <div class="bg-[#a2df6a] h-1.5 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <div class="flex justify-end gap-2 text-gray-400">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            {% endfor %}
+            
+            {% if can_create_task %}
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+                + Add Task
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Blocked Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
+        <div class="px-4 py-3 bg-[#ef4444] text-white text-center font-bold text-lg">
+            Blocked
+        </div>
+        <div class="p-3 task-column" id="blocked-col" data-status="BLOCKED">
+            {% for task in blocked %}
+            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#ef4444] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
+                <div class="p-3">
+                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
+                    <div class="flex items-center text-xs text-gray-500 mb-3">
+                        {% if task.assignee %}
+                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
+                        {% else %}
+                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
+                        {% endif %}
+                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
+                        <span>Blocked</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
+                        <div class="bg-[#ef4444] h-1.5 rounded-full" style="width: 100%"></div>
                     </div>
                     <div class="flex justify-end gap-2 text-gray-400">
                         <i data-lucide="message-square" class="w-3.5 h-3.5"></i>

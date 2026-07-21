@@ -107,6 +107,35 @@
                 hiddenTextarea.value = quill.root.innerHTML;
             }
         });
+        
+        // Auto-prefix task ID with Project ID
+        const projectSelect = document.getElementById('id_project');
+        const taskIdInput = document.getElementById('id_task_id');
+        
+        if (projectSelect && taskIdInput) {
+            projectSelect.addEventListener('change', function() {
+                if (this.selectedIndex > 0) {
+                    const text = this.options[this.selectedIndex].text;
+                    const match = text.match(/^\[(.*?)\]/);
+                    if (match) {
+                        const code = match[1];
+                        let currentVal = taskIdInput.value;
+                        const prefixRegex = /^([A-Za-z0-9_]+)-/;
+                        if (prefixRegex.test(currentVal)) {
+                            taskIdInput.value = currentVal.replace(prefixRegex, code + '-');
+                        } else if (currentVal) {
+                            taskIdInput.value = code + '-' + currentVal;
+                        } else {
+                            taskIdInput.value = code + '-';
+                        }
+                    }
+                }
+            });
+            
+            if (projectSelect.value && !taskIdInput.value) {
+                projectSelect.dispatchEvent(new Event('change'));
+            }
+        }
     });
 </script>
 {% endblock %}

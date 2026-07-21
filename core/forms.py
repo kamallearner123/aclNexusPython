@@ -68,9 +68,35 @@ class CustomUserCreationForm(UserCreationForm):
         fields = ('email', 'first_name', 'last_name')
 
 class ProfileEditForm(forms.ModelForm):
+    topic_1 = forms.CharField(required=False, max_length=50, label="Topic 1")
+    topic_2 = forms.CharField(required=False, max_length=50, label="Topic 2")
+    topic_3 = forms.CharField(required=False, max_length=50, label="Topic 3")
+    topic_4 = forms.CharField(required=False, max_length=50, label="Topic 4")
+    topic_5 = forms.CharField(required=False, max_length=50, label="Topic 5")
+
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'interested_topics', 'avatar')
+        fields = ('first_name', 'last_name', 'avatar')
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            topics = self.instance.interested_topics.split(',') if self.instance.interested_topics else []
+            for i, topic in enumerate(topics):
+                if i < 5:
+                    self.fields[f'topic_{i+1}'].initial = topic.strip()
+                    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        topics = []
+        for i in range(1, 6):
+            topic = self.cleaned_data.get(f'topic_{i}')
+            if topic and topic.strip():
+                topics.append(topic.strip())
+        user.interested_topics = ','.join(topics)
+        if commit:
+            user.save()
+        return user
 
 class EmployeeEditForm(forms.ModelForm):
     roles = forms.ModelMultipleChoiceField(

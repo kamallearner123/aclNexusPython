@@ -25,7 +25,7 @@ def _project_accessible_queryset(user):
         return Project.objects.filter(owner=user)
     return Project.objects.filter(
         Q(tasks__assignee=user) |
-        Q(team__members__user=user)
+        Q(teams__members__user=user)
     ).distinct()
 
 
@@ -34,7 +34,7 @@ def get_accessible_projects(user):
 
 
 def portfolio_overview(user):
-    projects = list(_project_accessible_queryset(user).select_related('owner', 'team'))
+    projects = list(_project_accessible_queryset(user).select_related('owner').prefetch_related('teams'))
     project_ids = [project.id for project in projects]
     tasks = Task.objects.filter(project_id__in=project_ids)
     issues = Issue.objects.filter(project_id__in=project_ids)
@@ -60,7 +60,7 @@ def portfolio_overview(user):
                 'priority': project.get_priority_display(),
                 'type': project.get_project_type_display(),
                 'owner': _user_label(project.owner),
-                'team': project.team.name if project.team else None,
+                'team': ', '.join(team.name for team in project.teams.all()) if project.teams.all() else None,
             }
             for project in projects
         ],
@@ -68,7 +68,7 @@ def portfolio_overview(user):
 
 
 def project_health(project_id, user):
-    project = _project_accessible_queryset(user).get(pk=project_id)
+    project = _project_accessible_queryset(user).prefetch_related('teams').get(pk=project_id)
     tasks = list(project.tasks.select_related('assignee', 'sprint').all())
     issues = list(project.issues.all())
     risks = list(project.risks.select_related('owner').all())
@@ -95,7 +95,7 @@ def project_health(project_id, user):
             'priority': project.get_priority_display(),
             'type': project.get_project_type_display(),
             'owner': _user_label(project.owner),
-            'team': project.team.name if project.team else None,
+            'team': ', '.join(team.name for team in project.teams.all()) if project.teams.all() else None,
             'start_date': project.start_date.isoformat() if project.start_date else None,
             'end_date': project.end_date.isoformat() if project.end_date else None,
         },
