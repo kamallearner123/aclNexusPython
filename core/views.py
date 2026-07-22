@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib import messages
+from django.contrib.auth.hashers import make_password
 from projects.models import Project
 from tasks.models import Task
 from issues.models import Issue
@@ -202,6 +204,27 @@ def employee_edit(request, pk):
     else:
         form = EmployeeEditForm(instance=employee)
     return render(request, 'core/employee_form.html', {'form': form, 'is_edit': True, 'employee': employee})
+@login_required
+@user_passes_test(is_admin)
+def employee_reset_password(request, pk):
+    employee = get_object_or_404(User, pk=pk)
+
+    if request.method == "POST":
+        new_password = request.POST.get("password")
+
+        if not new_password:
+            messages.error(request, "Password cannot be empty")
+            return redirect('/system-admin/?tab=engineers')
+
+        employee.password = make_password(new_password)
+        employee.save()
+
+        messages.success(
+            request,
+            f"Password reset successfully for {employee.email}"
+        )
+
+        return redirect('/system-admin/?tab=engineers')
 
 @login_required
 @user_passes_test(is_admin)

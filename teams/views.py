@@ -85,22 +85,34 @@ from django.http import HttpResponse
 
 @login_required
 def post_team_message(request):
+    print("===== POST TEAM MESSAGE =====")
+    print(request.POST)
+
     team_id = request.POST.get('team_id')
+
     if request.method == 'POST' and team_id:
         team = get_object_or_404(Team, id=team_id)
-        is_member = team.members.filter(user=request.user).exists()
-        is_lead = team.lead == request.user
-        
-        if is_member or is_lead:
-            content = request.POST.get('content', '').strip()
-            if content:
-                from .models import TeamMessage
-                msg = TeamMessage.objects.create(
-                    team=team,
-                    sender=request.user,
-                    content=content
-                )
-                return render(request, 'teams/partials/message.html', {'msg': msg})
+
+        content = request.POST.get('content', '').strip()
+
+        print("TEAM:", team)
+        print("USER:", request.user)
+        print("CONTENT:", content)
+
+        from .models import TeamMessage
+
+        msg = TeamMessage.objects.create(
+            team=team,
+            sender=request.user,
+            content=content
+        )
+
+        return render(
+            request,
+            'teams/partials/message.html',
+            {'msg': msg}
+        )
+
     return HttpResponse(status=204)
 
 from django.db.models import Q

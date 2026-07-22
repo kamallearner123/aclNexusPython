@@ -127,7 +127,14 @@
 
         <!-- Chat Input -->
         <div class="p-4 bg-white border-t border-gray-200 z-10">
-            <form id="chat-form" hx-post="{% url 'post_team_message' %}" hx-target="#chat-messages" hx-swap="beforeend" class="flex items-end gap-2 relative">
+            <form id="chat-form"
+      method="post"
+      action="{% url 'post_team_message' %}"
+      hx-post="{% url 'post_team_message' %}"
+      hx-include="#hidden-content"
+      hx-target="#chat-messages"
+      hx-swap="beforeend"
+      class="flex items-end gap-2 relative">
                 {% csrf_token %}
                 <input type="hidden" name="team_id" value="{{ team.id }}">
                 <div class="flex-1 relative rounded-xl shadow-sm border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-all flex flex-col">
@@ -167,17 +174,23 @@
         const form = document.getElementById('chat-form');
         const hiddenInput = document.getElementById('hidden-content');
         
-        form.addEventListener('submit', function(e) {
-            const htmlContent = quill.root.innerHTML;
-            const textContent = quill.getText().trim();
-            
-            // Don't submit if it's completely empty (no text and no images)
-            if (textContent.length === 0 && !htmlContent.includes('<img')) {
-                e.preventDefault();
-                return false;
-            }
-            hiddenInput.value = htmlContent;
-        });
+     form.addEventListener('submit', function(e) {
+
+    const htmlContent = quill.root.innerHTML;
+    const textContent = quill.getText().trim();
+
+    console.log("TEXT =", textContent);
+
+    hiddenInput.value = textContent;
+
+    console.log("HIDDEN VALUE =", hiddenInput.value);
+
+    if (textContent.length === 0 && !htmlContent.includes('<img')) {
+        e.preventDefault();
+        return false;
+    }
+
+});
         
         // Clear editor and scroll after htmx request completes
         document.body.addEventListener('htmx:afterRequest', function(evt) {

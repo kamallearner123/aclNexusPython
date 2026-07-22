@@ -63,6 +63,24 @@
                                     <a href="{% url 'employee_edit' u.pk %}" class="text-gray-400 hover:text-brand-600 transition-colors p-1" title="Edit Employee">
                                         <i data-lucide="edit-2" class="w-4 h-4"></i>
                                     </a>
+                                    <form method="post"
+      action="{% url 'employee_reset_password' u.pk %}"
+      class="inline-block">
+
+    {% csrf_token %}
+
+    <input type="password"
+           name="password"
+           placeholder="New Password"
+           required
+           class="border rounded px-2 py-1 text-xs">
+
+    <button type="submit"
+            class="text-blue-600 hover:text-blue-800 ml-1"
+            title="Reset Password">
+        Reset
+    </button>
+</form>
                                     {% if u != request.user %}
                                     <form method="post" action="{% url 'employee_toggle_status' u.pk %}" class="inline-block m-0" onsubmit="return confirm('{% if u.is_active %}Disable{% else %}Enable{% endif %} this employee?');">
                                         {% csrf_token %}

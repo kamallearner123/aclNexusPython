@@ -6,7 +6,9 @@
             <span class="text-xs font-bold text-gray-700">You</span>
         </div>
         <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-soft relative">
-            <div class="text-sm msg-content">{{ msg.content|safe }}</div>
+            <div class="text-sm msg-content">
+    TEST MESSAGE: {{ msg.content }}
+</div>
         </div>
     </div>
     <div class="ml-2 flex-shrink-0 flex items-end">
@@ -23,9 +25,11 @@
             <span class="text-xs font-bold text-gray-700 mr-2">{{ msg.sender.first_name|default:msg.sender.email }}</span>
             <span class="text-xs text-gray-400 font-medium">{{ msg.created_at|date:"g:i A" }}</span>
         </div>
-        <div class="bg-white border border-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-soft relative">
-            <div class="text-sm msg-content">{{ msg.content|safe }}</div>
-        </div>
+        <div class="bg-brand-600 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-soft relative">
+    <div class="text-sm msg-content break-words">
+        {{ msg.content|safe }}
+    </div>
+</div>
     </div>
 </div>
 {% endif %}
