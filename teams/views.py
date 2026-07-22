@@ -67,10 +67,22 @@ def my_team(request):
     all_my_teams = Team.objects.filter(id__in=all_team_ids)
     
     members = []
+
     if team:
         members = [m.user for m in team.members.all()]
+
         if team.lead and team.lead not in members:
             members.append(team.lead)
+
+    # unread message count
+    from .models import DirectMessage
+
+    for member in members:
+        member.unread_count = DirectMessage.objects.filter(
+            sender=member,
+            recipient=request.user,
+            is_read=False
+        ).count()
             
     messages = team.messages.all() if team else []
     
@@ -94,12 +106,15 @@ def post_team_message(request):
         team = get_object_or_404(Team, id=team_id)
 
         content = request.POST.get('content', '').strip()
+        print("CONTENT REPR =", repr(request.POST.get('content')))
 
         print("TEAM:", team)
         print("USER:", request.user)
         print("CONTENT:", content)
 
         from .models import TeamMessage
+        print("POST DATA =", request.POST)
+        print("CONTENT =", request.POST.get("content"))
 
         msg = TeamMessage.objects.create(
             team=team,

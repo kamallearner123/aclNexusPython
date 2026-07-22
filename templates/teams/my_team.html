@@ -88,9 +88,17 @@
                     </p>
                 </div>
                 {% if member != request.user %}
-                <div class="ml-auto pl-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <i data-lucide="message-circle" class="w-4 h-4 text-brand-600"></i>
-                </div>
+                <div class="ml-auto pl-2 flex-shrink-0">
+
+    {% if member.unread_count > 0 %}
+        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-600 rounded-full">
+            {{ member.unread_count }}
+        </span>
+    {% else %}
+        <i data-lucide="message-circle" class="w-4 h-4 text-brand-600"></i>
+    {% endif %}
+
+</div>
                 </a>
                 {% else %}
                 </div>
@@ -128,15 +136,14 @@
         <!-- Chat Input -->
         <div class="p-4 bg-white border-t border-gray-200 z-10">
             <form id="chat-form"
-      method="post"
-      action="{% url 'post_team_message' %}"
       hx-post="{% url 'post_team_message' %}"
-      hx-include="#hidden-content"
+      hx-trigger="submit"
       hx-target="#chat-messages"
       hx-swap="beforeend"
+      hx-on:submit="document.getElementById('hidden-content').value = quill.getText().trim()"
       class="flex items-end gap-2 relative">
                 {% csrf_token %}
-                <input type="hidden" name="team_id" value="{{ team.id }}">
+                <input type="text" name="team_id" value="{{ team.id }}">
                 <div class="flex-1 relative rounded-xl shadow-sm border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-all flex flex-col">
                     <div id="editor-container" class="w-full text-gray-900 bg-transparent"></div>
                     <input type="hidden" name="content" id="hidden-content">
@@ -156,7 +163,7 @@
         if(container) container.scrollTop = container.scrollHeight;
         
         // Initialize Quill
-        var quill = new Quill('#editor-container', {
+        window.quill = new Quill('#editor-container', {
             modules: {
                 toolbar: [
                     ['bold', 'italic', 'underline', 'strike'],
@@ -174,36 +181,45 @@
         const form = document.getElementById('chat-form');
         const hiddenInput = document.getElementById('hidden-content');
         
-     form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', function(e) {
 
-    const htmlContent = quill.root.innerHTML;
     const textContent = quill.getText().trim();
 
-    console.log("TEXT =", textContent);
-
-    hiddenInput.value = textContent;
-
-    console.log("HIDDEN VALUE =", hiddenInput.value);
-
-    if (textContent.length === 0 && !htmlContent.includes('<img')) {
+    if (textContent.length === 0) {
         e.preventDefault();
+        alert("Please type a message first");
         return false;
     }
+
+    document.getElementById('hidden-content').value = textContent;
+
+    console.log("TEXT =", textContent);
+    console.log("HIDDEN =", document.getElementById('hidden-content').value);
 
 });
         
         // Clear editor and scroll after htmx request completes
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
-            if (evt.target.id === 'chat-form') {
-                quill.setContents([]);
-                hiddenInput.value = '';
-                if(container) {
-                    setTimeout(() => {
-                        container.scrollTop = container.scrollHeight;
-                    }, 50);
-                }
+       document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.target.id === 'chat-form') {
+
+        setTimeout(() => {
+            quill.setText('');
+            document.getElementById('hidden-content').value = '';
+
+            if(container){
+                container.scrollTop = container.scrollHeight;
             }
-        });
+        }, 100);
+
+    }
+});
+document.body.addEventListener('htmx:configRequest', function(evt) {
+
+    evt.detail.parameters['content'] = quill.getText().trim();
+
+    console.log("HTMX CONTENT =", evt.detail.parameters['content']);
+
+});
     });
 </script>
 {% endif %}
