@@ -7,4 +7,5 @@ urlpatterns = [
 
     path('<int:pk>/', views.risk_detail, name='risk_detail'),
     path('<int:pk>/edit/', views.risk_update, name='risk_update'),
+    path('delete/<int:id>/', views.risk_delete, name='risk_delete'),
 ]

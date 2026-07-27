@@ -12,6 +12,7 @@ from .models import User, Attachment
 from .forms import CustomUserCreationForm, EmployeeCreationForm, EmployeeEditForm
 from .utils import get_daily_ai_news
 
+
 @login_required
 def landing_page(request):
     """
@@ -43,11 +44,12 @@ def dashboard(request):
         return redirect('engineer_dashboard')
     
     context = {
-        'active_projects': Project.objects.filter(status='ACTIVE').count(),
-        'completed_tasks': Task.objects.filter(status='COMPLETED').count(),
-        'open_issues': Issue.objects.filter(status__in=['OPEN', 'IN_PROGRESS']).count(),
-        'high_risks': Risk.objects.filter(risk_level__in=['HIGH', 'CRITICAL']).count(),
-    }
+    'active_projects': Project.objects.filter(status='ACTIVE').count(),
+    'completed_tasks': Task.objects.filter(status='COMPLETED').count(),
+    'open_issues': Issue.objects.filter(status__in=['OPEN', 'IN_PROGRESS']).count(),
+    'high_risks': Risk.objects.filter(risk_level__in=['HIGH', 'CRITICAL']).count(),
+    'total_risks': Risk.objects.count(),
+}
     return render(request, 'core/dashboard.html', context)
 
 @login_required
@@ -72,6 +74,7 @@ def pm_dashboard(request):
         'open_issues': Issue.objects.filter(project__in=projects, status__in=['OPEN', 'IN_PROGRESS']).count(),
         'projects': projects,
         'ai_news': get_daily_ai_news(request.user),
+        'total_risks': Risk.objects.count(),
     }
     return render(request, 'core/dashboards/pm.html', context)
 
@@ -102,6 +105,8 @@ def architect_dashboard(request):
         'team_tasks_open': team_tasks.count(),
         'my_tasks': my_tasks,
         'ai_news': get_daily_ai_news(request.user),
+        'total_risks': Risk.objects.count(),
+        
     }
     return render(request, 'core/dashboards/architect.html', context)
 
@@ -146,6 +151,7 @@ def engineer_dashboard(request):
         'task_status_labels': json.dumps(status_labels),
         'task_status_counts': json.dumps(status_counts),
         'ai_news': get_daily_ai_news(request.user),
+        'total_risks': Risk.objects.count(),
     }
     return render(request, 'core/dashboards/engineer.html', context)
 

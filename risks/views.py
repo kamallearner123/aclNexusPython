@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 
 
 
+
 @login_required
 def risks_register(request):
 
@@ -71,3 +72,19 @@ def risk_update(request, pk):
     return render(request, "risks/form.html", {
         "form": form
     })
+@login_required
+def risk_delete(request, id):
+
+    risk = get_object_or_404(Risk, id=id)
+
+    if request.method == "POST":
+        risk.delete()
+        return redirect('risks_register')
+
+    return render(
+        request,
+        'risks/risk_confirm_delete.html',
+        {
+            'risk': risk
+        }
+    )
