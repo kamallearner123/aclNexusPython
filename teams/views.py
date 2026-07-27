@@ -78,11 +78,18 @@ def my_team(request):
     from .models import DirectMessage
 
     for member in members:
-        member.unread_count = DirectMessage.objects.filter(
-            sender=member,
-            recipient=request.user,
-            is_read=False
-        ).count()
+     member.unread_count = DirectMessage.objects.filter(
+        sender=member,
+        recipient=request.user,
+        is_read=False
+    ).count()
+
+    print(
+        "Member:",
+        member.email,
+        "Unread:",
+        member.unread_count
+    )
             
     messages = team.messages.all() if team else []
     
@@ -153,15 +160,35 @@ def direct_chat_popup(request, user_id):
 
 @login_required
 def post_direct_message(request, user_id):
+
+    from .models import DirectMessage
+
     other_user = get_object_or_404(User, pk=user_id)
-    if request.method == 'POST':
-        content = request.POST.get('content', '').strip()
+
+    print("=========== DIRECT MESSAGE ===========")
+    print(request.POST)
+
+    if request.method == "POST":
+
+        content = request.POST.get("content", "").strip()
+
+        print("CONTENT =", repr(content))
+
         if content:
-            from .models import DirectMessage
+
             msg = DirectMessage.objects.create(
                 sender=request.user,
                 recipient=other_user,
                 content=content
             )
-            return render(request, 'teams/partials/message.html', {'msg': msg, 'is_direct': True})
+
+            return render(
+                request,
+                "teams/partials/message.html",
+                {
+                    "msg": msg,
+                    "is_direct": True
+                }
+            )
+
     return HttpResponse(status=204)

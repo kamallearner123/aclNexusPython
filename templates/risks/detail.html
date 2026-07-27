@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Risk Details{% endblock %}
+
+{% block content %}
+
+<div class="flex justify-between items-center mb-6">
+
+    <div>
+        <a href="{% url 'risks_register' %}"
+           class="text-sm text-gray-500 hover:text-brand-600">
+            ← Back to Risk Register
+        </a>
+
+        <h2 class="text-2xl font-bold mt-2">
+            {{ risk.title }}
+        </h2>
+    </div>
+
+    <a href="{% url 'risk_update' risk.pk %}"
+       class="bg-brand-600 text-white px-5 py-2 rounded-lg hover:bg-brand-700">
+        Edit Risk
+    </a>
+
+</div>
+
+
+<div class="bg-white rounded-xl shadow p-6">
+
+    <table class="table-auto w-full">
+
+        <tr class="border-b">
+            <td class="font-semibold py-3 w-48">Risk ID</td>
+            <td>{{ risk.risk_id }}</td>
+        </tr>
+
+        <tr class="border-b">
+            <td class="font-semibold py-3">Project</td>
+            <td>{{ risk.project }}</td>
+        </tr>
+
+        <tr class="border-b">
+            <td class="font-semibold py-3">Title</td>
+            <td>{{ risk.title }}</td>
+        </tr>
+
+        <tr class="border-b">
+            <td class="font-semibold py-3">Description</td>
+            <td>{{ risk.description|default:"-" }}</td>
+        </tr>
+
+        <tr class="border-b">
+            <td class="font-semibold py-3">Owner</td>
+            <td>{{ risk.owner|default:"Unassigned" }}</td>
+        </tr>
+
+        <tr class="border-b">
+            <td class="font-semibold py-3">Risk Level</td>
+            <td>{{ risk.get_risk_level_display }}</td>
+        </tr>
+
+        <tr class="border-b">
+            <td class="font-semibold py-3">Risk Score</td>
+            <td>{{ risk.risk_score }}</td>
+        </tr>
+
+        <tr>
+            <td class="font-semibold py-3">Mitigation Plan</td>
+            <td>{{ risk.mitigation_plan|default:"-" }}</td>
+        </tr>
+
+    </table>
+
+</div>
+
+{% endblock %}

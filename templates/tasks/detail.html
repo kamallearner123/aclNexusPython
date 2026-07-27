@@ -45,43 +45,74 @@
             <div class="p-6">
                 <div class="mb-6">{% if task.description %}{{ task.description|safe }}{% else %}No description provided.{% endif %}</div>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    <div class="flex flex-col">
-                        <div class="text-gray-500 text-sm">Status</div>
-                        <div class="font-semibold">
-                            <span class="badge {% if task.status == 'BACKLOG' %}bg-secondary{% elif task.status == 'IN_PROGRESS' %}bg-primary{% elif task.status == 'REVIEW' %}bg-info{% else %}bg-success{% endif %}">
-                                {{ task.get_status_display }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="text-gray-500 text-sm">Priority</div>
-                        <div class="font-semibold">
-                            <span class="badge {% if task.priority == 'HIGH' or task.priority == 'CRITICAL' %}bg-danger{% elif task.priority == 'MEDIUM' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
-                                {{ task.get_priority_display }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="text-gray-500 text-sm">Assignee</div>
-                        <div class="font-semibold">{{ task.assignee.email|default:"Unassigned" }}</div>
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="text-gray-500 text-sm">Project</div>
-                        <div class="font-semibold">{{ task.project.name|default:"-" }}</div>
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="text-gray-500 text-sm">Sprint</div>
-                        <div class="font-semibold">{{ task.sprint.name|default:"-" }}</div>
-                    </div>
-                    <div class="flex flex-col">
-                        <div class="text-gray-500 text-sm">Story Points</div>
-                        <div class="font-semibold">{{ task.story_points|default:"-" }}</div>
-                    </div>
-                    <div class="flex flex-col sm:col-span-2 md:col-span-3">
-                        <div class="text-gray-500 text-sm">Due Date</div>
-                        <div class="font-semibold">{{ task.due_date|date:"M d, Y"|default:"Not Set" }}</div>
-                    </div>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-6">
+                    <div class="bg-gray-50 border rounded-lg p-4">
+    <div class="text-xs text-gray-500 mb-2">
+        Status
+    </div>
+
+    <div>
+        <span class="badge {% if task.status == 'BACKLOG' %}bg-secondary{% elif task.status == 'IN_PROGRESS' %}bg-primary{% elif task.status == 'REVIEW' %}bg-info{% else %}bg-success{% endif %}">
+            {{ task.get_status_display }}
+        </span>
+    </div>
+</div>
+                    <div class="bg-gray-50 border rounded-lg p-4">
+    <div class="text-xs text-gray-500 mb-2">
+        Priority
+    </div>
+
+    <div>
+        <span class="badge {% if task.priority == 'HIGH' or task.priority == 'CRITICAL' %}bg-danger{% elif task.priority == 'MEDIUM' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+            {{ task.get_priority_display }}
+        </span>
+    </div>
+</div>
+                    <div class="bg-gray-50 border rounded-lg p-4">
+    <div class="text-xs text-gray-500 mb-2">
+        Assignee
+    </div>
+
+    <div class="font-semibold">
+        {{ task.assignee.email|default:"Unassigned" }}
+    </div>
+</div>
+                    <div class="bg-gray-50 border rounded-lg p-4">
+    <div class="text-xs text-gray-500 mb-2">
+        Project
+    </div>
+
+    <div class="font-semibold">
+        {{ task.project.name|default:"-" }}
+    </div>
+</div>
+                   <div class="bg-gray-50 border rounded-lg p-4">
+    <div class="text-xs text-gray-500 mb-2">
+        Sprint
+    </div>
+
+    <div class="font-semibold">
+        {{ task.sprint.name|default:"-" }}
+    </div>
+</div>
+                    <div class="bg-gray-50 border rounded-lg p-4">
+    <div class="text-xs text-gray-500 mb-2">
+        Story Points
+    </div>
+
+    <div class="font-semibold text-lg">
+        {{ task.story_points|default:"0" }}
+    </div>
+</div>
+                    <div class="bg-gray-50 border rounded-lg p-4">
+    <div class="text-xs text-gray-500 mb-2">
+        Due Date
+    </div>
+
+    <div class="font-semibold">
+        {{ task.due_date|date:"d M Y"|default:"Not Set" }}
+    </div>
+</div>
                 </div>
             </div>
         </div>

@@ -4,23 +4,25 @@ from .models import Risk
 from .forms import RiskForm
 
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
+
+
 
 @login_required
-def risk_register(request):
-    """
-    Risk Register view displaying risks for user's projects.
-    """
-    user = request.user
-    if user.is_superuser or user.is_staff:
-        risks = Risk.objects.all().order_by('-risk_score')
-    else:
-        q = Q(project__owner=user) | Q(project__tasks__assignee=user)
-        user_teams = list(user.teams.values_list('id', flat=True))
-        if user_teams:
-            q |= Q(project__teams__in=user_teams)
-        risks = Risk.objects.filter(q).distinct().order_by('-risk_score')
-        
-    return render(request, 'risks/register.html', {'risks': risks})
+def risks_register(request):
+
+    risks = Risk.objects.select_related(
+        'project',
+        'owner'
+    ).all().order_by('-created_at')
+
+    return render(
+        request,
+        'risks/register.html',
+        {
+            'risks': risks
+        }
+    )
 
 @login_required
 def risk_create(request):
@@ -38,3 +40,34 @@ def risk_create(request):
         form = RiskForm()
     
     return render(request, 'risks/form.html', {'form': form})
+
+
+
+
+
+@login_required
+def risk_detail(request, pk):
+    risk = get_object_or_404(Risk, pk=pk)
+
+    return render(request, "risks/detail.html", {
+        "risk": risk
+    })
+
+
+@login_required
+def risk_update(request, pk):
+    risk = get_object_or_404(Risk, pk=pk)
+
+    if request.method == "POST":
+        form = RiskForm(request.POST, instance=risk)
+
+        if form.is_valid():
+            form.save()
+            return redirect("risk_detail", pk=risk.pk)
+
+    else:
+        form = RiskForm(instance=risk)
+
+    return render(request, "risks/form.html", {
+        "form": form
+    })

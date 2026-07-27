@@ -31,7 +31,12 @@
                     {% for project in projects %}
                     <tr class="hover:bg-brand-50/50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{{ project.code }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ project.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold">
+    <a href="{% url 'project_detail' project.pk %}"
+       class="text-brand-600 hover:text-brand-800 hover:underline">
+        {{ project.name }}
+    </a>
+</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ project.get_project_type_display }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset {% if project.status == 'ACTIVE' %}bg-emerald-50 text-emerald-700 ring-emerald-600/20{% elif project.status == 'PLANNED' %}bg-brand-50 text-brand-700 ring-brand-600/20{% else %}bg-gray-50 text-gray-600 ring-gray-500/10{% endif %}">

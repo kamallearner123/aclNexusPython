@@ -27,7 +27,12 @@
                     <tr>
                         <td class="ps-4 font-semibold text-brand-600">{{ risk.risk_id }}</td>
                         <td>{{ risk.project.code }}</td>
-                        <td>{{ risk.title }}</td>
+                        <td>
+    <a href="{% url 'risk_detail' risk.pk %}"
+       class="text-brand-600 hover:text-brand-800 hover:underline font-semibold">
+        {{ risk.title }}
+    </a>
+</td>
                         <td>
                             <span class="badge {% if risk.risk_level == 'CRITICAL' %}bg-danger{% elif risk.risk_level == 'HIGH' %}bg-warning text-dark{% elif risk.risk_level == 'MEDIUM' %}bg-info{% else %}bg-secondary{% endif %}">
                                 {{ risk.get_risk_level_display }}

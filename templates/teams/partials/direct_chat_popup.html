@@ -27,13 +27,30 @@
     
     <!-- Input -->
     <div class="p-2 bg-white border-t border-gray-200">
-        <form hx-post="{% url 'post_direct_message' other_user.pk %}" hx-target="#dm-messages-{{ other_user.pk }}" hx-swap="beforeend" class="flex gap-2" onsubmit="setTimeout(() => { this.reset(); const container = document.getElementById('dm-messages-{{ other_user.pk }}'); container.scrollTop = container.scrollHeight; }, 50);">
-            {% csrf_token %}
-            <input type="text" name="content" class="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-brand-500 focus:border-brand-500" placeholder="Type a message..." required autocomplete="off">
-            <button type="submit" class="bg-brand-600 text-white p-1.5 rounded-lg hover:bg-brand-500">
-                <i data-lucide="send" class="w-4 h-4"></i>
-            </button>
-        </form>
+        <form
+    hx-post="{% url 'post_direct_message' other_user.pk %}"
+    hx-target="#dm-messages-{{ other_user.pk }}"
+    hx-swap="beforeend"
+    class="flex gap-2"
+    id="direct-chat-form-{{ other_user.pk }}">
+
+    {% csrf_token %}
+
+    <input
+        type="text"
+        id="direct-message-input-{{ other_user.pk }}"
+        name="content"
+        class="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5"
+        placeholder="Type a message..."
+        autocomplete="off"
+        required>
+
+    <button type="submit"
+            class="bg-brand-600 text-white p-1.5 rounded-lg hover:bg-brand-500">
+        <i data-lucide="send" class="w-4 h-4"></i>
+    </button>
+
+</form>
     </div>
 </div>
 <!-- Re-init lucide icons for the new HTML -->
@@ -50,4 +67,23 @@
         const dmContainer = document.getElementById('dm-messages-{{ other_user.pk }}');
         if (dmContainer) dmContainer.scrollTop = dmContainer.scrollHeight;
     }, 100);
+</script>
+<script>
+
+document.body.addEventListener("htmx:afterRequest", function(evt){
+
+    if(evt.target.id === "direct-chat-form-{{ other_user.pk }}"){
+
+        document.getElementById("direct-message-input-{{ other_user.pk }}").value = "";
+
+        const container = document.getElementById("dm-messages-{{ other_user.pk }}");
+
+        if(container){
+            container.scrollTop = container.scrollHeight;
+        }
+
+    }
+
+});
+
 </script>
