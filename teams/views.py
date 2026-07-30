@@ -84,7 +84,7 @@ def my_team(request):
         is_read=False
     ).count()
 
-    print(
+     print(
         "Member:",
         member.email,
         "Unread:",
