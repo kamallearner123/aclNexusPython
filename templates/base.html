@@ -93,156 +93,124 @@
 <body class="bg-gray-50 text-gray-900 font-sans antialiased flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside
-        class="w-64 {% if request.user.is_staff or request.user.is_superuser %}bg-slate-50 border-slate-200{% else %}bg-white border-gray-200{% endif %} border-r flex flex-col justify-between hidden md:flex h-full z-10 flex-shrink-0">
-        <div>
+    <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between hidden md:flex h-full z-20 flex-shrink-0 shadow-2xl relative selection:bg-brand-500/30">
+        <!-- Subtle top glow -->
+        <div class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-brand-500/50 to-transparent"></div>
+        
+        <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Brand -->
-            <a href="{% url 'landing_page' %}"
-                class="h-16 flex items-center px-6 border-b {% if request.user.is_staff or request.user.is_superuser %}border-slate-200 hover:bg-slate-100{% else %}border-gray-100 hover:bg-gray-50{% endif %} transition-colors relative overflow-hidden">
-                <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-6 w-auto mr-3 object-contain">
-                <span class="font-semibold text-gray-900 text-sm tracking-tight">Apt Computing Labs</span>
-                {% if request.user.is_staff or request.user.is_superuser %}
-                <!-- Admin subtle indicator -->
-                <div
-                    class="absolute top-0 right-0 bg-brand-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg">
-                    ADMIN</div>
-                {% endif %}
+            <a href="{% url 'landing_page' %}" class="h-[76px] flex items-center px-6 border-b border-slate-800/60 hover:bg-slate-800/30 transition-all group flex-shrink-0">
+                <div class="bg-white p-1.5 rounded-xl shadow-sm mr-3 ring-1 ring-white/10 group-hover:scale-105 transition-transform">
+                    <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-6 w-auto object-contain">
+                </div>
+                <div class="flex flex-col overflow-hidden">
+                    <span class="font-bold text-white text-[15px] tracking-tight leading-tight truncate">Apt Computing Labs</span>
+                    {% if request.user.is_staff or request.user.is_superuser %}
+                    <div class="flex items-center mt-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brand-400 mr-1.5 animate-pulse"></span>
+                        <span class="text-[9px] font-bold text-brand-300 uppercase tracking-wider">System Admin</span>
+                    </div>
+                    {% endif %}
+                </div>
             </a>
 
             <!-- Navigation -->
-            <nav class="p-4 space-y-2 mt-2">
+            <nav class="p-4 space-y-1 mt-2 overflow-y-auto flex-1">
                 {% if request.user.is_staff or request.user.is_superuser %}
-                <a href="{% url 'dashboard' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if request.resolver_match.url_name == 'dashboard' %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if request.resolver_match.url_name == 'dashboard' %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                    </div>
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3 mt-2">Overview</div>
+                
+                <a href="{% url 'dashboard' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if request.resolver_match.url_name == 'dashboard' %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3 {% if request.resolver_match.url_name == 'dashboard' %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Dashboard
                 </a>
-                <a href="{% url 'system_admin_dashboard' %}?tab=engineers"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'tab=engineers' in request.get_full_path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'tab=engineers' in request.get_full_path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="user-cog" class="w-4 h-4"></i>
-                    </div>
-                    Engineers
-                </a>
-                <a href="{% url 'project_list' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'projects' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'projects' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="briefcase" class="w-4 h-4"></i>
-                    </div>
+
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Management</div>
+
+                <a href="{% url 'project_list' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'projects' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="briefcase" class="w-4 h-4 mr-3 {% if 'projects' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Projects
                 </a>
-                <a href="{% url 'system_admin_dashboard' %}?tab=teams"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'tab=teams' in request.get_full_path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'tab=teams' in request.get_full_path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                    </div>
+                
+                <a href="{% url 'system_admin_dashboard' %}?tab=teams" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'tab=teams' in request.get_full_path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="users" class="w-4 h-4 mr-3 {% if 'tab=teams' in request.get_full_path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Teams
                 </a>
-                <a href="{% url 'user_calendar' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'calendar' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'calendar' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="calendar" class="w-4 h-4"></i>
-                    </div>
+
+                <a href="{% url 'system_admin_dashboard' %}?tab=engineers" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'tab=engineers' in request.get_full_path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="user-cog" class="w-4 h-4 mr-3 {% if 'tab=engineers' in request.get_full_path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
+                    Engineers
+                </a>
+
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Tools & Apps</div>
+
+                <a href="{% url 'user_calendar' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'calendar' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="calendar" class="w-4 h-4 mr-3 {% if 'calendar' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Calendar
                 </a>
+                
                 {% if request.user|is_pia_system_admin_user %}
-                <a href="{% url 'pia_home' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'pia' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'pia' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="brain-circuit" class="w-4 h-4"></i>
-                    </div>
+                <a href="{% url 'pia_home' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'pia' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="brain-circuit" class="w-4 h-4 mr-3 {% if 'pia' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     PIA
                 </a>
                 {% endif %}
-                <a href="{% url 'risks_register' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'risks' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'risks' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
-                    </div>
+                
+                <a href="{% url 'risks_register' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'risks' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="shield-alert" class="w-4 h-4 mr-3 {% if 'risks' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Risks
                 </a>
-                <a href="{% url 'notes_dashboard' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'notes' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'notes' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="file-text" class="w-4 h-4"></i>
-                    </div>
+                
+                <a href="{% url 'notes_dashboard' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'notes' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-3 {% if 'notes' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Notes
                 </a>
+
                 {% else %}
-                <a href="{% url 'dashboard' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if request.resolver_match.url_name == 'dashboard' %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if request.resolver_match.url_name == 'dashboard' %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                    </div>
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3 mt-2">Overview</div>
+
+                <a href="{% url 'dashboard' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if request.resolver_match.url_name == 'dashboard' %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3 {% if request.resolver_match.url_name == 'dashboard' %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Dashboard
                 </a>
-                <a href="{% url 'project_list' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'projects' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'projects' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="briefcase" class="w-4 h-4"></i>
-                    </div>
+
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Work</div>
+
+                <a href="{% url 'project_list' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'projects' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="briefcase" class="w-4 h-4 mr-3 {% if 'projects' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Projects
                 </a>
-                <a href="{% url 'user_calendar' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'calendar' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'calendar' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="calendar" class="w-4 h-4"></i>
-                    </div>
+                
+                <a href="{% url 'my_team' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'team' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="users" class="w-4 h-4 mr-3 {% if 'team' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
+                    Team
+                </a>
+                
+                <a href="{% url 'issue_tracker' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'issues' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="bug" class="w-4 h-4 mr-3 {% if 'issues' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
+                    Issues
+                </a>
+
+                <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3 mt-6">Tools & Apps</div>
+
+                <a href="{% url 'user_calendar' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'calendar' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="calendar" class="w-4 h-4 mr-3 {% if 'calendar' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Calendar
                 </a>
+                
                 {% if request.user|is_pia_system_admin_user %}
-                <a href="{% url 'pia_home' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'pia' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'pia' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="brain-circuit" class="w-4 h-4"></i>
-                    </div>
+                <a href="{% url 'pia_home' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'pia' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="brain-circuit" class="w-4 h-4 mr-3 {% if 'pia' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     PIA
                 </a>
                 {% endif %}
-                <a href="{% url 'my_team' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'team' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'team' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                    </div>
-                    Team
-                </a>
-                <a href="{% url 'issue_tracker' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'issues' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'issues' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="bug" class="w-4 h-4"></i>
-                    </div>
-                    Issues
-                </a>
-                <a href="{% url 'risks_register' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'risks' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'risks' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
-                    </div>
+                
+                <a href="{% url 'risks_register' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'risks' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="shield-alert" class="w-4 h-4 mr-3 {% if 'risks' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Risks
                 </a>
-                <a href="{% url 'notes_dashboard' %}"
-                    class="group flex items-center px-4 py-3 mx-2 rounded-xl text-sm font-semibold transition-all duration-300 {% if 'notes' in request.path %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/30 ring-1 ring-white/20 transform scale-[1.02]{% else %}text-gray-500 hover:text-gray-900 hover:bg-white hover:shadow-sm hover:ring-1 hover:ring-gray-900/5{% endif %}">
-                    <div
-                        class="mr-3 p-1.5 rounded-lg {% if 'notes' in request.path %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600{% endif %} transition-colors">
-                        <i data-lucide="file-text" class="w-4 h-4"></i>
-                    </div>
+                
+                <a href="{% url 'notes_dashboard' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'notes' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-3 {% if 'notes' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Notes
                 </a>
                 {% endif %}
@@ -250,39 +218,38 @@
         </div>
 
         <!-- User Profile (Bottom Sidebar) -->
-        <div class="p-6 border-t border-gray-100">
-            <div
-                class="flex items-center cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors group relative">
+        <div class="p-4 border-t border-slate-800/60 bg-slate-900/50 flex-shrink-0">
+            <div class="flex items-center cursor-pointer p-2.5 hover:bg-slate-800 rounded-xl transition-colors group relative border border-transparent hover:border-slate-700/50">
                 {% if request.user.avatar %}
-                <img src="{{ request.user.avatar.url }}" alt="Avatar"
-                    class="h-8 w-8 rounded-full shadow-soft ring-1 ring-gray-900/10 object-cover">
+                <img src="{{ request.user.avatar.url }}" alt="Avatar" class="h-9 w-9 rounded-lg shadow-sm ring-1 ring-white/10 object-cover">
                 {% else %}
-                <img src="https://ui-avatars.com/api/?name={{ request.user.email }}&background=random" alt="Avatar"
-                    class="h-8 w-8 rounded-full shadow-soft ring-1 ring-gray-900/10">
+                <img src="https://ui-avatars.com/api/?name={{ request.user.email }}&background=1e293b&color=fff" alt="Avatar" class="h-9 w-9 rounded-lg shadow-sm ring-1 ring-white/10">
                 {% endif %}
                 <div class="ml-3 overflow-hidden flex-1">
-                    <p class="text-sm font-medium text-gray-900 truncate">{{ request.user.first_name|default:request.user.email }}</p>
-                    <p class="text-xs text-gray-500 truncate">
+                    <p class="text-sm font-semibold text-white truncate">{{ request.user.first_name|default:request.user.email }}</p>
+                    <p class="text-[11px] text-slate-400 truncate mt-0.5">
                         {% if request.user.is_superuser %}System Admin
                         {% elif request.user.roles.exists %}{{ request.user.roles.first.name }}
                         {% else %}User{% endif %}
                     </p>
                 </div>
-                <i data-lucide="chevrons-up-down" class="w-3 h-3 text-gray-400 group-hover:text-gray-600"></i>
+                <i data-lucide="chevron-up" class="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors"></i>
 
-                <!-- Simple Dropdown (CSS hover based for simplicity in this artifact) -->
-                <div
-                    class="absolute bottom-full left-0 w-full mb-4 bg-white border border-gray-100 shadow-elevated rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <div class="p-1">
-                        <a href="{% url 'profile_edit' %}"
-                            class="block px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Edit Profile</a>
-                        <a href="{% url 'password_change' %}"
-                            class="block px-6 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">Change
-                            Password</a>
+                <!-- Dropdown -->
+                <div class="absolute bottom-full left-0 w-full mb-2 bg-slate-800 border border-slate-700 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-bottom scale-95 group-hover:scale-100">
+                    <div class="p-1.5 space-y-1">
+                        <a href="{% url 'profile_edit' %}" class="flex items-center px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                            <i data-lucide="user" class="w-4 h-4 mr-3"></i> Profile
+                        </a>
+                        <a href="{% url 'password_change' %}" class="flex items-center px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                            <i data-lucide="key" class="w-4 h-4 mr-3"></i> Password
+                        </a>
+                        <div class="h-px bg-slate-700/50 my-1"></div>
                         <form action="{% url 'logout' %}" method="post" class="m-0">
                             {% csrf_token %}
-                            <button type="submit"
-                                class="w-full text-left px-6 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">Logout</button>
+                            <button type="submit" class="w-full flex items-center px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors">
+                                <i data-lucide="log-out" class="w-4 h-4 mr-3"></i> Logout
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -291,24 +258,24 @@
     </aside>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col h-full overflow-hidden">
+    <div class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 relative">
+        <!-- Subtle Top Gradient in Main Area for depth -->
+        <div class="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-slate-200/50 to-transparent pointer-events-none"></div>
 
         <!-- Top Nav (Mobile) -->
-        <header
-            class="md:hidden bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 flex-shrink-0">
+        <header class="md:hidden bg-white/80 backdrop-blur-md border-b border-gray-200 h-16 flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-30">
             <a href="{% url 'landing_page' %}" class="flex items-center hover:opacity-80 transition-opacity">
-                <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-6 w-auto mr-2">
-                <span class="font-semibold text-gray-900 text-sm">Nexus</span>
+                <img src="{% static 'img/logo.png' %}" alt="Logo" class="h-7 w-auto mr-2">
+                <span class="font-bold text-gray-900 text-lg tracking-tight">Nexus</span>
             </a>
-            <button class="text-gray-500 hover:text-gray-700">
+            <button class="text-gray-500 hover:text-brand-600 transition-colors p-2 rounded-lg hover:bg-gray-100">
                 <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
         </header>
 
         <!-- Main Scrollable Area -->
-        <main
-            class="flex-1 overflow-y-auto {% if request.user.is_staff or request.user.is_superuser %}bg-[#f8fafc] border-t-4 border-brand-500{% else %}bg-[#FAFAFA]{% endif %}">
-            <div class="p-6 md:p-10 max-w-7xl mx-auto">
+        <main class="flex-1 overflow-y-auto relative z-10">
+            <div class="p-6 md:p-10 max-w-7xl mx-auto min-h-full">
                 {% block content %}
                 {% endblock %}
             </div>
