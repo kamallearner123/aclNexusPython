@@ -8,4 +8,7 @@ urlpatterns = [
     path('<int:pk>/edit/', views.project_update, name='project_update'),
     path('<int:pk>/delete/', views.project_delete, name='project_delete'),
     path('<int:pk>/process-board/', views.automotive_process_board, name='automotive_process_board'),
+    path('<int:project_id>/requirements/new/', views.requirement_create, name='requirement_create'),
+    path('requirements/<int:pk>/edit/', views.requirement_update, name='requirement_update'),
+    path('requirements/<int:pk>/convert/', views.requirement_convert_to_task, name='requirement_convert_to_task'),
 ]

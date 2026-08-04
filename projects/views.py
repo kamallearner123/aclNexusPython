@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.models import AuditLog
-from .models import Project
-from .forms import ProjectForm
+from .models import Project, Requirement
+from .forms import ProjectForm, RequirementForm
+from tasks.models import Task
 
 from django.db.models import Q
 
@@ -86,6 +87,7 @@ def project_detail(request, pk):
         'activities': activities,
         'tasks': project.tasks.all().order_by('-created_at'),
         'issues': project.issues.all().order_by('-created_at'),
+        'requirements': project.requirements.all().order_by('-created_at'),
     })
 
 @login_required
@@ -172,3 +174,92 @@ def automotive_process_board(request, pk):
     }
     
     return render(request, 'projects/automotive_board.html', context)
+
+@login_required
+def requirement_create(request, project_id):
+    """
+    Allow Client or Admin to add requirements for a project.
+    """
+    project = get_object_or_404(Project, pk=project_id)
+    # Basic permission check: allow admins, owners, or clients assigned to the team
+    # (assuming Client role is represented either by user.roles or just anyone in the team for now)
+    
+    if request.method == 'POST':
+        form = RequirementForm(request.POST)
+        if form.is_valid():
+            req = form.save(commit=False)
+            req.project = project
+            req.created_by = request.user
+            req.save()
+            return redirect('project_detail', pk=project.pk)
+    else:
+        form = RequirementForm()
+        
+    return render(request, 'projects/requirement_form.html', {'form': form, 'project': project})
+
+@login_required
+def requirement_update(request, pk):
+    req = get_object_or_404(Requirement, pk=pk)
+    project = req.project
+    
+    if request.method == 'POST':
+        form = RequirementForm(request.POST, instance=req)
+        if form.is_valid():
+            updated_req = form.save(commit=False)
+            updated_req.updated_by = request.user
+            updated_req.save()
+            return redirect('project_detail', pk=project.pk)
+    else:
+        form = RequirementForm(instance=req)
+        
+    return render(request, 'projects/requirement_form.html', {'form': form, 'project': project, 'is_update': True})
+
+@login_required
+def requirement_convert_to_task(request, pk):
+    """
+    Architect/Manager can convert requirement to tasks/stories.
+    """
+    req = get_object_or_404(Requirement, pk=pk)
+    project = req.project
+    
+    user_roles = request.user.roles.values_list('name', flat=True)
+    is_architect_manager = request.user.is_superuser or request.user.is_staff or 'Architect' in user_roles or 'Project Manager' in user_roles
+    
+    if not is_architect_manager:
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Only Architects or Managers can convert requirements to tasks.")
+
+    if request.method == 'POST':
+        titles = request.POST.getlist('task_title')
+        descriptions = request.POST.getlist('task_description')
+        priorities = request.POST.getlist('task_priority')
+        
+        date_str = req.created_at.strftime('%m%y')
+        
+        for idx, title in enumerate(titles):
+            if title.strip():
+                # Count current tasks to generate ID
+                task_count = Task.objects.filter(project=project).count() + 1
+                task_id = f"REQ{project.pk}{date_str}_Task_{task_count}"
+                
+                desc = descriptions[idx] if idx < len(descriptions) else ''
+                priority = priorities[idx] if idx < len(priorities) else 'MEDIUM'
+                
+                Task.objects.create(
+                    task_id=task_id,
+                    project=project,
+                    requirement=req,
+                    title=title,
+                    description=desc,
+                    priority=priority,
+                    status='BACKLOG',
+                    created_by=request.user,
+                    updated_by=request.user
+                )
+        
+        req.status = 'CONVERTED'
+        req.save()
+        return redirect('project_detail', pk=project.pk)
+        
+    return render(request, 'projects/requirement_convert.html', {'requirement': req, 'project': project})
+

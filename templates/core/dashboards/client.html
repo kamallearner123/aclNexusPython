@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Client Dashboard - Apt Computing Labs Nexus{% endblock %}
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">{{ role_title }}</h1>
+    <p class="text-sm text-gray-500 mt-1">Overview of your projects and requirements.</p>
+</div>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">My Active Projects</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ active_projects }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Total Requirements</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ total_requirements }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Approved Requirements</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ approved_requirements }}</p>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
+        <p class="text-sm font-medium text-gray-500">Closed Requirements</p>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ closed_requirements }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <div class="bg-white p-6 rounded-xl shadow-soft border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">My Projects</h2>
+        <div class="space-y-4">
+            {% for project in projects %}
+            <div class="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors flex justify-between items-center">
+                <div>
+                    <h3 class="font-medium text-gray-900">{{ project.name }} ({{ project.code }})</h3>
+                    <p class="text-sm text-gray-500">Status: {{ project.get_status_display }} | Budget: {{ project.budget|default:"N/A" }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'project_detail' project.pk %}" class="text-brand-600 hover:text-brand-700 text-sm font-medium">View</a>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-500">No projects assigned to you yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-soft border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">My Requirements Status</h2>
+        <div class="space-y-4">
+            {% for req in requirements %}
+            <div class="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-medium text-gray-900">{{ req.title }}</h3>
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset 
+                    {% if req.status == 'CLOSED' %} bg-emerald-50 text-emerald-700 ring-emerald-600/20
+                    {% elif req.status == 'APPROVED' %} bg-sky-50 text-sky-700 ring-sky-600/20
+                    {% else %} bg-gray-50 text-gray-600 ring-gray-500/10 {% endif %}">
+                        {{ req.get_status_display }}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-500">Project: {{ req.project.name }} &bull; Total Hours Spent: {{ req.total_hours_spent }}h</p>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-500">No requirements found.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

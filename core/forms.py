@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import User, Role, NoteTopic, Note
+from .models import User, Role, NoteTopic, Note, ClientProfile
 from teams.models import Team
+from projects.models import Project
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -130,4 +131,82 @@ class EmployeeEditForm(forms.ModelForm):
             TeamMember.objects.filter(user=user).delete()
             for team in self.cleaned_data.get('teams', []):
                 TeamMember.objects.create(user=user, team=team)
+        return user
+
+class ClientCreationForm(UserCreationForm):
+    first_name = forms.CharField(max_length=150, required=True)
+    last_name = forms.CharField(max_length=150, required=True)
+    company_name = forms.CharField(max_length=255, required=False)
+    phone = forms.CharField(max_length=50, required=False)
+    address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
+    projects = forms.ModelMultipleChoiceField(
+        queryset=Project.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        help_text="Select projects to assign to this client."
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('email', 'first_name', 'last_name')
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            client_role, _ = Role.objects.get_or_create(name='Client')
+            user.roles.add(client_role)
+            
+            ClientProfile.objects.create(
+                user=user,
+                company_name=self.cleaned_data.get('company_name', ''),
+                phone=self.cleaned_data.get('phone', ''),
+                address=self.cleaned_data.get('address', '')
+            )
+            
+            for project in self.cleaned_data.get('projects', []):
+                project.clients.add(user)
+                
+        return user
+
+class ClientEditForm(forms.ModelForm):
+    company_name = forms.CharField(max_length=255, required=False)
+    phone = forms.CharField(max_length=50, required=False)
+    address = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
+    projects = forms.ModelMultipleChoiceField(
+        queryset=Project.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        help_text="Select projects to assign to this client."
+    )
+
+    class Meta:
+        model = User
+        fields = ('email', 'first_name', 'last_name')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            profile = getattr(self.instance, 'client_profile', None)
+            if profile:
+                self.fields['company_name'].initial = profile.company_name
+                self.fields['phone'].initial = profile.phone
+                self.fields['address'].initial = profile.address
+            self.fields['projects'].initial = Project.objects.filter(clients=self.instance)
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            profile, _ = ClientProfile.objects.get_or_create(user=user)
+            profile.company_name = self.cleaned_data.get('company_name', '')
+            profile.phone = self.cleaned_data.get('phone', '')
+            profile.address = self.cleaned_data.get('address', '')
+            profile.save()
+            
+            for p in Project.objects.filter(clients=user):
+                p.clients.remove(user)
+            for p in self.cleaned_data.get('projects', []):
+                p.clients.add(user)
+                
         return user

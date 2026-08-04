@@ -332,13 +332,19 @@
                     const taskId = itemEl.getAttribute('data-task-id');
                     const newStatus = toEl.getAttribute('data-status');
                     
+                    let hoursStr = prompt("Please enter the number of hours spent on this task for this stage transition:", "0");
+                    let hoursSpent = parseFloat(hoursStr);
+                    if (isNaN(hoursSpent) || hoursSpent < 0) {
+                        hoursSpent = 0;
+                    }
+                    
                     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
                     
                     // Update counts visually
                     const toCountEl = document.getElementById('count-' + newStatus);
                     const fromCountEl = document.getElementById('count-' + fromEl.getAttribute('data-status'));
-                    toCountEl.innerText = parseInt(toCountEl.innerText) + 1;
-                    fromCountEl.innerText = parseInt(fromCountEl.innerText) - 1;
+                    if(toCountEl) toCountEl.innerText = parseInt(toCountEl.innerText) + 1;
+                    if(fromCountEl) fromCountEl.innerText = parseInt(fromCountEl.innerText) - 1;
 
                     // Update backend
                     fetch("{% url 'update_task_status' %}", {
@@ -349,7 +355,8 @@
                         },
                         body: JSON.stringify({
                             task_id: taskId,
-                            status: newStatus
+                            status: newStatus,
+                            hours_spent: hoursSpent
                         })
                     })
                     .then(response => response.json())

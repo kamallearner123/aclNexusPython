@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from core.models import BaseModel
-from projects.models import Project, Sprint
+from projects.models import Project, Sprint, Requirement
 from django.contrib.contenttypes.fields import GenericRelation
 
 class Task(BaseModel):
@@ -27,6 +27,7 @@ class Task(BaseModel):
 
     task_id = models.CharField(max_length=50, unique=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
+    requirement = models.ForeignKey(Requirement, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     sprint = models.ForeignKey(Sprint, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -34,6 +35,7 @@ class Task(BaseModel):
     reporter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reported_tasks')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
     story_points = models.IntegerField(default=0)
+    hours_spent = models.DecimalField(max_digits=8, decimal_places=2, default=0.0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='BACKLOG')
     due_date = models.DateField(null=True, blank=True)
     actual_completion_date = models.DateField(null=True, blank=True)
@@ -95,6 +97,14 @@ class Task(BaseModel):
                 )
             
         self._original_state = self._get_current_state()
+        
+        # Check if requirement should be closed
+        if self.requirement:
+            # Re-fetch tasks from DB to get the latest status of this task as well
+            if not self.requirement.tasks.exclude(status='COMPLETED').exists():
+                if self.requirement.status != 'CLOSED':
+                    self.requirement.status = 'CLOSED'
+                    self.requirement.save()
 
     def __str__(self):
         return f"[{self.task_id}] {self.title}"

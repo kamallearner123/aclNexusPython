@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Convert Requirement to Tasks{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Convert Requirement to Tasks: {{ requirement.title }}</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Description:</strong> {{ requirement.description }}</p>
+                    <p><strong>Project:</strong> {{ project.name }}</p>
+                    
+                    <form method="post" id="convertForm">
+                        {% csrf_token %}
+                        <div id="tasks-container">
+                            <div class="task-entry card mb-3">
+                                <div class="card-header bg-light">
+                                    <strong>Task 1</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Task Title</label>
+                                        <input type="text" name="task_title" class="form-control" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Description (Optional)</label>
+                                        <textarea name="task_description" class="form-control" rows="2"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Priority</label>
+                                        <select name="task_priority" class="form-select">
+                                            <option value="LOW">Low</option>
+                                            <option value="MEDIUM" selected>Medium</option>
+                                            <option value="HIGH">High</option>
+                                            <option value="CRITICAL">Critical</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <button type="button" class="btn btn-outline-success" id="addTaskBtn">
+                                <i data-lucide="plus" class="w-4 h-4 inline-block mr-1"></i> Add Another Task
+                            </button>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'project_detail' project.pk %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Convert and Create Tasks</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let taskCount = 1;
+        const tasksContainer = document.getElementById('tasks-container');
+        const addTaskBtn = document.getElementById('addTaskBtn');
+        
+        addTaskBtn.addEventListener('click', function() {
+            taskCount++;
+            
+            const taskEntry = document.createElement('div');
+            taskEntry.className = 'task-entry card mb-3';
+            taskEntry.innerHTML = `
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <strong>Task ${taskCount}</strong>
+                    <button type="button" class="btn btn-sm btn-danger remove-task-btn">Remove</button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Task Title</label>
+                        <input type="text" name="task_title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description (Optional)</label>
+                        <textarea name="task_description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select name="task_priority" class="form-select">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="CRITICAL">Critical</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            tasksContainer.appendChild(taskEntry);
+            
+            const removeBtn = taskEntry.querySelector('.remove-task-btn');
+            removeBtn.addEventListener('click', function() {
+                taskEntry.remove();
+            });
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    });
+</script>
+{% endblock %}

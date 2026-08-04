@@ -8,8 +8,8 @@ from issues.models import Issue
 from risks.models import Risk
 from teams.models import Team
 from django.contrib.contenttypes.models import ContentType
-from .models import User, Attachment
-from .forms import CustomUserCreationForm, EmployeeCreationForm, EmployeeEditForm
+from .models import User, Attachment, ClientProfile
+from .forms import CustomUserCreationForm, EmployeeCreationForm, EmployeeEditForm, ClientCreationForm, ClientEditForm
 from .utils import get_daily_ai_news
 
 
@@ -29,6 +29,9 @@ def is_architect(user):
 def is_engineer(user):
     return user.roles.filter(name__in=['Developer', 'Tester', 'Customer Engineer']).exists()
 
+def is_client(user):
+    return user.roles.filter(name='Client').exists()
+
 @login_required
 def dashboard(request):
     """
@@ -42,6 +45,8 @@ def dashboard(request):
         return redirect('architect_dashboard')
     elif is_engineer(request.user):
         return redirect('engineer_dashboard')
+    elif is_client(request.user):
+        return redirect('client_dashboard')
     
     context = {
     'active_projects': Project.objects.filter(status='ACTIVE').count(),
@@ -77,6 +82,27 @@ def pm_dashboard(request):
         'total_risks': Risk.objects.count(),
     }
     return render(request, 'core/dashboards/pm.html', context)
+
+@login_required
+@user_passes_test(is_client)
+def client_dashboard(request):
+    user = request.user
+    
+    projects = Project.objects.filter(clients=user).distinct()
+    from projects.models import Requirement
+    requirements = Requirement.objects.filter(project__in=projects)
+    
+    context = {
+        'role_title': 'Client Dashboard',
+        'projects': projects,
+        'requirements': requirements,
+        'active_projects': projects.filter(status='ACTIVE').count(),
+        'total_requirements': requirements.count(),
+        'approved_requirements': requirements.filter(status='APPROVED').count(),
+        'closed_requirements': requirements.filter(status='CLOSED').count(),
+        'ai_news': get_daily_ai_news(request.user),
+    }
+    return render(request, 'core/dashboards/client.html', context)
 
 from django.db.models import Q
 
@@ -210,6 +236,31 @@ def employee_edit(request, pk):
     else:
         form = EmployeeEditForm(instance=employee)
     return render(request, 'core/employee_form.html', {'form': form, 'is_edit': True, 'employee': employee})
+
+@login_required
+@user_passes_test(is_admin)
+def client_create(request):
+    if request.method == 'POST':
+        form = ClientCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('system_admin_dashboard')
+    else:
+        form = ClientCreationForm()
+    return render(request, 'core/client_form.html', {'form': form})
+
+@login_required
+@user_passes_test(is_admin)
+def client_edit(request, pk):
+    client = get_object_or_404(User, pk=pk)
+    if request.method == 'POST':
+        form = ClientEditForm(request.POST, instance=client)
+        if form.is_valid():
+            form.save()
+            return redirect('/system-admin/?tab=engineers')
+    else:
+        form = ClientEditForm(instance=client)
+    return render(request, 'core/client_form.html', {'form': form, 'is_edit': True, 'client': client})
 @login_required
 @user_passes_test(is_admin)
 def employee_reset_password(request, pk):

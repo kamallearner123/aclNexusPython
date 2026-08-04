@@ -14,15 +14,18 @@
     <div id="employees">
         <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
             <div class="border-b border-gray-100 px-6 py-4 bg-white pt-3 pb-2 flex justify-between items-center border-bottom-0">
-                <h6 class="m-0 font-bold text-brand-600">Registered Employees</h6>
-                <a href="{% url 'employee_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors"><i data-lucide="person-plus" class="w-4 h-4 mr-1"></i> Add Employee</a>
+                <h6 class="m-0 font-bold text-brand-600">Registered Users & Clients</h6>
+                <div class="flex space-x-2">
+                    <a href="{% url 'client_create' %}" class="inline-flex items-center justify-center rounded-md bg-amber-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-soft hover:bg-amber-500 transition-colors"><i data-lucide="building" class="w-4 h-4 mr-1"></i> Add Client</a>
+                    <a href="{% url 'employee_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors"><i data-lucide="person-plus" class="w-4 h-4 mr-1"></i> Add User</a>
+                </div>
             </div>
             <div class="p-6 p-0">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User/Client</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Roles</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -60,9 +63,15 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex justify-end items-center space-x-2">
+                                    {% if u.is_client %}
+                                    <a href="{% url 'client_edit' u.pk %}" class="text-amber-500 hover:text-amber-700 transition-colors p-1" title="Edit Client">
+                                        <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                    </a>
+                                    {% else %}
                                     <a href="{% url 'employee_edit' u.pk %}" class="text-gray-400 hover:text-brand-600 transition-colors p-1" title="Edit Employee">
                                         <i data-lucide="edit-2" class="w-4 h-4"></i>
                                     </a>
+                                    {% endif %}
                                     <form method="post"
       action="{% url 'employee_reset_password' u.pk %}"
       class="inline-block">

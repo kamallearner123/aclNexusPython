@@ -144,10 +144,18 @@ def update_task_status(request):
             data = json.loads(request.body)
             task_id = data.get('task_id')
             new_status = data.get('status')
+            hours_spent = data.get('hours_spent', 0)
             
             task = get_object_or_404(Task, pk=task_id)
             task.status = new_status
             task.updated_by = request.user
+            
+            try:
+                from decimal import Decimal
+                task.hours_spent += Decimal(str(hours_spent))
+            except (ValueError, TypeError, Exception):
+                pass
+                
             task.save()
             
             return JsonResponse({'success': True})

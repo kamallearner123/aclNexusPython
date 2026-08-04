@@ -76,6 +76,10 @@ class User(AbstractUser, BaseModel):
 
     objects = CustomUserManager()
 
+    @property
+    def is_client(self):
+        return self.roles.filter(name='Client').exists()
+
     def __str__(self):
         return self.email
 
@@ -149,3 +153,16 @@ class NoteEntry(BaseModel):
     
     def __str__(self):
         return f"Entry on {self.note.title}"
+
+class ClientProfile(BaseModel):
+    """
+    Client specific details.
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='client_profile')
+    company_name = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    address = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.company_name} ({self.user.email})"
+

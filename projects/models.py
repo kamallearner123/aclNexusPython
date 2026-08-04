@@ -48,6 +48,7 @@ class Project(BaseModel):
     gdrive_url = models.URLField(blank=True, null=True, help_text="Link to Google Drive folder (containing Requirement, Design, Implementation, Testing, Deployment)")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='owned_projects')
     teams = models.ManyToManyField('teams.Team', blank=True, related_name='projects')
+    clients = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='client_projects')
     attachments = GenericRelation('core.Attachment')
 
     def __init__(self, *args, **kwargs):
@@ -233,3 +234,38 @@ class Sprint(BaseModel):
 
     def __str__(self):
         return f"{self.project.code} - {self.name}"
+
+class Requirement(BaseModel):
+    """
+    Client requirements for a project.
+    """
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('REVIEW', 'In Review'),
+        ('APPROVED', 'Approved'),
+        ('CONVERTED', 'Converted to Tasks'),
+        ('CLOSED', 'Closed'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('CRITICAL', 'Critical'),
+        ('HIGH', 'High'),
+        ('MEDIUM', 'Medium'),
+        ('LOW', 'Low'),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='requirements')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
+    
+    @property
+    def total_hours_spent(self):
+        from django.db.models import Sum
+        total = self.tasks.aggregate(Sum('hours_spent'))['hours_spent__sum']
+        return total or 0.0
+    
+    def __str__(self):
+        return f"Req: {self.title} ({self.project.code})"
