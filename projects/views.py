@@ -187,11 +187,18 @@ def requirement_create(request, project_id):
     if request.method == 'POST':
         form = RequirementForm(request.POST)
         if form.is_valid():
-            req = form.save(commit=False)
-            req.project = project
-            req.created_by = request.user
-            req.save()
-            return redirect('project_detail', pk=project.pk)
+           req = form.save(commit=False)
+
+           req.project = project
+           req.owner = request.user
+           req.created_by = request.user
+           req.updated_by = request.user
+
+           req.save()
+
+           form.save_m2m()
+
+           return redirect('project_detail', pk=project.pk)
     else:
         form = RequirementForm()
         
@@ -206,8 +213,13 @@ def requirement_update(request, pk):
         form = RequirementForm(request.POST, instance=req)
         if form.is_valid():
             updated_req = form.save(commit=False)
+
             updated_req.updated_by = request.user
+
             updated_req.save()
+
+            form.save_m2m()
+
             return redirect('project_detail', pk=project.pk)
     else:
         form = RequirementForm(instance=req)

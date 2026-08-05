@@ -239,6 +239,7 @@ class Requirement(BaseModel):
     """
     Client requirements for a project.
     """
+
     STATUS_CHOICES = [
         ('DRAFT', 'Draft'),
         ('REVIEW', 'In Review'),
@@ -255,17 +256,66 @@ class Requirement(BaseModel):
         ('LOW', 'Low'),
     ]
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='requirements')
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='requirements'
+    )
+
     title = models.CharField(max_length=255)
+
     description = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
+
+    start_date = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    end_date = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    estimated_effort = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0
+    )
+
+    effort_spent = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='DRAFT'
+    )
+
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default='MEDIUM'
+    )
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='owned_requirements'
+    )
+
     
+    attachments = GenericRelation('core.Attachment')
+
     @property
     def total_hours_spent(self):
         from django.db.models import Sum
         total = self.tasks.aggregate(Sum('hours_spent'))['hours_spent__sum']
         return total or 0.0
-    
+
     def __str__(self):
         return f"Req: {self.title} ({self.project.code})"

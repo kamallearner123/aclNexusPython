@@ -58,11 +58,24 @@ class ProjectForm(forms.ModelForm):
             if selected_client:
                 project.clients.add(selected_client)
         return project
-
 class RequirementForm(forms.ModelForm):
     class Meta:
         model = Requirement
-        fields = ['title', 'description', 'status', 'priority']
+        fields = [
+            'project',
+            'title',
+            'description',
+            'start_date',
+            'end_date',
+            'estimated_effort',
+            'effort_spent',
+            'status',
+            'priority',
+            'owner',
+        ]
+
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
