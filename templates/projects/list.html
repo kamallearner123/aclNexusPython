@@ -10,10 +10,9 @@
     {% endif %}
 </div>
 
-{% if request.user.is_staff or request.user.is_superuser %}
     <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none mb-4">
         <div class="border-b border-gray-100 px-6 py-4 bg-white pt-3 pb-2 flex justify-between items-center border-bottom-0">
-            <h6 class="m-0 font-bold text-brand-600">Projects Backend Control</h6>
+            <h6 class="m-0 font-bold text-brand-600">Project Portfolio</h6>
         </div>
         <div class="p-6 p-0">
         <div class="overflow-x-auto">
@@ -69,8 +68,10 @@
                         </td>
                         <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div class="flex justify-end gap-2">
+                                {% if request.user.is_staff or request.user.is_superuser or project.owner == request.user or project.created_by == request.user %}
                                 <a href="{% url 'project_update' project.pk %}" class="text-gray-400 hover:text-brand-600 transition-colors p-1" title="Edit Project"><i data-lucide="pencil" class="w-4 h-4"></i></a>
                                 <a href="{% url 'project_delete' project.pk %}" class="text-gray-400 hover:text-red-600 transition-colors p-1 inline-block" title="Delete Project"><i data-lucide="trash-2" class="w-4 h-4"></i></a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -81,55 +82,6 @@
             </table>
         </div>
         </div>
-    </div>
-{% else %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {% for project in projects %}
-    <div class="flex flex-col">
-        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl flex flex-col h-full">
-            <div class="p-6 flex-1">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="badge bg-gray-50 text-brand-600 border font-semibold">{{ project.code }}</span>
-                    <span class="badge {% if project.status == 'ACTIVE' %}bg-success{% elif project.status == 'PLANNED' %}bg-info{% elif project.status == 'ON_HOLD' %}bg-warning text-dark{% elif project.status == 'CANCELLED' %}bg-danger{% else %}bg-secondary{% endif %}">
-                        {{ project.get_status_display }}
-                    </span>
-                </div>
-                
-                <h5 class="text-lg font-semibold text-gray-900 mb-2">{{ project.name }}</h5>
-                <p class="text-sm text-gray-500 mb-6 flex-1">
-                    {{ project.description|default:"No description provided."|safe }}
-                </p>
-
-                <div class="mb-6">
-                    <div class="flex justify-between small text-gray-500 mb-4">
-                        <span><i data-lucide="tag" class="w-4 h-4 mr-1"></i>{{ project.get_project_type_display }}</span>
-                        <span><i data-lucide="person" class="w-4 h-4 mr-1"></i>{{ project.owner.email|default:"Unassigned" }}</span>
-                    </div>
-                </div>
-
-            </div>
-            <div class="border-t border-gray-100 px-6 py-4 bg-gray-50 rounded-b-xl mt-auto">
-                <div class="flex justify-between items-center">
-                    <small class="text-gray-500 flex items-center"><i data-lucide="calendar" class="w-4 h-4 mr-1"></i>{{ project.start_date|date:"M d, Y"|default:"TBD" }}</small>
-                    <div class="flex gap-2">
-                        <a href="{% url 'tasks_kanban' %}?project_id={{ project.pk }}" class="inline-flex items-center justify-center rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-accent-600 shadow-sm ring-1 ring-inset ring-accent-300 hover:bg-accent-50 transition-colors"><i data-lucide="trello" class="w-4 h-4 mr-1"></i> Tasks Board</a>
-                        <a href="{% url 'project_detail' project.pk %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-brand-700 hover:bg-brand-500 transition-colors">Details</a>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
-    {% empty %}
-    <div class="col-span-1">
-        <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl border-none shadow-soft">
-            <div class="p-6 text-center py-12">
-                <div class="text-gray-500 mb-3"><i data-lucide="folder-open" class="w-4 h-4 text-4xl"></i></div>
-                <h5 class="font-bold">No Projects Found</h5>
-                <p class="text-gray-500">There are currently no projects assigned to you.</p>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
 {% endblock %}

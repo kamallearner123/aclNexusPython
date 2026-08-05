@@ -41,7 +41,7 @@ def can_create_task(user):
     if user.is_staff or user.is_superuser:
         return True
     roles = user.roles.values_list('name', flat=True)
-    if 'Project Manager' in roles or 'Architect' in roles:
+    if 'Project Manager' in roles or 'Architect' in roles or 'Manager' in roles:
         return True
     if user.led_teams.exists():
         return True

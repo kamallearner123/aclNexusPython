@@ -11,8 +11,31 @@
 
 <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
     <div class="p-6 p-6">
-        <form method="post" enctype="multipart/form-data">
+        <form id="task-form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
+            
+            {% if form.errors %}
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        html: `
+                            <ul style="text-align: left; font-size: 0.875rem; color: #dc2626;">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        `,
+                        confirmButtonColor: '#3b82f6'
+                    });
+                });
+            </script>
+            {% endif %}
+
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div class="md:col-span-6 mb-3">
                     {{ form.task_id|as_crispy_field }}
@@ -25,6 +48,12 @@
                 </div>
                 <div class="md:col-span-6 mb-3">
                     {{ form.sprint|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.task_type|as_crispy_field }}
+                </div>
+                <div class="md:col-span-6 mb-3">
+                    {{ form.requirement|as_crispy_field }}
                 </div>
                 <div class="md:col-span-4 mb-3">
                     {{ form.status|as_crispy_field }}
@@ -102,9 +131,14 @@
         }
         
         // On form submit, sync Quill content to hidden textarea
-        document.querySelector('form').addEventListener('submit', function() {
+        document.querySelector('#task-form').addEventListener('submit', function() {
             if (hiddenTextarea) {
-                hiddenTextarea.value = quill.root.innerHTML;
+                var html = quill.root.innerHTML;
+                if (html === '<p><br></p>' || quill.getText().trim() === '') {
+                    hiddenTextarea.value = '';
+                } else {
+                    hiddenTextarea.value = html;
+                }
             }
         });
         

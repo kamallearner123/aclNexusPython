@@ -88,7 +88,8 @@ def pm_dashboard(request):
 def client_dashboard(request):
     user = request.user
     
-    projects = Project.objects.filter(clients=user).distinct()
+    from django.db.models import Q
+    projects = Project.objects.filter(Q(clients=user) | Q(client=user.email)).distinct()
     from projects.models import Requirement
     requirements = Requirement.objects.filter(project__in=projects)
     

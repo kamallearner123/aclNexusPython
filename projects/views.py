@@ -30,6 +30,11 @@ def project_list(request):
             Q(tasks__assignee=user) | 
             Q(teams__members__user=user)
         ).distinct()
+    elif user.roles.filter(name='Client').exists():
+        projects = Project.objects.filter(
+            Q(clients=user) | 
+            Q(client=user.email)
+        ).distinct()
     else:
         projects = Project.objects.filter(
             Q(tasks__assignee=user) |
@@ -241,9 +246,10 @@ def requirement_create(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
     
     user_roles = request.user.roles.values_list('name', flat=True)
-    if not ('Business Analyst' in user_roles or request.user.is_superuser):
+    allowed_roles = ['Client', 'Project Manager', 'Manager', 'Architect', 'Business Analyst']
+    if not any(role in user_roles for role in allowed_roles) and not request.user.is_superuser:
         from django.core.exceptions import PermissionDenied
-        raise PermissionDenied("Only Business Analysts can create requirements.")
+        raise PermissionDenied("You do not have permission to create requirements.")
     
     if request.method == 'POST':
         form = RequirementForm(request.POST)

@@ -57,6 +57,14 @@ class ProjectForm(forms.ModelForm):
             project.clients.clear()
             if selected_client:
                 project.clients.add(selected_client)
+        else:
+            old_save_m2m = self.save_m2m
+            def save_m2m():
+                old_save_m2m()
+                project.clients.clear()
+                if selected_client:
+                    project.clients.add(selected_client)
+            self.save_m2m = save_m2m
         return project
 class RequirementForm(forms.ModelForm):
     class Meta:
