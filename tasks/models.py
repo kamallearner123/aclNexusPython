@@ -8,14 +8,22 @@ class Task(BaseModel):
     """
     Task management module.
     """
+    TASK_TYPES = [
+        ('DEVELOPMENT', 'Development'),
+        ('TESTING', 'Testing'),
+        ('MAINTENANCE', 'Maintenance'),
+    ]
+
     STATUS_CHOICES = [
         ('BACKLOG', 'Backlog'),
         ('PLANNED', 'Planned'),
         ('IN_PROGRESS', 'In Progress'),
         ('IN_REVIEW', 'In Review'),
         ('TESTING', 'Testing'),
+        ('PENDING_APPROVAL', 'Pending Approval'),
         ('BLOCKED', 'Blocked'),
-        ('COMPLETED', 'Completed'),
+        ('CLOSED', 'Closed'),
+        ('DEACTIVATED', 'Deactivated'),
     ]
 
     PRIORITY_CHOICES = [
@@ -26,6 +34,7 @@ class Task(BaseModel):
     ]
 
     task_id = models.CharField(max_length=50, unique=True)
+    task_type = models.CharField(max_length=20, choices=TASK_TYPES, default='DEVELOPMENT')
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
     requirement = models.ForeignKey(Requirement, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     sprint = models.ForeignKey(Sprint, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
@@ -42,6 +51,12 @@ class Task(BaseModel):
     github_url = models.URLField(blank=True, null=True, help_text="Link to GitHub repository/PR")
     gdrive_url = models.URLField(blank=True, null=True, help_text="Link to Google Drive documents")
     attachments = GenericRelation('core.Attachment')
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.task_type in ['DEVELOPMENT', 'TESTING'] and not self.requirement:
+            raise ValidationError({'requirement': 'A Requirement must be provided for Development and Testing tasks.'})
+        super().clean()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -101,7 +116,7 @@ class Task(BaseModel):
         # Check if requirement should be closed
         if self.requirement:
             # Re-fetch tasks from DB to get the latest status of this task as well
-            if not self.requirement.tasks.exclude(status='COMPLETED').exists():
+            if not self.requirement.tasks.exclude(status='CLOSED').exists():
                 if self.requirement.status != 'CLOSED':
                     self.requirement.status = 'CLOSED'
                     self.requirement.save()

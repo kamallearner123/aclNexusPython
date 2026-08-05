@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Requirement: {{ requirement.title }} - PPEDP{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-4">
+    <div>
+        <a href="{% url 'project_detail' requirement.project.pk %}#requirements-table" class="text-decoration-none text-gray-500 mb-2 d-inline-block hover:text-brand-600 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4 inline-block mr-1"></i> Back to Project
+        </a>
+        <h2 class="h3 mb-0 text-gray-800 font-bold">
+            {{ requirement.title }}
+        </h2>
+    </div>
+    <div class="flex gap-2">
+        <a href="{% url 'requirement_update' requirement.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-brand-600 shadow-soft ring-1 ring-inset ring-brand-300 hover:bg-brand-50 transition-colors">
+            <i data-lucide="edit-2" class="w-4 h-4 mr-2"></i> Edit
+        </a>
+        {% if requirement.status != 'DEACTIVATED' %}
+        <form action="{% url 'requirement_deactivate' requirement.pk %}" method="post" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow-soft ring-1 ring-inset ring-rose-300 hover:bg-rose-50 transition-colors" onclick="return confirm('Are you sure you want to deactivate this requirement and all its tasks?');">
+                <i data-lucide="power-off" class="w-4 h-4 mr-2"></i> Deactivate
+            </button>
+        </form>
+        {% endif %}
+        {% if requirement.status != 'CONVERTED' and requirement.status != 'DEACTIVATED' %}
+        <a href="{% url 'requirement_convert_to_task' requirement.pk %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Add Task(s)
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900 m-0">Details</h3>
+                <span class="inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium 
+                    {% if requirement.status == 'APPROVED' %}bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20
+                    {% elif requirement.status == 'CONVERTED' %}bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20
+                    {% elif requirement.status == 'REJECTED' %}bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20
+                    {% else %}bg-gray-50 text-gray-700 ring-1 ring-inset ring-gray-600/20{% endif %}">
+                    {{ requirement.get_status_display }}
+                </span>
+            </div>
+            <div class="p-6 prose max-w-none text-gray-700">
+                {{ requirement.description|safe|default:"<p class='text-gray-500 italic'>No description provided.</p>" }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="lg:col-span-1 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900 m-0">Properties</h3>
+            </div>
+            <div class="p-0">
+                <dl class="divide-y divide-gray-100">
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Project</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.project.name }}</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Owner</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.owner.email|default:"Unassigned" }}</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Priority</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.get_priority_display }}</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Req ID</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.requirement_id|default:"-" }}</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Phase</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.phase|default:"-" }}</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Dependency</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.dependency|default:"-" }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <h3 class="text-lg font-semibold text-gray-900 m-0">Timeline & Effort</h3>
+            </div>
+            <div class="p-0">
+                <dl class="divide-y divide-gray-100">
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Start Date</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.start_date|date:"M d, Y"|default:"Not set" }}</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">End Date</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.end_date|date:"M d, Y"|default:"Not set" }}</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Est. Effort</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.estimated_effort }} hrs</dd>
+                    </div>
+                    <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+                        <dt class="text-sm font-medium text-gray-500">Spent Effort</dt>
+                        <dd class="text-sm text-gray-900 sm:col-span-2">{{ requirement.effort_spent }} hrs</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

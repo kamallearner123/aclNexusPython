@@ -1,9 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import HttpResponseForbidden
 from core.models import AuditLog
 from .models import Project, Requirement
 from .forms import ProjectForm, RequirementForm
 from tasks.models import Task
+import csv
+from io import TextIOWrapper
 
 from django.db.models import Q
 
@@ -76,19 +80,73 @@ def project_detail(request, pk):
     Detailed view of a project, including activity history.
     """
     project = get_object_or_404(Project, pk=pk)
-    # Fetch audit logs where object_id matches project.pk
+    # Fetch recent activities
+    requirements = project.requirements.all()
     activities = AuditLog.objects.filter(
-        model_name='Project', 
-        object_id=str(project.pk)
-    ).order_by('-timestamp')
+        Q(model_name='Project', object_id=str(project.pk)) |
+        Q(model_name='Requirement', object_id__in=[str(r.pk) for r in requirements])
+    ).order_by('-timestamp')[:20]
     
-    return render(request, 'projects/detail.html', {
+    user_roles = request.user.roles.values_list('name', flat=True)
+    is_client = 'Client' in user_roles
+
+    # Requirements Breakdown
+    total_reqs = project.requirements.count()
+    created_reqs = project.requirements.filter(status='DRAFT').count()
+    inprogress_reqs = project.requirements.exclude(status__in=['DRAFT', 'CLOSED', 'REJECTED']).count()
+    completed_reqs = project.requirements.filter(status='CLOSED').count()
+    
+    # Tasks Breakdown
+    total_tasks = project.tasks.count()
+    created_tasks = project.tasks.filter(status__in=['BACKLOG', 'PLANNED']).count()
+    inprogress_tasks = project.tasks.exclude(status__in=['BACKLOG', 'PLANNED', 'CLOSED']).count()
+    completed_tasks = project.tasks.filter(status='CLOSED').count()
+
+    # Percentage
+    project_percentage = 0
+    if total_tasks > 0:
+        project_percentage = int((completed_tasks / total_tasks) * 100)
+    elif total_reqs > 0:
+        project_percentage = int((completed_reqs / total_reqs) * 100)
+        
+    risks = project.risks.all() if hasattr(project, 'risks') else []
+
+    context = {
         'project': project,
         'activities': activities,
         'tasks': project.tasks.all().order_by('-created_at'),
         'issues': project.issues.all().order_by('-created_at'),
         'requirements': project.requirements.all().order_by('-created_at'),
-    })
+        'is_client': is_client,
+        'total_reqs': total_reqs,
+        'created_reqs': created_reqs,
+        'inprogress_reqs': inprogress_reqs,
+        'completed_reqs': completed_reqs,
+        'total_tasks': total_tasks,
+        'created_tasks': created_tasks,
+        'inprogress_tasks': inprogress_tasks,
+        'completed_tasks': completed_tasks,
+        'project_percentage': project_percentage,
+        'risks': risks,
+    }
+    return render(request, 'projects/detail.html', context)
+
+@login_required
+def project_print(request, pk):
+    """
+    Renders a print-friendly snapshot of the project for PDF dumping.
+    """
+    project = get_object_or_404(Project, pk=pk)
+    
+    context = {
+        'project': project,
+        'requirements': project.requirements.exclude(status='DEACTIVATED').order_by('-created_at'),
+        'tasks': project.tasks.exclude(status='DEACTIVATED').order_by('-created_at'),
+        'issues': project.issues.all().order_by('-created_at'),
+        'risks': project.risks.all().order_by('-created_at'),
+    }
+    
+    return render(request, 'projects/print.html', context)
 
 @login_required
 def project_update(request, pk):
@@ -181,8 +239,11 @@ def requirement_create(request, project_id):
     Allow Client or Admin to add requirements for a project.
     """
     project = get_object_or_404(Project, pk=project_id)
-    # Basic permission check: allow admins, owners, or clients assigned to the team
-    # (assuming Client role is represented either by user.roles or just anyone in the team for now)
+    
+    user_roles = request.user.roles.values_list('name', flat=True)
+    if not ('Business Analyst' in user_roles or request.user.is_superuser):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Only Business Analysts can create requirements.")
     
     if request.method == 'POST':
         form = RequirementForm(request.POST)
@@ -203,6 +264,21 @@ def requirement_create(request, project_id):
         form = RequirementForm()
         
     return render(request, 'projects/requirement_form.html', {'form': form, 'project': project})
+
+@login_required
+def requirement_detail(request, pk):
+    req = get_object_or_404(Requirement, pk=pk)
+    return render(request, 'projects/requirement_detail.html', {'requirement': req})
+
+@login_required
+def requirement_deactivate(request, pk):
+    if request.method == 'POST':
+        req = get_object_or_404(Requirement, pk=pk)
+        req.status = 'DEACTIVATED'
+        req.updated_by = request.user
+        req.save()
+        return redirect('project_detail', pk=req.project.pk)
+    return redirect('requirement_detail', pk=pk)
 
 @login_required
 def requirement_update(request, pk):
@@ -274,4 +350,71 @@ def requirement_convert_to_task(request, pk):
         return redirect('project_detail', pk=project.pk)
         
     return render(request, 'projects/requirement_convert.html', {'requirement': req, 'project': project})
+
+@login_required
+def requirement_bulk_create(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+    
+    user_roles = request.user.roles.values_list('name', flat=True)
+    is_client = 'Client' in user_roles
+    is_admin = request.user.is_superuser
+    is_ba = 'Business Analyst' in user_roles
+    
+    if is_client or (not is_admin and not is_ba):
+        return HttpResponseForbidden("You don't have permission to add requirements.")
+        
+    if request.method == 'POST':
+        if 'file' not in request.FILES:
+            messages.error(request, "No file provided.")
+            return redirect('requirement_bulk_create', project_id=project.pk)
+            
+        file = request.FILES['file']
+        
+        if not file.name.endswith('.csv'):
+            messages.error(request, "Only CSV files are supported.")
+            return redirect('requirement_bulk_create', project_id=project.pk)
+            
+        try:
+            csv_file = TextIOWrapper(file.file, encoding='utf-8')
+            reader = csv.DictReader(csv_file)
+            
+            created_count = 0
+            for row in reader:
+                # Expected columns: ID, Phase, Task, Dependency
+                row_data = {k.strip().lower(): v.strip() for k, v in row.items() if k}
+                
+                req_id = row_data.get('id', '')
+                phase = row_data.get('phase', '')
+                task_title = row_data.get('task', '')
+                dependency = row_data.get('dependency', '')
+                
+                if not task_title:
+                    continue 
+                    
+                Requirement.objects.create(
+                    project=project,
+                    title=task_title,
+                    requirement_id=req_id,
+                    phase=phase,
+                    dependency=dependency,
+                    status='DRAFT',
+                    priority='MEDIUM'
+                )
+                created_count += 1
+                
+            AuditLog.objects.create(
+                user=request.user,
+                action='UPDATE',
+                model_name='Project',
+                object_id=str(project.pk),
+                changes={'requirements': {'old': 'Upload', 'new': f'{created_count} added via CSV'}}
+            )
+            messages.success(request, f"Successfully imported {created_count} requirements.")
+            return redirect('project_detail', pk=project.pk)
+            
+        except Exception as e:
+            messages.error(request, f"Error processing file: {str(e)}")
+            return redirect('requirement_bulk_create', project_id=project.pk)
+            
+    return render(request, 'projects/requirement_bulk.html', {'project': project})
 

@@ -25,7 +25,8 @@ def kanban_board(request):
             'in_review': tasks.filter(status='IN_REVIEW'),
             'testing': tasks.filter(status='TESTING'),
             'blocked': tasks.filter(status='BLOCKED'),
-            'completed': tasks.filter(status='COMPLETED'),
+            'pending_approval': tasks.filter(status='PENDING_APPROVAL'),
+            'completed': tasks.filter(status='CLOSED'),
             'can_create_task': can_create_task(request.user),
         }
         return render(request, 'tasks/kanban.html', context)
@@ -98,13 +99,23 @@ def task_detail(request, pk):
             
     activities = AuditLog.objects.filter(
         model_name='Task', 
-        object_id=str(task.pk)
+        object_id=str(task.pk),
+        timestamp__gte=task.created_at
     ).order_by('-timestamp')
     
     return render(request, 'tasks/detail.html', {
         'task': task,
         'activities': activities
     })
+
+@login_required
+def task_deactivate(request, pk):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, pk=pk)
+        task.status = 'DEACTIVATED'
+        task.updated_by = request.user
+        task.save()
+    return redirect('task_detail', pk=pk)
 
 @login_required
 def task_update(request, pk):
@@ -144,6 +155,13 @@ def update_task_status(request):
             data = json.loads(request.body)
             task_id = data.get('task_id')
             new_status = data.get('status')
+            
+            user_roles = request.user.roles.values_list('name', flat=True)
+            is_architect = 'Architect' in user_roles or request.user.is_superuser
+            
+            if new_status == 'CLOSED' and not is_architect:
+                return JsonResponse({'success': False, 'error': 'Only Architects can close tasks.'}, status=403)
+                
             hours_spent = data.get('hours_spent', 0)
             
             task = get_object_or_404(Task, pk=task_id)
@@ -199,7 +217,7 @@ def user_calendar(request):
         if task.due_date:
             # Color coding based on status
             color = '#3b82f6' # Blue (default)
-            if task.status == 'COMPLETED':
+            if task.status == 'CLOSED':
                 color = '#10b981' # Green
             elif task.status in ['BLOCKED']:
                 color = '#ef4444' # Red

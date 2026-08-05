@@ -84,38 +84,8 @@ class Project(BaseModel):
                 changes={'event': 'Project created'}
             )
             
-            # Auto-generate tasks for Agentic AI projects
-            if self.project_type == 'AGENTIC_AI':
-                from tasks.models import Task
-                
-                # Format month and year: MMYY
-                # e.g., June 2026 -> 0626
-                date_str = self.created_at.strftime('%m%y')
-                
-                default_tasks = [
-                    "Analysing the platform and cost",
-                    "Prototype confirmation",
-                    "Implementation",
-                    "Testing",
-                    "Deployment"
-                ]
-                
-                for idx, title in enumerate(default_tasks, start=1):
-                    # ACL<ProjectID><Month number><last 2 digits of the year>_Task_<Number>
-                    custom_task_id = f"ACL{self.pk}{date_str}_Task_{idx}"
-                    
-                    Task.objects.create(
-                        task_id=custom_task_id,
-                        project=self,
-                        title=title,
-                        status='BACKLOG',
-                        priority='MEDIUM',
-                        created_by=self.created_by,
-                        updated_by=self.created_by
-                    )
-            
             # Auto-generate process board for Automotive projects
-            elif self.project_type == 'AUTOMOTIVE':
+            if self.project_type == 'AUTOMOTIVE':
                 from tasks.models import Task
                 from projects.models import Milestone
                 
@@ -214,6 +184,33 @@ class Project(BaseModel):
     def __str__(self):
         return f"[{self.code}] {self.name}"
 
+    @property
+    def requirements_stats(self):
+        reqs = self.requirements.all()
+        return {
+            'completed': reqs.filter(status='CLOSED').count(),
+            'inprogress': reqs.filter(status__in=['REVIEW', 'APPROVED', 'CONVERTED']).count(),
+            'created': reqs.exclude(status__in=['CLOSED', 'REJECTED']).count()
+        }
+
+    @property
+    def tasks_stats(self):
+        tasks = self.tasks.all()
+        return {
+            'completed': tasks.filter(status='CLOSED').count(),
+            'inprogress': tasks.filter(status__in=['IN_PROGRESS', 'REVIEW']).count(),
+            'created': tasks.exclude(status__in=['CLOSED']).count()
+        }
+
+    @property
+    def completion_percentage(self):
+        tasks = self.tasks.all()
+        total = tasks.count()
+        if total == 0:
+            return 0
+        completed = tasks.filter(status='CLOSED').count()
+        return int((completed / total) * 100)
+
 class Milestone(BaseModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='milestones')
     name = models.CharField(max_length=255)
@@ -247,6 +244,7 @@ class Requirement(BaseModel):
         ('CONVERTED', 'Converted to Tasks'),
         ('CLOSED', 'Closed'),
         ('REJECTED', 'Rejected'),
+        ('DEACTIVATED', 'Deactivated'),
     ]
 
     PRIORITY_CHOICES = [
@@ -261,6 +259,10 @@ class Requirement(BaseModel):
         on_delete=models.CASCADE,
         related_name='requirements'
     )
+    
+    requirement_id = models.CharField(max_length=50, blank=True)
+    phase = models.CharField(max_length=100, blank=True)
+    dependency = models.CharField(max_length=255, blank=True)
 
     title = models.CharField(max_length=255)
 
@@ -316,6 +318,28 @@ class Requirement(BaseModel):
         from django.db.models import Sum
         total = self.tasks.aggregate(Sum('hours_spent'))['hours_spent__sum']
         return total or 0.0
+
+    @property
+    def readiness_score(self):
+        total_tasks = self.tasks.count()
+        if total_tasks == 0:
+            return 0
+        completed_tasks = self.tasks.filter(status='CLOSED').count()
+        return int((completed_tasks / total_tasks) * 100)
+
+    def save(self, *args, **kwargs):
+        is_deactivated = False
+        if self.pk:
+            old_instance = Requirement.objects.get(pk=self.pk)
+            if self.status == 'DEACTIVATED' and old_instance.status != 'DEACTIVATED':
+                is_deactivated = True
+        
+        super().save(*args, **kwargs)
+        
+        if is_deactivated:
+            for task in self.tasks.all():
+                task.status = 'DEACTIVATED'
+                task.save()
 
     def __str__(self):
         return f"Req: {self.title} ({self.project.code})"

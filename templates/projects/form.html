@@ -104,11 +104,14 @@
         });
         
         var hiddenTextarea = document.getElementById('id_description');
-        if (hiddenTextarea && hiddenTextarea.value) {
-            quill.root.innerHTML = hiddenTextarea.value;
+        if (hiddenTextarea) {
+            hiddenTextarea.removeAttribute('required');
+            if (hiddenTextarea.value) {
+                quill.root.innerHTML = hiddenTextarea.value;
+            }
         }
         
-        document.querySelector('form').addEventListener('submit', function() {
+        document.querySelector('form').addEventListener('submit', function(e) {
             if (hiddenTextarea) {
                 hiddenTextarea.value = quill.root.innerHTML;
             }
