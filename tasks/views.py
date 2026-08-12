@@ -7,6 +7,14 @@ from .models import Task
 from .forms import TaskForm
 
 @login_required
+def my_tasks(request):
+    """
+    View to list all tasks assigned to the current user.
+    """
+    tasks = Task.objects.filter(assignee=request.user).order_by('due_date').select_related('project', 'requirement')
+    return render(request, 'tasks/my_tasks.html', {'tasks': tasks})
+
+@login_required
 def kanban_board(request):
     """
     Kanban board view grouping tasks by status.
@@ -54,7 +62,10 @@ def task_create(request):
     View for creating a new task.
     """
     if request.method == 'POST':
-        form = TaskForm(request.POST)
+        initial_data = {}
+        if request.GET.get('project_id'):
+            initial_data['project'] = request.GET.get('project_id')
+        form = TaskForm(request.POST, request.FILES, initial=initial_data)
         if form.is_valid():
             task = form.save(commit=False)
             task.created_by = request.user
@@ -121,7 +132,7 @@ def task_deactivate(request, pk):
 def task_update(request, pk):
     task = get_object_or_404(Task, pk=pk)
     if request.method == 'POST':
-        form = TaskForm(request.POST, instance=task)
+        form = TaskForm(request.POST, request.FILES, instance=task)
         if form.is_valid():
             updated_task = form.save(commit=False)
             updated_task.updated_by = request.user

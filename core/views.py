@@ -8,7 +8,7 @@ from issues.models import Issue
 from risks.models import Risk
 from teams.models import Team
 from django.contrib.contenttypes.models import ContentType
-from .models import User, Attachment, ClientProfile
+from .models import User, Attachment, ClientProfile, AuditLog
 from .forms import CustomUserCreationForm, EmployeeCreationForm, EmployeeEditForm, ClientCreationForm, ClientEditForm
 from .utils import get_daily_ai_news
 
@@ -80,6 +80,7 @@ def pm_dashboard(request):
         'projects': projects,
         'ai_news': get_daily_ai_news(request.user),
         'total_risks': Risk.objects.count(),
+        'recent_activity': AuditLog.objects.filter(user=user, model_name__in=['Requirement', 'Task', 'Issue']).order_by('-timestamp')[:10],
     }
     return render(request, 'core/dashboards/pm.html', context)
 
@@ -179,6 +180,7 @@ def engineer_dashboard(request):
         'task_status_counts': json.dumps(status_counts),
         'ai_news': get_daily_ai_news(request.user),
         'total_risks': Risk.objects.count(),
+        'recent_activity': AuditLog.objects.filter(user=user, model_name__in=['Requirement', 'Task', 'Issue']).order_by('-timestamp')[:10],
     }
     return render(request, 'core/dashboards/engineer.html', context)
 

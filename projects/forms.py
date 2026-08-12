@@ -87,3 +87,8 @@ class RequirementForm(forms.ModelForm):
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.initial.get('project') or (self.instance and self.instance.pk and self.instance.project_id):
+            self.fields['project'].disabled = True

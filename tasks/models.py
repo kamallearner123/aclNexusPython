@@ -54,8 +54,8 @@ class Task(BaseModel):
 
     def clean(self):
         from django.core.exceptions import ValidationError
-        if self.task_type in ['DEVELOPMENT', 'TESTING'] and not self.requirement:
-            raise ValidationError({'requirement': 'A Requirement must be provided for Development and Testing tasks.'})
+        # if self.task_type in ['DEVELOPMENT', 'TESTING'] and not self.requirement:
+        #     raise ValidationError({'requirement': 'A Requirement must be provided for Development and Testing tasks.'})
         super().clean()
 
     def __init__(self, *args, **kwargs):

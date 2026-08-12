@@ -169,6 +169,9 @@ class Project(BaseModel):
                         'new': str(new_value) if new_value is not None else 'None'
                     }
             
+            if hasattr(self, '_edit_comment') and self._edit_comment:
+                changes['edit_comment'] = {'old': '', 'new': self._edit_comment}
+            
             if changes:
                 user = getattr(self, 'updated_by', None) or getattr(self, 'created_by', None)
                 AuditLog.objects.create(
@@ -327,7 +330,21 @@ class Requirement(BaseModel):
         completed_tasks = self.tasks.filter(status='CLOSED').count()
         return int((completed_tasks / total_tasks) * 100)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._original_state = self._get_current_state()
+
+    def _get_current_state(self):
+        return {
+            'title': self.__dict__.get('title'),
+            'status': self.__dict__.get('status'),
+            'priority': self.__dict__.get('priority'),
+            'start_date': self.__dict__.get('start_date'),
+            'end_date': self.__dict__.get('end_date'),
+        }
+
     def save(self, *args, **kwargs):
+        is_new = self.pk is None
         is_deactivated = False
         if self.pk:
             old_instance = Requirement.objects.get(pk=self.pk)
@@ -336,6 +353,45 @@ class Requirement(BaseModel):
         
         super().save(*args, **kwargs)
         
+        from core.models import AuditLog
+        
+        if is_new:
+            changes = {'event': 'Requirement created'}
+            if hasattr(self, '_edit_comment') and self._edit_comment:
+                changes['comment'] = {'old': '', 'new': self._edit_comment}
+                
+            AuditLog.objects.create(
+                action='CREATE',
+                model_name='Requirement',
+                object_id=str(self.pk),
+                user=getattr(self, 'created_by', None) or getattr(self, 'updated_by', None),
+                changes=changes
+            )
+        else:
+            current_state = self._get_current_state()
+            changes = {}
+            for field, old_value in self._original_state.items():
+                new_value = current_state[field]
+                if old_value != new_value:
+                    changes[field] = {
+                        'old': str(old_value) if old_value is not None else 'None', 
+                        'new': str(new_value) if new_value is not None else 'None'
+                    }
+            
+            if hasattr(self, '_edit_comment') and self._edit_comment:
+                changes['comment'] = {'old': '', 'new': self._edit_comment}
+                
+            if changes:
+                user = getattr(self, 'updated_by', None) or getattr(self, 'created_by', None)
+                AuditLog.objects.create(
+                    action='UPDATE',
+                    model_name='Requirement',
+                    object_id=str(self.pk),
+                    user=user,
+                    changes=changes
+                )
+        self._original_state = self._get_current_state()
+        
         if is_deactivated:
             for task in self.tasks.all():
                 task.status = 'DEACTIVATED'
@@ -343,3 +399,19 @@ class Requirement(BaseModel):
 
     def __str__(self):
         return f"Req: {self.title} ({self.project.code})"
+class ProjectComment(BaseModel):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='project_comments')
+    content = models.TextField()
+
+    def __str__(self):
+        return f"Comment by {self.author} on {self.project.code}"
+
+class RequirementComment(BaseModel):
+    requirement = models.ForeignKey('Requirement', on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='requirement_comments')
+    content = models.TextField()
+    attachments = GenericRelation('core.Attachment')
+
+    def __str__(self):
+        return f"Comment by {self.author} on {self.requirement.req_id}"

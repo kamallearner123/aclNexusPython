@@ -140,10 +140,9 @@
       hx-trigger="submit"
       hx-target="#chat-messages"
       hx-swap="beforeend"
-      hx-on:submit="document.getElementById('hidden-content').value = quill.getText().trim()"
       class="flex items-end gap-2 relative">
                 {% csrf_token %}
-                <input type="text" name="team_id" value="{{ team.id }}">
+                <input type="hidden" name="team_id" value="{{ team.id }}">
                 <div class="flex-1 relative rounded-xl shadow-sm border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-all flex flex-col">
                     <div id="editor-container" class="w-full text-gray-900 bg-transparent"></div>
                     <input type="hidden" name="content" id="hidden-content">
@@ -182,44 +181,27 @@
         const hiddenInput = document.getElementById('hidden-content');
         
     form.addEventListener('submit', function(e) {
-
-    const textContent = quill.getText().trim();
-
-    if (textContent.length === 0) {
-        e.preventDefault();
-        alert("Please type a message first");
-        return false;
-    }
-
-    document.getElementById('hidden-content').value = textContent;
-
-    console.log("TEXT =", textContent);
-    console.log("HIDDEN =", document.getElementById('hidden-content').value);
-
-});
+        const textContent = quill.getText().trim();
+        if (textContent.length === 0) {
+            e.preventDefault();
+            alert("Please type a message first");
+            return false;
+        }
+        document.getElementById('hidden-content').value = quill.root.innerHTML;
+    });
         
-        // Clear editor and scroll after htmx request completes
-       document.body.addEventListener('htmx:afterRequest', function(evt) {
-    if (evt.target.id === 'chat-form') {
-
-        setTimeout(() => {
-            quill.setText('');
-            document.getElementById('hidden-content').value = '';
-
-            if(container){
-                container.scrollTop = container.scrollHeight;
-            }
-        }, 100);
-
-    }
-});
-document.body.addEventListener('htmx:configRequest', function(evt) {
-
-    evt.detail.parameters['content'] = quill.getText().trim();
-
-    console.log("HTMX CONTENT =", evt.detail.parameters['content']);
-
-});
+    // Clear editor and scroll after htmx request completes
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.target.id === 'chat-form') {
+            setTimeout(() => {
+                quill.setText('');
+                document.getElementById('hidden-content').value = '';
+                if(container){
+                    container.scrollTop = container.scrollHeight;
+                }
+            }, 100);
+        }
+    });
     });
 </script>
 {% endif %}

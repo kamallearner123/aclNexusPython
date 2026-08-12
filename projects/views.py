@@ -85,6 +85,14 @@ def project_detail(request, pk):
     Detailed view of a project, including activity history.
     """
     project = get_object_or_404(Project, pk=pk)
+    
+    if request.method == 'POST':
+        content = request.POST.get('comment_content')
+        if content and content.strip() and content != '<p><br></p>':
+            from .models import ProjectComment
+            ProjectComment.objects.create(project=project, author=request.user, content=content)
+            return redirect('project_detail', pk=pk)
+
     # Fetch recent activities
     requirements = project.requirements.all()
     activities = AuditLog.objects.filter(
@@ -161,10 +169,15 @@ def project_update(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
     if request.method == 'POST':
-        form = ProjectForm(request.POST, instance=project)
+        form = ProjectForm(request.POST, request.FILES, instance=project)
         if form.is_valid():
             updated_project = form.save(commit=False)
             updated_project.updated_by = request.user
+            
+            comment = request.POST.get('comment')
+            if comment and comment.strip():
+                updated_project._edit_comment = comment.strip()
+                
             updated_project.save()
             form.save_m2m()
             
@@ -252,7 +265,7 @@ def requirement_create(request, project_id):
         raise PermissionDenied("You do not have permission to create requirements.")
     
     if request.method == 'POST':
-        form = RequirementForm(request.POST)
+        form = RequirementForm(request.POST, request.FILES, initial={'project': project.pk})
         if form.is_valid():
            req = form.save(commit=False)
 
@@ -261,19 +274,68 @@ def requirement_create(request, project_id):
            req.created_by = request.user
            req.updated_by = request.user
 
+           comment = request.POST.get('comment')
+           if comment and comment.strip():
+               req._edit_comment = comment.strip()
+
            req.save()
 
            form.save_m2m()
 
+           from core.models import Attachment
+           from django.contrib.contenttypes.models import ContentType
+           content_type = ContentType.objects.get_for_model(Requirement)
+           
+           for f in request.FILES.getlist('attachment'):
+               Attachment.objects.create(
+                   file=f,
+                   filename=f.name,
+                   uploaded_by=request.user,
+                   content_type=content_type,
+                   object_id=req.pk
+               )
+
            return redirect('project_detail', pk=project.pk)
     else:
-        form = RequirementForm()
+        form = RequirementForm(initial={'project': project.pk})
         
     return render(request, 'projects/requirement_form.html', {'form': form, 'project': project})
 
 @login_required
 def requirement_detail(request, pk):
     req = get_object_or_404(Requirement, pk=pk)
+    
+    if request.method == 'POST':
+        content = request.POST.get('comment_content')
+        if content and content.strip() and content != '<p><br></p>':
+            from .models import RequirementComment
+            comment = RequirementComment.objects.create(requirement=req, author=request.user, content=content)
+            
+            # Handle attachments for the comment
+            from core.models import Attachment
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(RequirementComment)
+            
+            for f in request.FILES.getlist('attachments'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=comment.pk
+                )
+            
+            # Add audit log for requirement
+            from core.models import AuditLog
+            AuditLog.objects.create(
+                action='UPDATE',
+                model_name='Requirement',
+                object_id=str(req.pk),
+                user=request.user,
+                changes={'comment_added': {'old': '', 'new': 'New comment added to discussion'}}
+            )
+            return redirect('requirement_detail', pk=pk)
+
     return render(request, 'projects/requirement_detail.html', {'requirement': req})
 
 @login_required
@@ -292,15 +354,32 @@ def requirement_update(request, pk):
     project = req.project
     
     if request.method == 'POST':
-        form = RequirementForm(request.POST, instance=req)
+        form = RequirementForm(request.POST, request.FILES, instance=req)
         if form.is_valid():
             updated_req = form.save(commit=False)
 
             updated_req.updated_by = request.user
 
+            comment = request.POST.get('comment')
+            if comment and comment.strip():
+                updated_req._edit_comment = comment.strip()
+
             updated_req.save()
 
             form.save_m2m()
+
+            from core.models import Attachment
+            from django.contrib.contenttypes.models import ContentType
+            content_type = ContentType.objects.get_for_model(Requirement)
+            
+            for f in request.FILES.getlist('attachment'):
+                Attachment.objects.create(
+                    file=f,
+                    filename=f.name,
+                    uploaded_by=request.user,
+                    content_type=content_type,
+                    object_id=updated_req.pk
+                )
 
             return redirect('project_detail', pk=project.pk)
     else:

@@ -131,6 +131,11 @@
                     Projects
                 </a>
                 
+                <a href="{% url 'my_tasks' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'my-tasks' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="check-square" class="w-4 h-4 mr-3 {% if 'my-tasks' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
+                    My Tasks
+                </a>
+                
                 <a href="{% url 'system_admin_dashboard' %}?tab=teams" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'tab=teams' in request.get_full_path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
                     <i data-lucide="users" class="w-4 h-4 mr-3 {% if 'tab=teams' in request.get_full_path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Teams
@@ -178,6 +183,11 @@
                 <a href="{% url 'project_list' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'projects' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
                     <i data-lucide="briefcase" class="w-4 h-4 mr-3 {% if 'projects' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Projects
+                </a>
+                
+                <a href="{% url 'my_tasks' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'my-tasks' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="check-square" class="w-4 h-4 mr-3 {% if 'my-tasks' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
+                    My Tasks
                 </a>
                 
                 {% if not request.user.is_client %}
@@ -281,7 +291,7 @@
 
         <!-- Main Scrollable Area -->
         <main class="flex-1 overflow-y-auto relative z-10">
-            <div class="p-6 md:p-10 max-w-7xl mx-auto min-h-full">
+            <div class="p-6 md:p-10 w-full max-w-[1600px] mx-auto min-h-full">
                 {% block content %}
                 {% endblock %}
             </div>
