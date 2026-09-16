@@ -585,6 +585,9 @@
 
                         <!-- Action Dropdown / Quick Links -->
                         <div class="flex items-center space-x-1.5">
+                            <button type="button" onclick="openEditBatchModal('{{ b.pk }}', '{{ b.name|escapejs }}', '{{ b.code|escapejs }}', '{{ b.course_id|default:'' }}', '{{ b.status }}', '{{ b.start_date|date:'Y-m-d'|default:'' }}', '{{ b.end_date|date:'Y-m-d'|default:'' }}', '{{ b.schedule_days|escapejs }}', '{{ b.schedule_time|escapejs }}', '{{ b.schedule|escapejs }}', '{{ b.zoom_link|escapejs }}', '{{ b.github_path|escapejs }}', '{{ b.gdrive_path|escapejs }}', '{{ b.description|escapejs }}')" class="p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-colors" title="Edit Batch Details">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
                             <a href="{% url 'lms:batch_detail' b.pk %}" class="p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-colors" title="Open Batch Hub">
                                 <i data-lucide="external-link" class="w-4 h-4"></i>
                             </a>
@@ -1294,10 +1297,16 @@
                 </div>
 
                 <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-                    <a href="{% url 'lms:course_detail' c.course.slug %}" class="text-xs font-bold text-indigo-600 hover:underline flex items-center">
-                        <span>Course Syllabus</span>
-                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-1"></i>
-                    </a>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" onclick="openEditCourseModal('{{ c.course.pk }}', '{{ c.course.title|escapejs }}', '{{ c.course.code|escapejs }}', '{{ c.course.slug|escapejs }}', '{{ c.course.category|escapejs }}', '{{ c.course.difficulty_level|escapejs }}', '{{ c.course.status|escapejs }}', '{{ c.course.short_description|escapejs }}', '{{ c.course.description|escapejs }}', '{{ c.course.lead_instructor.user.id|default:'' }}')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 text-xs font-bold transition-colors flex items-center space-x-1" title="Edit Course Details">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            <span>Edit</span>
+                        </button>
+                        <a href="{% url 'lms:course_detail' c.course.slug %}" class="text-xs font-bold text-indigo-600 hover:underline flex items-center">
+                            <span>Syllabus</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-1"></i>
+                        </a>
+                    </div>
                     <form method="post" action="{% url 'lms:join_students' %}" class="m-0">
                         {% csrf_token %}
                         <input type="hidden" name="course_id" value="{{ c.course.id }}">
@@ -1950,6 +1959,114 @@
     </div>
 </div>
 
+<!-- 1B. Admin Edit Batch Modal -->
+<div id="adminEditBatchModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-2xl w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Batch Administration</span>
+                <h3 class="text-xl font-extrabold text-slate-900 flex items-center mt-0.5">
+                    <i data-lucide="edit-3" class="w-6 h-6 mr-2.5 text-indigo-600"></i>
+                    Edit Batch: <span id="adminEditBatchCodeTitle" class="ml-1 text-indigo-600 font-mono"></span>
+                </h3>
+            </div>
+            <button type="button" onclick="closeModal('adminEditBatchModal')" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form id="adminEditBatchForm" method="post" action="" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="/lms/?tab=batches">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batch Name *</label>
+                    <input type="text" name="name" id="admin_edit_batch_name" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batch Code *</label>
+                    <input type="text" name="code" id="admin_edit_batch_code" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono uppercase outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Course Curriculum</label>
+                    <select name="course" id="admin_edit_batch_course" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- No Linked Course --</option>
+                        {% for c in courses_stats %}
+                        <option value="{{ c.course.id }}">{{ c.course.title }} ({{ c.course.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batch Status *</label>
+                    <select name="status" id="admin_edit_batch_status" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="UPCOMING">Upcoming</option>
+                        <option value="ONGOING">Ongoing / Active</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="ARCHIVED">Archived</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Date</label>
+                    <input type="date" name="start_date" id="admin_edit_batch_start_date" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">End Date</label>
+                    <input type="date" name="end_date" id="admin_edit_batch_end_date" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Schedule Days</label>
+                    <input type="text" name="schedule_days" id="admin_edit_batch_schedule_days" placeholder="e.g. Mon, Wed, Fri" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Class Time</label>
+                    <input type="text" name="schedule_time" id="admin_edit_batch_schedule_time" placeholder="e.g. 19:00 - 21:00 IST" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Schedule Summary</label>
+                    <input type="text" name="schedule" id="admin_edit_batch_schedule" placeholder="e.g. Mon, Wed, Fri @ 19:00" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Zoom / Meeting Link</label>
+                    <input type="text" name="zoom_link" id="admin_edit_batch_zoom_link" placeholder="https://zoom.us/j/..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">GitHub Repo</label>
+                    <input type="text" name="github_path" id="admin_edit_batch_github_path" placeholder="https://github.com/..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Google Drive</label>
+                    <input type="text" name="gdrive_path" id="admin_edit_batch_gdrive_path" placeholder="https://drive.google.com/..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description / Notes</label>
+                <textarea name="description" id="admin_edit_batch_description" rows="2" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('adminEditBatchModal')" class="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Save Batch Changes</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- 2. Add Student Modal -->
 <div id="addStudentModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
     <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
@@ -2484,6 +2601,92 @@
     </div>
 </div>
 
+<!-- 10B. Admin Edit Course Modal -->
+<div id="adminEditCourseModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-xl w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Curriculum Administration</span>
+                <h3 class="text-xl font-extrabold text-slate-900 flex items-center mt-0.5">
+                    <i data-lucide="edit-3" class="w-6 h-6 mr-2.5 text-indigo-600"></i>
+                    Edit Course: <span id="adminEditCourseCodeTitle" class="ml-1 text-indigo-600 font-mono"></span>
+                </h3>
+            </div>
+            <button type="button" onclick="closeModal('adminEditCourseModal')" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form id="adminEditCourseForm" method="post" action="" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="/lms/?tab=courses">
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Course Code *</label>
+                    <input type="text" name="code" id="admin_edit_course_code" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono uppercase outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
+                    <input type="text" name="category" id="admin_edit_course_category" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Course Title *</label>
+                <input type="text" name="title" id="admin_edit_course_title" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Difficulty Level</label>
+                    <select name="difficulty_level" id="admin_edit_course_difficulty" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="BEGINNER">Beginner</option>
+                        <option value="INTERMEDIATE">Intermediate</option>
+                        <option value="ADVANCED">Advanced</option>
+                        <option value="ALL_LEVELS">All Levels</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Status</label>
+                    <select name="status" id="admin_edit_course_status" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="DRAFT">Draft</option>
+                        <option value="PUBLISHED">Published</option>
+                        <option value="ARCHIVED">Archived</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Lead Instructor / Mentor</label>
+                <select name="lead_instructor" id="admin_edit_course_instructor" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- No Lead Instructor --</option>
+                    {% for m in mentors %}
+                    <option value="{{ m.id }}">{{ m.full_name }} ({{ m.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Short Description / Tagline</label>
+                <input type="text" name="short_description" id="admin_edit_course_short_desc" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Detailed Description / Syllabus</label>
+                <textarea name="description" id="admin_edit_course_desc" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('adminEditCourseModal')" class="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Save Course Changes</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- 11. General Add Session Modal -->
 <div id="generalAddSessionModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
     <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
@@ -2698,6 +2901,43 @@ function toggleQuickActionDropdown() {
 
 function openCreateCourseModal() {
     openModal('createCourseModal');
+}
+
+function openEditBatchModal(id, name, code, courseId, status, startDate, endDate, schedDays, schedTime, sched, zoom, github, gdrive, desc) {
+    const titleEl = document.getElementById('adminEditBatchCodeTitle');
+    if (titleEl) titleEl.textContent = code;
+    const formEl = document.getElementById('adminEditBatchForm');
+    if (formEl) formEl.action = '/lms/batches/' + id + '/edit/';
+    if (document.getElementById('admin_edit_batch_name')) document.getElementById('admin_edit_batch_name').value = name || '';
+    if (document.getElementById('admin_edit_batch_code')) document.getElementById('admin_edit_batch_code').value = code || '';
+    if (document.getElementById('admin_edit_batch_course')) document.getElementById('admin_edit_batch_course').value = courseId || '';
+    if (document.getElementById('admin_edit_batch_status')) document.getElementById('admin_edit_batch_status').value = status || 'ONGOING';
+    if (document.getElementById('admin_edit_batch_start_date')) document.getElementById('admin_edit_batch_start_date').value = startDate || '';
+    if (document.getElementById('admin_edit_batch_end_date')) document.getElementById('admin_edit_batch_end_date').value = endDate || '';
+    if (document.getElementById('admin_edit_batch_schedule_days')) document.getElementById('admin_edit_batch_schedule_days').value = schedDays || '';
+    if (document.getElementById('admin_edit_batch_schedule_time')) document.getElementById('admin_edit_batch_schedule_time').value = schedTime || '';
+    if (document.getElementById('admin_edit_batch_schedule')) document.getElementById('admin_edit_batch_schedule').value = sched || '';
+    if (document.getElementById('admin_edit_batch_zoom_link')) document.getElementById('admin_edit_batch_zoom_link').value = zoom || '';
+    if (document.getElementById('admin_edit_batch_github_path')) document.getElementById('admin_edit_batch_github_path').value = github || '';
+    if (document.getElementById('admin_edit_batch_gdrive_path')) document.getElementById('admin_edit_batch_gdrive_path').value = gdrive || '';
+    if (document.getElementById('admin_edit_batch_description')) document.getElementById('admin_edit_batch_description').value = desc || '';
+    openModal('adminEditBatchModal');
+}
+
+function openEditCourseModal(id, title, code, slug, category, diff, status, shortDesc, desc, instructorId) {
+    const titleEl = document.getElementById('adminEditCourseCodeTitle');
+    if (titleEl) titleEl.textContent = code;
+    const formEl = document.getElementById('adminEditCourseForm');
+    if (formEl) formEl.action = '/lms/courses/' + id + '/edit/';
+    if (document.getElementById('admin_edit_course_title')) document.getElementById('admin_edit_course_title').value = title || '';
+    if (document.getElementById('admin_edit_course_code')) document.getElementById('admin_edit_course_code').value = code || '';
+    if (document.getElementById('admin_edit_course_category')) document.getElementById('admin_edit_course_category').value = category || '';
+    if (document.getElementById('admin_edit_course_difficulty')) document.getElementById('admin_edit_course_difficulty').value = diff || 'BEGINNER';
+    if (document.getElementById('admin_edit_course_status')) document.getElementById('admin_edit_course_status').value = status || 'PUBLISHED';
+    if (document.getElementById('admin_edit_course_instructor')) document.getElementById('admin_edit_course_instructor').value = instructorId || '';
+    if (document.getElementById('admin_edit_course_short_desc')) document.getElementById('admin_edit_course_short_desc').value = shortDesc || '';
+    if (document.getElementById('admin_edit_course_desc')) document.getElementById('admin_edit_course_desc').value = desc || '';
+    openModal('adminEditCourseModal');
 }
 
 function openGeneralAddSessionModal() {

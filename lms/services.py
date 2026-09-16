@@ -144,21 +144,23 @@ def mark_lesson_completed(enrollment, lesson):
     return progress, new_percent
 
 
-def submit_assignment(assignment, external_user_id, submission_url, submission_text):
+def submit_assignment(assignment, external_user_id, submission_url, submission_text, github_path=''):
     """
-    Workflow 9.1 & 9.2: Upsert assignment submission, reset status to SUBMITTED, update notes and URL.
+    Workflow 9.1 & 9.2: Upsert assignment submission, reset status to SUBMITTED, update notes, path, and URL.
     """
     submission, _ = AssignmentSubmission.objects.get_or_create(
         assignment=assignment,
         external_user_id=external_user_id,
         defaults={
             'submission_url': submission_url,
+            'github_path': github_path,
             'submission_text': submission_text,
             'status': 'SUBMITTED',
         }
     )
 
     submission.submission_url = submission_url
+    submission.github_path = github_path
     submission.submission_text = submission_text
     submission.status = 'SUBMITTED'
     submission.mentor_feedback = ''

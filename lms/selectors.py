@@ -1,5 +1,7 @@
 from decimal import Decimal
+from datetime import datetime, timedelta, timezone as dt_timezone
 from django.utils import timezone
+from django.db.models import Q
 from .models import (
     Course,
     Enrollment,
@@ -20,6 +22,8 @@ from .models import (
     BatchAssignmentAssessment,
     CourseFeedback,
     MentorMessage,
+    Lesson,
+    LessonProgress,
 )
 from .services import calculate_overall_progress
 
@@ -63,7 +67,7 @@ def get_user_enrollments(external_user_id):
     return Enrollment.objects.filter(
         external_user_id=external_user_id,
         is_active=True
-    ).select_related('course').order_by('-enrolled_at')
+    ).select_related('course', 'last_lesson').order_by('-enrolled_at')
 
 
 def get_student_assignments(course, external_user_id):
@@ -195,9 +199,41 @@ def get_courses_with_stats():
 def get_dashboard_aggregates(external_user_id):
     """
     Aggregates metrics for the student and teacher LMS dashboard.
+    Attaches resume_lesson to each enrollment and determines primary_resume course.
     """
-    enrollments = get_user_enrollments(external_user_id)
+    enrollments = list(get_user_enrollments(external_user_id))
     enrolled_courses = [e.course for e in enrollments]
+
+    # Attach resume_lesson to each enrollment
+    for enr in enrollments:
+        completed_ids = set(LessonProgress.objects.filter(enrollment=enr, completed=True).values_list('lesson_id', flat=True))
+        modules = enr.course.modules.filter(is_active=True).prefetch_related('lessons').order_by('order', 'id')
+        resume_lesson = None
+        first_lesson = None
+        for m in modules:
+            for l in m.lessons.filter(is_active=True).order_by('order', 'id'):
+                if not first_lesson:
+                    first_lesson = l
+                if l.id not in completed_ids and not resume_lesson:
+                    resume_lesson = l
+                    break
+            if resume_lesson:
+                break
+        enr.resume_lesson = enr.last_lesson if (enr.last_lesson_id and enr.last_lesson) else (resume_lesson or first_lesson)
+
+    # Primary resume target (most recently accessed or active course)
+    primary_resume = None
+    sorted_enrollments = sorted(
+        enrollments,
+        key=lambda e: (
+            1 if e.last_accessed_at else 0,
+            e.last_accessed_at or datetime.min.replace(tzinfo=dt_timezone.utc),
+            1 if e.progress_percent > 0 else 0
+        ),
+        reverse=True
+    )
+    if sorted_enrollments and sorted_enrollments[0].resume_lesson:
+        primary_resume = sorted_enrollments[0]
 
     # Teaching courses for mentors/instructors
     teaching_assignments = CourseInstructor.objects.filter(
@@ -241,12 +277,13 @@ def get_dashboard_aggregates(external_user_id):
     # Badges
     badges = StudentBadge.objects.filter(is_active=True)[:4]
 
-    completed_courses_count = enrollments.filter(status='COMPLETED').count()
+    completed_courses_count = sum(1 for e in enrollments if e.status == 'COMPLETED')
 
     return {
         'enrollments': enrollments,
+        'primary_resume': primary_resume,
         'overall_progress': overall_progress,
-        'enrolled_courses_count': enrollments.count(),
+        'enrolled_courses_count': len(enrollments),
         'completed_courses_count': completed_courses_count,
         'teaching_courses': teaching_courses,
         'upcoming_sessions': upcoming_sessions,
@@ -254,6 +291,110 @@ def get_dashboard_aggregates(external_user_id):
         'recent_activities': recent_activities,
         'badges': badges,
     }
+
+
+def get_student_pending_assignments(lms_user, external_user_id):
+    """
+    Returns list of all pending assignments (both BatchAssignment and curriculum Assignment)
+    that the student has not yet submitted.
+    """
+    now = timezone.now()
+    pending = []
+
+    # 1. Batch Assignments
+    student_batches = list(lms_user.student_batches.filter(is_active=True).select_related('course')) if lms_user else []
+    if lms_user and not student_batches:
+        enrolled_course_ids = Enrollment.objects.filter(external_user_id=external_user_id, is_active=True).values_list('course_id', flat=True)
+        course_batches = Batch.objects.filter(course_id__in=enrolled_course_ids, is_active=True).select_related('course')
+        for cb in course_batches:
+            student_batches.append(cb)
+
+    if student_batches:
+        b_assignments = list(BatchAssignment.objects.filter(
+            batch__in=student_batches,
+            is_active=True,
+            status='ACTIVE'
+        ).filter(
+            Q(target_student__isnull=True) | Q(target_student=lms_user)
+        ).select_related('batch', 'batch__course', 'assigned_by').order_by('due_date', '-created_at'))
+
+        assessments_map = {}
+        if lms_user and b_assignments:
+            for att in BatchAssignmentAssessment.objects.filter(
+                assignment__in=b_assignments,
+                student=lms_user,
+                is_active=True
+            ).select_related('assessed_by'):
+                assessments_map[att.assignment_id] = att
+
+        for a in b_assignments:
+            att = assessments_map.get(a.id)
+            has_submitted = bool(att and att.submission_url)
+            if not has_submitted:
+                is_overdue = bool(a.due_date and a.due_date < now)
+                pending.append({
+                    'id': a.id,
+                    'title': a.title,
+                    'description': a.description,
+                    'course': a.batch.course,
+                    'course_code': a.batch.course.code if a.batch.course else '',
+                    'course_title': a.batch.course.title if a.batch.course else '',
+                    'batch': a.batch,
+                    'batch_code': a.batch.code,
+                    'due_date': a.due_date,
+                    'max_score': a.max_score,
+                    'is_overdue': is_overdue,
+                    'type': 'Batch Task',
+                    'submit_url': f'/lms/assignments/#assignment-{a.id}',
+                    'assessment': att,
+                })
+
+    # 2. Course Milestone Deliverables (Curriculum Assignments)
+    enrolled_courses = list(Course.objects.filter(enrollments__external_user_id=external_user_id, enrollments__is_active=True, is_active=True).distinct())
+    if enrolled_courses:
+        curriculum_assignments = list(Assignment.objects.filter(
+            course__in=enrolled_courses,
+            status='ACTIVE',
+            is_active=True
+        ).select_related('course').order_by('due_date'))
+
+        submissions_map = {
+            s.assignment_id: s
+            for s in AssignmentSubmission.objects.filter(
+                assignment__in=curriculum_assignments,
+                external_user_id=external_user_id,
+                is_active=True
+            )
+        }
+
+        for ca in curriculum_assignments:
+            sub = submissions_map.get(ca.id)
+            has_submitted = bool(sub and sub.submission_url)
+            if not has_submitted:
+                is_overdue = bool(ca.due_date and ca.due_date < now)
+                pending.append({
+                    'id': ca.id,
+                    'title': ca.title,
+                    'description': ca.description,
+                    'course': ca.course,
+                    'course_code': ca.course.code if ca.course else '',
+                    'course_title': ca.course.title if ca.course else '',
+                    'batch': None,
+                    'batch_code': '',
+                    'due_date': ca.due_date,
+                    'max_score': ca.max_score,
+                    'is_overdue': is_overdue,
+                    'type': 'Course Milestone',
+                    'submit_url': f'/lms/assignments/{ca.id}/',
+                    'submission': sub,
+                })
+
+    pending.sort(key=lambda x: (
+        0 if x['is_overdue'] else 1,
+        x['due_date'] or (now + timedelta(days=3650)),
+        x['title']
+    ))
+    return pending
 
 
 def get_admin_dashboard_data():
@@ -599,6 +740,20 @@ def get_batch_detail(batch_id):
         s.assessed_tasks_count = sum(1 for asm in s_asms if asm.status == 'GRADED')
         scored = [asm.score for asm in s_asms if asm.score is not None]
         s.avg_score = round(sum(scored) / len(scored)) if scored else None
+
+        # MCQ Chapter-by-Chapter Performance
+        s_lps = list(LessonProgress.objects.filter(
+            enrollment__external_user_id=s.external_user_id,
+            enrollment__course=batch.course
+        ).select_related('lesson'))
+        s.mcq_score_sum = sum(lp.mcq_score for lp in s_lps if lp.mcq_total > 0)
+        s.mcq_total_sum = sum(lp.mcq_total for lp in s_lps if lp.mcq_total > 0)
+        s.mcq_avg_pct = round((s.mcq_score_sum / s.mcq_total_sum) * 100) if s.mcq_total_sum > 0 else 0
+        s.mcq_attempted_chapters = sum(1 for lp in s_lps if lp.mcq_score > 0 or lp.mcq_completed)
+        s.chapter_mcq_scores = [
+            {'order': lp.lesson.order, 'title': lp.lesson.title, 'score': lp.mcq_score, 'total': lp.mcq_total, 'pct': lp.mcq_percent}
+            for lp in s_lps if lp.mcq_total > 0
+        ]
 
     # Enrich sessions with attendance stats
     for ses in sessions:

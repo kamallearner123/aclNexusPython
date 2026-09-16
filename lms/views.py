@@ -28,6 +28,7 @@ from .models import (
     SessionAttendance,
     BatchAssignmentAssessment,
     MentorMessage,
+    StudentActivity,
 )
 from .decorators import lms_role_required, get_lms_user
 from .services import (
@@ -49,6 +50,7 @@ from .selectors import (
     get_admin_dashboard_data,
     get_batch_detail,
     get_student_payment_data,
+    get_student_pending_assignments,
 )
 from .forms import (
     ProfileEditForm,
@@ -60,6 +62,7 @@ from .forms import (
     AssignmentCreateForm,
     CohortUserForm,
     CourseCreateForm,
+    CourseEditForm,
     BatchForm,
     BatchAssignMembersForm,
     CohortUserEditForm,
@@ -216,6 +219,8 @@ def dashboard(request):
             ma.total_students = len(target_students)
             ma.submission_pct = round((ma.submissions_count / ma.total_students * 100)) if ma.total_students else 0
 
+            ma.student_reports = []
+
             for st in target_students:
                 att = assessment_map.get((ma.id, st.id))
                 has_submitted = bool(att and att.submission_url)
@@ -235,7 +240,7 @@ def dashboard(request):
                     if is_overdue:
                         total_overdue_count += 1
 
-                student_assignment_reports.append({
+                rep_entry = {
                     'assignment': ma,
                     'assignment_id': ma.id,
                     'assignment_title': ma.title,
@@ -251,6 +256,8 @@ def dashboard(request):
                     'student_avatar': avatar_url,
                     'has_submitted': has_submitted,
                     'submission_url': att.submission_url if att else None,
+                    'github_path': att.github_path if att else '',
+                    'direct_submission_url': att.direct_submission_url if att else None,
                     'submitted_at': att.updated_at if (att and att.submission_url) else None,
                     'is_graded': is_graded,
                     'score': att.score if att else None,
@@ -259,7 +266,9 @@ def dashboard(request):
                     'assessed_by': att.assessed_by if att else None,
                     'is_overdue': is_overdue,
                     'assessment_id': att.id if att else None,
-                })
+                }
+                student_assignment_reports.append(rep_entry)
+                ma.student_reports.append(rep_entry)
 
         # Mentor Chat Inquiries from Students
         mentor_batch_ids = list(mentor_batches.values_list('id', flat=True))
@@ -376,6 +385,7 @@ def dashboard(request):
     ).select_related('batch', 'session').order_by('-created_at')[:6] if student_batches else []
 
     payment_summary = get_student_payment_data(request.user.id)
+    pending_assignments = get_student_pending_assignments(lms_user, request.user.id)
 
     context = {
         'lms_user': lms_user,
@@ -384,6 +394,7 @@ def dashboard(request):
         'student_sessions': student_sessions,
         'student_materials': student_materials,
         'payment_summary': payment_summary,
+        'pending_assignments': pending_assignments,
         **aggregates,
     }
     return render(request, 'lms/dashboard.html', context)
@@ -510,6 +521,36 @@ def course_detail(request, slug):
         if first_mod and first_mod.lessons.exists():
             first_lesson = first_mod.lessons.first()
 
+    # Determine resume lesson (last opened lesson takes priority, else first uncompleted lesson, else first lesson)
+    last_opened_lesson = enrollment.last_lesson if (enrollment and enrollment.last_lesson_id) else None
+    resume_lesson = last_opened_lesson or first_lesson
+
+    # Chapter-by-Chapter MCQ performance calculation for student
+    lesson_progresses = LessonProgress.objects.filter(enrollment=enrollment)
+    progress_map = {lp.lesson_id: lp for lp in lesson_progresses}
+
+    total_course_mcq_score = 0
+    total_course_mcq_possible = 0
+    total_course_mcq_attempted = 0
+
+    for m in modules:
+        for l in m.lessons.all():
+            lp = progress_map.get(l.id)
+            l.user_mcq_score = lp.mcq_score if lp else 0
+            l.user_mcq_total = lp.mcq_total if (lp and lp.mcq_total > 0) else l.mcq_count
+            l.user_mcq_completed = lp.mcq_completed if lp else False
+            l.user_has_attempted_mcq = (lp is not None and (lp.mcq_score > 0 or lp.mcq_completed))
+            if l.user_mcq_total > 0:
+                l.user_mcq_pct = round((l.user_mcq_score / l.user_mcq_total) * 100)
+                total_course_mcq_score += l.user_mcq_score
+                total_course_mcq_possible += l.user_mcq_total
+                if l.user_has_attempted_mcq:
+                    total_course_mcq_attempted += 1
+            else:
+                l.user_mcq_pct = 0
+
+    overall_course_mcq_pct = round((total_course_mcq_score / total_course_mcq_possible) * 100) if total_course_mcq_possible > 0 else 0
+
     context = {
         'course': course,
         'enrollment': enrollment,
@@ -529,6 +570,12 @@ def course_detail(request, slug):
         'mentors': mentors,
         'assignments': assignments,
         'first_lesson': first_lesson,
+        'last_opened_lesson': last_opened_lesson,
+        'resume_lesson': resume_lesson,
+        'total_course_mcq_score': total_course_mcq_score,
+        'total_course_mcq_possible': total_course_mcq_possible,
+        'total_course_mcq_attempted': total_course_mcq_attempted,
+        'overall_course_mcq_pct': overall_course_mcq_pct,
         'lms_user': lms_user,
         'is_admin': is_admin,
     }
@@ -685,6 +732,15 @@ def lesson_view(request, slug, lesson_id):
         defaults={'status': 'ACTIVE', 'progress_percent': 0}
     )
 
+    # Keep data where student has opened last chapter
+    if enrollment.last_lesson_id != lesson.id:
+        enrollment.last_lesson = lesson
+        enrollment.last_accessed_at = timezone.now()
+        enrollment.save(update_fields=['last_lesson', 'last_accessed_at'])
+    else:
+        enrollment.last_accessed_at = timezone.now()
+        enrollment.save(update_fields=['last_accessed_at'])
+
     progress = LessonProgress.objects.filter(enrollment=enrollment, lesson=lesson).first()
     is_completed = progress.completed if progress else False
 
@@ -717,11 +773,27 @@ def lesson_view(request, slug, lesson_id):
         if not user_batch:
             user_batch = course.batches.filter(is_active=True).first()
 
+    # Calculate MCQ progress for all lessons in sidebar navigation
+    lesson_progresses = LessonProgress.objects.filter(enrollment=enrollment)
+    progress_map = {lp.lesson_id: lp for lp in lesson_progresses}
+    for m in modules:
+        for l in m.lessons.all():
+            lp = progress_map.get(l.id)
+            l.user_mcq_score = lp.mcq_score if lp else 0
+            l.user_mcq_total = lp.mcq_total if (lp and lp.mcq_total > 0) else l.mcq_count
+            l.user_mcq_completed = lp.mcq_completed if lp else False
+            l.user_has_attempted_mcq = (lp is not None and (lp.mcq_score > 0 or lp.mcq_completed))
+            if l.user_mcq_total > 0:
+                l.user_mcq_pct = round((l.user_mcq_score / l.user_mcq_total) * 100)
+            else:
+                l.user_mcq_pct = 0
+
     context = {
         'course': course,
         'lesson': lesson,
         'enrollment': enrollment,
         'is_completed': is_completed,
+        'current_progress': progress,
         'modules': modules,
         'completed_lesson_ids': completed_lesson_ids,
         'prev_lesson': prev_lesson,
@@ -735,19 +807,71 @@ def lesson_view(request, slug, lesson_id):
 @login_required
 def lesson_toggle_complete(request, slug, lesson_id):
     """
-    Action endpoint to mark a lesson completed and recalculate course progress.
+    Action endpoint to mark a lesson completed or incomplete and recalculate course progress.
+    Supports both standard form submission and AJAX JSON responses.
     """
     if request.method != 'POST':
         return redirect('lms:lesson_view', slug=slug, lesson_id=lesson_id)
 
     course = get_object_or_404(Course, slug=slug, is_active=True)
     lesson = get_object_or_404(Lesson, id=lesson_id, module__course=course, is_active=True)
-    enrollment = get_object_or_404(Enrollment, external_user_id=request.user.id, course=course)
+    enrollment, _ = Enrollment.objects.get_or_create(
+        external_user_id=request.user.id,
+        course=course,
+        defaults={'status': 'ACTIVE', 'progress_percent': 0}
+    )
 
-    _, new_percent = mark_lesson_completed(enrollment, lesson)
+    progress, _ = LessonProgress.objects.get_or_create(
+        enrollment=enrollment,
+        lesson=lesson
+    )
 
-    messages.success(request, f"Lesson '{lesson.title}' marked as completed! Course progress: {new_percent}%.")
+    action = request.POST.get('action')
+    if action == 'mark_complete':
+        progress.completed = True
+        progress.completed_at = timezone.now()
+    elif action == 'mark_incomplete':
+        progress.completed = False
+        progress.completed_at = None
+    else:
+        # Toggle state
+        if progress.completed:
+            progress.completed = False
+            progress.completed_at = None
+        else:
+            progress.completed = True
+            progress.completed_at = timezone.now()
 
+    progress.save()
+
+    new_percent = calculate_course_progress(enrollment)
+
+    if progress.completed:
+        StudentActivity.objects.create(
+            external_user_id=enrollment.external_user_id,
+            activity_type='LESSON_COMPLETED',
+            title=f"Completed: {lesson.title}",
+            detail=f"Module: {lesson.module.title} • {lesson.module.course.code}",
+        )
+        msg = f"Chapter '{lesson.title}' marked as completed! Course progress: {new_percent}%."
+    else:
+        msg = f"Chapter '{lesson.title}' marked as incomplete. Course progress: {new_percent}%."
+
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or
+        request.POST.get('format') == 'json' or
+        'application/json' in request.headers.get('Accept', '')
+    )
+    if is_ajax:
+        return JsonResponse({
+            'status': 'success',
+            'completed': progress.completed,
+            'progress_percent': new_percent,
+            'lesson_id': lesson.id,
+            'message': msg
+        })
+
+    messages.success(request, msg)
     next_url = request.POST.get('next')
     if next_url:
         return redirect(next_url)
@@ -755,26 +879,105 @@ def lesson_toggle_complete(request, slug, lesson_id):
 
 
 @login_required
+def record_lesson_mcq_score(request, slug, lesson_id):
+    """
+    Records or updates a student's MCQ score for a specific chapter/lesson in real-time.
+    Accepts AJAX JSON or form POST payload:
+    - score: number of questions answered correctly
+    - total: total questions in the quiz
+    - attempted: number of questions attempted
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required'}, status=405)
+
+    course = get_object_or_404(Course, slug=slug, is_active=True)
+    lesson = get_object_or_404(Lesson, id=lesson_id, module__course=course, is_active=True)
+
+    enrollment, _ = Enrollment.objects.get_or_create(
+        external_user_id=request.user.id,
+        course=course,
+        defaults={'status': 'ACTIVE', 'progress_percent': 0}
+    )
+
+    progress, _ = LessonProgress.objects.get_or_create(
+        enrollment=enrollment,
+        lesson=lesson
+    )
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body.decode('utf-8'))
+            score = int(data.get('score', 0))
+            total = int(data.get('total', 0))
+            attempted = int(data.get('attempted', score))
+        else:
+            score = int(request.POST.get('score', 0))
+            total = int(request.POST.get('total', 0))
+            attempted = int(request.POST.get('attempted', score))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Invalid score payload'}, status=400)
+
+    score = max(0, score)
+    total = max(0, total)
+    attempted = max(0, attempted)
+
+    progress.mcq_score = score
+    progress.mcq_total = total if total > 0 else lesson.mcq_count
+    progress.mcq_completed = (attempted >= progress.mcq_total and progress.mcq_total > 0)
+    progress.mcq_submitted_at = timezone.now()
+
+    # Automatically mark lesson complete if student finishes the quiz with a passing score (>= 70%)
+    if progress.mcq_completed and progress.mcq_percent >= 70 and not progress.completed:
+        progress.completed = True
+        progress.completed_at = timezone.now()
+        calculate_course_progress(enrollment)
+
+    progress.save()
+
+    return JsonResponse({
+        'status': 'success',
+        'lesson_id': lesson.id,
+        'mcq_score': progress.mcq_score,
+        'mcq_total': progress.mcq_total,
+        'mcq_completed': progress.mcq_completed,
+        'mcq_percent': progress.mcq_percent,
+    })
+
+
+@login_required
 def live_classes(request):
     """
     Live Classes Schedule:
-    Displays all registered batches for the student. Under each batch, displays a table of sessions.
-    Ongoing sessions are highlighted in green color.
-    Completed sessions display video recording links.
+    Displays all registered batches for the student or assigned batches for trainer/mentor.
+    Under each batch, displays a structured table of sessions:
+    Date | Topic | Status | Video Link | Recorded Link | Assignment | Actions
+    Trainers can add and edit sessions directly from this view.
     """
     lms_user = get_lms_user(request.user)
-    student_batches = list(lms_user.student_batches.filter(is_active=True).select_related('course').prefetch_related('sessions__instructor')) if lms_user else []
+    is_trainer = bool(
+        request.user.is_superuser or
+        request.user.is_staff or
+        request.user.email in ['admin@admin.com', 'kamal@aptcomputinglabs.com', 'kamalbec2004@gmail.com'] or
+        (lms_user and lms_user.role in ['ADMIN', 'MANAGER', 'MENTOR', 'INSTRUCTOR'])
+    )
 
-    # If student is enrolled in courses with batches, auto-link them
-    if lms_user and not student_batches:
-        enrolled_course_ids = Enrollment.objects.filter(external_user_id=request.user.id, is_active=True).values_list('course_id', flat=True)
-        course_batches = Batch.objects.filter(course_id__in=enrolled_course_ids, is_active=True).select_related('course').prefetch_related('sessions__instructor')
-        for cb in course_batches:
-            cb.students.add(lms_user)
-            student_batches.append(cb)
-
-    if not student_batches and (request.user.is_staff or request.user.is_superuser or (lms_user and lms_user.role in ['ADMIN', 'MANAGER'])):
-        student_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('sessions__instructor'))
+    if lms_user and lms_user.role in ['ADMIN', 'MANAGER'] or request.user.is_staff or request.user.is_superuser:
+        student_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('sessions__instructor', 'sessions__assignment', 'mentors', 'assignments'))
+    elif lms_user and lms_user.role in ['MENTOR', 'INSTRUCTOR']:
+        student_batches = list(lms_user.mentor_batches.filter(is_active=True).select_related('course').prefetch_related('sessions__instructor', 'sessions__assignment', 'mentors', 'assignments'))
+        if not student_batches:
+            student_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('sessions__instructor', 'sessions__assignment', 'mentors', 'assignments'))
+    else:
+        student_batches = list(lms_user.student_batches.filter(is_active=True).select_related('course').prefetch_related('sessions__instructor', 'sessions__assignment', 'mentors', 'assignments')) if lms_user else []
+        # If student is enrolled in courses with batches, auto-link them
+        if lms_user and not student_batches:
+            enrolled_course_ids = Enrollment.objects.filter(external_user_id=request.user.id, is_active=True).values_list('course_id', flat=True)
+            course_batches = Batch.objects.filter(course_id__in=enrolled_course_ids, is_active=True).select_related('course').prefetch_related('sessions__instructor', 'sessions__assignment', 'mentors', 'assignments')
+            for cb in course_batches:
+                cb.students.add(lms_user)
+                student_batches.append(cb)
+        if not student_batches and (request.user.is_staff or request.user.is_superuser or (lms_user and lms_user.role in ['ADMIN', 'MANAGER', 'MENTOR', 'INSTRUCTOR'])):
+            student_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('sessions__instructor', 'sessions__assignment', 'mentors', 'assignments'))
 
     now = timezone.now()
     today = now.date()
@@ -784,7 +987,7 @@ def live_classes(request):
     total_ongoing_count = 0
 
     for b in student_batches:
-        batch_sessions = list(b.sessions.filter(is_active=True).select_related('instructor').order_by('scheduled_date', 'start_time'))
+        batch_sessions = list(b.sessions.filter(is_active=True).select_related('instructor', 'assignment').order_by('scheduled_date', 'start_time'))
         for s in batch_sessions:
             is_ongoing = (s.status == 'LIVE') or (s.scheduled_date == today and s.start_time <= current_time and (not s.end_time or current_time <= s.end_time))
             is_done = (s.status == 'COMPLETED') or (s.scheduled_date < today) or (s.scheduled_date == today and s.end_time and current_time > s.end_time)
@@ -794,6 +997,8 @@ def live_classes(request):
                 total_ongoing_count += 1
             total_sessions_count += 1
         b.batch_sessions = batch_sessions
+        b.can_manage = is_trainer or bool(lms_user and b.mentors.filter(pk=lms_user.pk).exists())
+        b.available_assignments = list(b.assignments.filter(is_active=True).order_by('title'))
 
     active_broadcasts = []
     for b in student_batches:
@@ -802,12 +1007,16 @@ def live_classes(request):
             if cmd and cmd not in active_broadcasts:
                 active_broadcasts.append(cmd)
 
+    instructors = list(LMSUser.objects.filter(is_active=True, role__in=['ADMIN', 'MANAGER', 'MENTOR', 'INSTRUCTOR']).order_by('first_name', 'email'))
+
     context = {
         'student_batches': student_batches,
         'total_sessions_count': total_sessions_count,
         'total_ongoing_count': total_ongoing_count,
         'active_broadcasts': active_broadcasts,
         'lms_user': lms_user,
+        'is_trainer': is_trainer,
+        'instructors': instructors,
     }
     return render(request, 'lms/live_classes.html', context)
 
@@ -815,13 +1024,110 @@ def live_classes(request):
 @login_required
 def assignments_list(request):
     """
-    Student assignments dashboard:
-    - Shows all registered batches of the student.
-    - Under each batch, displays the list of assignments assigned by the teacher (BatchAssignment).
-    - Shows due date, submission status, score, mentor feedback, starter code / GitHub links.
-    - Allows students to submit or update their solution URL.
+    Assignments Dashboard:
+    - For Students: Displays assigned cohort tasks, due dates, submission status, grades, feedback,
+      and enables direct solution submission.
+    - For Trainers / Mentors / Instructors / Admins: Displays cohort batches, allows creating assignments
+      assigned to all students or individual learners, view student submission repositories and notes,
+      and validate / assign marks and feedback.
     """
     lms_user = get_lms_user(request.user)
+    is_trainer = bool(
+        request.user.is_superuser or
+        request.user.is_staff or
+        request.user.email in ['admin@admin.com', 'kamal@aptcomputinglabs.com', 'kamalbec2004@gmail.com'] or
+        (lms_user and lms_user.role in ['ADMIN', 'MANAGER', 'MENTOR', 'INSTRUCTOR'])
+    )
+
+    now = timezone.now()
+
+    if is_trainer:
+        if lms_user and lms_user.role in ['ADMIN', 'MANAGER'] or request.user.is_staff or request.user.is_superuser:
+            trainer_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('students', 'mentors', 'assignments'))
+        elif lms_user and lms_user.role in ['MENTOR', 'INSTRUCTOR']:
+            trainer_batches = list(lms_user.mentor_batches.filter(is_active=True).select_related('course').prefetch_related('students', 'mentors', 'assignments'))
+            if not trainer_batches:
+                trainer_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('students', 'mentors', 'assignments'))
+        else:
+            trainer_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('students', 'mentors', 'assignments'))
+
+        trainer_batch_sections = []
+        trainer_total_assignments = 0
+        trainer_total_submissions = 0
+        trainer_total_graded = 0
+        trainer_total_pending_evaluation = 0
+
+        for b in trainer_batches:
+            b_students = list(b.students.filter(is_active=True).order_by('first_name', 'last_name', 'email'))
+            b_assignments = list(BatchAssignment.objects.filter(batch=b, is_active=True).select_related('assigned_by').prefetch_related('assessments__student').order_by('-created_at'))
+
+            assignment_items = []
+            for a in b_assignments:
+                trainer_total_assignments += 1
+                assessments_by_student = {att.student_id: att for att in a.assessments.all()}
+
+                target_students = [a.target_student] if a.target_student else b_students
+                student_submissions = []
+
+                for s in target_students:
+                    att = assessments_by_student.get(s.id)
+                    has_submitted = bool(att and att.submission_url)
+                    is_graded = bool(att and att.score is not None)
+
+                    if has_submitted:
+                        trainer_total_submissions += 1
+                    if is_graded:
+                        trainer_total_graded += 1
+                    elif has_submitted:
+                        trainer_total_pending_evaluation += 1
+
+                    student_submissions.append({
+                        'student': s,
+                        'assessment': att,
+                        'has_submitted': has_submitted,
+                        'is_graded': is_graded,
+                        'score': att.score if att else None,
+                        'max_score': a.max_score,
+                        'status': att.status if att else 'PENDING',
+                        'submission_url': att.submission_url if att else '',
+                        'github_path': att.github_path if att else '',
+                        'direct_submission_url': att.direct_submission_url if att else '',
+                        'mentor_feedback': att.mentor_feedback if att else '',
+                        'submitted_at': att.updated_at if (att and att.submission_url) else None,
+                    })
+
+                a.submissions_list = student_submissions
+                a.total_students = len(target_students)
+                a.submitted_count = sum(1 for s in student_submissions if s['has_submitted'])
+                a.graded_count = sum(1 for s in student_submissions if s['is_graded'])
+                a.pending_grade_count = sum(1 for s in student_submissions if s['has_submitted'] and not s['is_graded'])
+
+                assignment_items.append(a)
+
+            b.assignment_items = assignment_items
+            b.enrolled_students = b_students
+            b.can_manage = True
+
+            trainer_batch_sections.append({
+                'batch': b,
+                'assignments': assignment_items,
+                'students': b_students,
+                'total_assignments': len(assignment_items),
+            })
+
+        context = {
+            'is_trainer': True,
+            'trainer_batches': trainer_batches,
+            'trainer_batch_sections': trainer_batch_sections,
+            'trainer_total_assignments': trainer_total_assignments,
+            'trainer_total_submissions': trainer_total_submissions,
+            'trainer_total_graded': trainer_total_graded,
+            'trainer_total_pending_evaluation': trainer_total_pending_evaluation,
+            'lms_user': lms_user,
+        }
+        return render(request, 'lms/assignments.html', context)
+
+    # Student View
     student_batches = list(lms_user.student_batches.filter(is_active=True).select_related('course').prefetch_related('students')) if lms_user else []
     if lms_user and not student_batches:
         enrolled_course_ids = Enrollment.objects.filter(external_user_id=request.user.id, is_active=True).values_list('course_id', flat=True)
@@ -833,7 +1139,6 @@ def assignments_list(request):
     if not student_batches and (request.user.is_staff or request.user.is_superuser or (lms_user and lms_user.role in ['ADMIN', 'MANAGER'])):
         student_batches = list(Batch.objects.filter(is_active=True).select_related('course').prefetch_related('students'))
 
-    now = timezone.now()
     batch_assignment_sections = []
     total_assigned_count = 0
     total_submitted_count = 0
@@ -909,6 +1214,7 @@ def assignments_list(request):
         })
 
     context = {
+        'is_trainer': False,
         'batch_assignment_sections': batch_assignment_sections,
         'assignment_cards': assignment_cards,
         'total_assigned_count': total_assigned_count,
@@ -958,11 +1264,22 @@ def assignment_submit(request, assignment_id):
 
     form = AssignmentSubmissionForm(request.POST, instance=submission)
     if form.is_valid():
+        raw_url = form.cleaned_data['submission_url'].strip()
+        raw_path = form.cleaned_data.get('github_path', '').strip().strip('/')
+        if raw_url and not raw_url.startswith(('http://', 'https://')):
+            if 'github.com' in raw_url:
+                raw_url = f"https://{raw_url.lstrip('/')}"
+            elif '/' in raw_url and len(raw_url.split('/')) == 2:
+                raw_url = f"https://github.com/{raw_url.strip('/')}"
+            else:
+                raw_url = f"https://{raw_url}"
+
         submit_assignment(
             assignment=assignment,
             external_user_id=request.user.id,
-            submission_url=form.cleaned_data['submission_url'],
-            submission_text=form.cleaned_data['submission_text']
+            submission_url=raw_url,
+            submission_text=form.cleaned_data['submission_text'],
+            github_path=raw_path
         )
         messages.success(request, f"Assignment '{assignment.title}' successfully submitted for mentor review!")
     else:
@@ -998,23 +1315,45 @@ def assignment_grade(request, submission_id):
 @login_required
 def submit_batch_assignment_view(request, assignment_id):
     """
-    Endpoint for students to submit their solution (GitHub URL, live demo, Colab) to a BatchAssignment.
+    Endpoint for students to submit their solution (GitHub URL, GitHub path, live demo, Colab) to a BatchAssignment.
     """
     if request.method != 'POST':
         return redirect('lms:assignments_list')
 
+    next_url = request.POST.get('next')
+
     lms_user = get_lms_user(request.user)
     if not lms_user:
         messages.error(request, "Student account profile not found.")
+        if next_url:
+            return redirect(next_url)
         return redirect('lms:assignments_list')
 
     assignment = get_object_or_404(BatchAssignment, id=assignment_id, is_active=True)
     submission_url = request.POST.get('submission_url', '').strip()
+    github_path = request.POST.get('github_path', '').strip()
     student_notes = request.POST.get('student_notes', '').strip()
 
+    if not submission_url and github_path and ('github.com' in github_path or '/' in github_path):
+        submission_url = github_path
+        github_path = ''
+
     if not submission_url:
-        messages.error(request, "Please provide a valid submission URL (e.g. GitHub repository or project link).")
+        messages.error(request, "Please provide a valid GitHub repository or project link.")
+        if next_url:
+            return redirect(next_url)
         return redirect('lms:assignments_list')
+
+    # Normalize submission_url so shorthand or missing scheme doesn't fail
+    if not submission_url.startswith(('http://', 'https://')):
+        if 'github.com' in submission_url:
+            submission_url = f"https://{submission_url.lstrip('/')}"
+        elif '/' in submission_url and len(submission_url.split('/')) == 2:
+            submission_url = f"https://github.com/{submission_url.strip('/')}"
+        else:
+            submission_url = f"https://{submission_url}"
+
+    clean_github_path = github_path.strip().strip('/')
 
     assessment, created = BatchAssignmentAssessment.objects.get_or_create(
         assignment=assignment,
@@ -1023,11 +1362,13 @@ def submit_batch_assignment_view(request, assignment_id):
             'max_score': assignment.max_score,
             'status': 'PENDING',
             'submission_url': submission_url,
+            'github_path': clean_github_path,
             'mentor_feedback': f"(Student Note: {student_notes})" if student_notes else '',
         }
     )
     if not created:
         assessment.submission_url = submission_url
+        assessment.github_path = clean_github_path
         assessment.status = 'PENDING'
         if student_notes:
             prev_fb = assessment.mentor_feedback or ''
@@ -1038,6 +1379,9 @@ def submit_batch_assignment_view(request, assignment_id):
         assessment.save()
 
     messages.success(request, f"Your solution for '{assignment.title}' was submitted successfully to your faculty instructor.")
+    next_url = request.POST.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect('lms:assignments_list')
 
 
@@ -1609,6 +1953,41 @@ def create_course_view(request):
 
 @login_required
 @lms_role_required(allowed_roles=['ADMIN', 'MANAGER'])
+def edit_course_view(request, pk):
+    """
+    Updates an existing Course in the LMS, including metadata and primary instructor.
+    """
+    course = get_object_or_404(Course, pk=pk)
+    if request.method == 'POST':
+        form = CourseEditForm(request.POST, instance=course)
+        if form.is_valid():
+            updated_course = form.save(commit=False)
+            if not updated_course.thumbnail:
+                updated_course.thumbnail = 'genai.svg'
+            updated_course.save()
+
+            lead_instructor = form.cleaned_data.get('lead_instructor')
+            if lead_instructor:
+                current_lead = CourseInstructor.objects.filter(course=updated_course, is_primary=True).first()
+                if current_lead:
+                    current_lead.instructor = lead_instructor
+                    current_lead.save()
+                else:
+                    CourseInstructor.objects.create(
+                        course=updated_course,
+                        instructor=lead_instructor,
+                        role='LEAD',
+                        is_primary=True
+                    )
+
+            messages.success(request, f"Course [{updated_course.code}] '{updated_course.title}' updated successfully.")
+        else:
+            messages.error(request, f"Failed to update course: {form.errors.as_text()}")
+    return redirect(request.POST.get('next') or '/lms/?tab=courses')
+
+
+@login_required
+@lms_role_required(allowed_roles=['ADMIN', 'MANAGER'])
 def join_students_view(request):
     """
     Handles joining (enrolling) or removing students from courses,
@@ -1986,7 +2365,8 @@ def edit_batch_view(request, pk):
     if request.method == 'POST':
         form = BatchForm(request.POST, instance=batch)
         if form.is_valid():
-            form.save()
+            batch = form.save()
+            sync_batch_course_and_enrollments(batch)
             messages.success(request, f"Batch '{batch.code}' updated successfully.")
         else:
             messages.error(request, f"Error updating batch: {form.errors.as_text()}")
@@ -2080,6 +2460,7 @@ def batch_detail_view(request, pk):
             'students': batch.students.all(),
             'mentors': batch.mentors.all(),
         }),
+        'all_courses': Course.objects.all().order_by('title'),
         **detail_data,
     }
     return render(request, 'lms/batch_detail.html', context)
@@ -2243,45 +2624,53 @@ def assess_batch_assignment_view(request, batch_id):
 # =========================================================================================
 
 @login_required
-@lms_role_required(allowed_roles=['ADMIN', 'MANAGER', 'MENTOR'])
+@lms_role_required(allowed_roles=['ADMIN', 'MANAGER', 'MENTOR', 'INSTRUCTOR'])
 def add_batch_session_view(request, batch_id=None):
     if not batch_id:
         batch_id = request.POST.get('batch_id')
     batch = get_object_or_404(Batch, pk=batch_id)
     if request.method == 'POST':
-        form = BatchSessionForm(request.POST)
+        form = BatchSessionForm(request.POST, initial={'batch': batch})
         if form.is_valid():
             session = form.save(commit=False)
             session.batch = batch
+            if not session.instructor_id:
+                lms_user = get_lms_user(request.user)
+                if lms_user and lms_user.role in ['MENTOR', 'ADMIN', 'MANAGER', 'INSTRUCTOR']:
+                    session.instructor = lms_user
             session.save()
-            messages.success(request, f"Scheduled session '{session.title}' for batch {batch.code}!")
+            messages.success(request, f"Scheduled live session '{session.title}' for batch {batch.code}!")
         else:
             messages.error(request, f"Failed to schedule session: {form.errors.as_text()}")
     return redirect(request.POST.get('next') or f"/lms/batches/{batch_id}/")
 
 
 @login_required
-@lms_role_required(allowed_roles=['ADMIN', 'MANAGER', 'MENTOR'])
+@lms_role_required(allowed_roles=['ADMIN', 'MANAGER', 'MENTOR', 'INSTRUCTOR'])
 def edit_batch_session_view(request, pk):
     session = get_object_or_404(BatchSession, pk=pk)
     if request.method == 'POST':
         form = BatchSessionForm(request.POST, instance=session)
         if form.is_valid():
-            form.save()
-            messages.success(request, f"Updated session '{session.title}'.")
+            updated_session = form.save(commit=False)
+            if not updated_session.batch_id:
+                updated_session.batch = session.batch
+            updated_session.save()
+            messages.success(request, f"Updated session '{session.title}'. Changes are now live!")
         else:
             messages.error(request, f"Error updating session: {form.errors.as_text()}")
     return redirect(request.POST.get('next') or f"/lms/batches/{session.batch_id}/")
 
 
 @login_required
-@lms_role_required(allowed_roles=['ADMIN', 'MANAGER', 'MENTOR'])
+@lms_role_required(allowed_roles=['ADMIN', 'MANAGER', 'MENTOR', 'INSTRUCTOR'])
 def delete_batch_session_view(request, pk):
     session = get_object_or_404(BatchSession, pk=pk)
     batch_id = session.batch_id
+    title = session.title
     if request.method == 'POST':
         session.delete()
-        messages.success(request, "Session removed.")
+        messages.success(request, f"Session '{title}' has been removed.")
     return redirect(request.POST.get('next') or f"/lms/batches/{batch_id}/")
 
 

@@ -56,6 +56,10 @@
                 </button>
                 {% endif %}
                 {% if is_admin %}
+                <button onclick="openModal('editBatchModal')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    <span>Edit Batch</span>
+                </button>
                 <button onclick="openModal('assignMembersModal')" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5">
                     <i data-lucide="users" class="w-4 h-4"></i>
                     <span>Manage Members</span>
@@ -94,22 +98,31 @@
                 </div>
                 <div class="space-y-1.5 flex-1">
                     <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Cohort Repositories</span>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex flex-col sm:flex-row flex-wrap items-start gap-2">
                         {% if batch.github_path %}
-                        <a href="{{ batch.github_url|default:batch.github_path }}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs group" title="GitHub Repository: {{ batch.github_path }}">
-                            <i data-lucide="git-branch" class="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform"></i>
-                            <span>GitHub Repo</span>
-                            <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+                        <a href="{{ batch.github_url|default:batch.github_path }}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-mono flex items-center space-x-2 transition-all shadow-xs group max-w-xs truncate" title="GitHub: {{ batch.github_path }}">
+                            <svg class="w-4 h-4 flex-shrink-0 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                            </svg>
+                            <span class="truncate">{{ batch.github_path }}</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400 group-hover:text-white flex-shrink-0"></i>
                         </a>
                         {% else %}
                         <span class="text-xs text-slate-400">No GitHub path set</span>
                         {% endif %}
 
                         {% if batch.gdrive_path %}
-                        <a href="{{ batch.gdrive_url|default:batch.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center space-x-1.5 transition-all group" title="Google Drive Folder: {{ batch.gdrive_path }}">
-                            <i data-lucide="folder" class="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform"></i>
-                            <span>Google Drive</span>
-                            <i data-lucide="external-link" class="w-3 h-3 text-blue-400"></i>
+                        <a href="{{ batch.gdrive_url|default:batch.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-mono flex items-center space-x-2 transition-all group max-w-xs truncate" title="Google Drive: {{ batch.gdrive_path }}">
+                            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                            </svg>
+                            <span class="truncate">{{ batch.gdrive_path }}</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5 text-blue-400 flex-shrink-0"></i>
                         </a>
                         {% else %}
                         <span class="text-xs text-slate-400">No GDrive path set</span>
@@ -261,21 +274,30 @@
                     <div class="flex flex-wrap items-center gap-2.5 flex-shrink-0">
                         {% if batch.github_path %}
                         <a href="{{ batch.github_url|default:batch.github_path }}" target="_blank" rel="noopener noreferrer"
-                           class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center space-x-2 border border-slate-700 transition-all shadow-sm group"
-                           title="GitHub Repository: {{ batch.github_path }}">
-                            <i data-lucide="git-branch" class="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform"></i>
-                            <span>Open GitHub Repo</span>
-                            <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+                           class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-mono font-medium flex items-center space-x-2 border border-slate-700 transition-all shadow-sm group max-w-sm truncate"
+                           title="GitHub: {{ batch.github_path }}">
+                            <svg class="w-4 h-4 flex-shrink-0 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                            </svg>
+                            <span class="truncate">{{ batch.github_path }}</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400 group-hover:text-white flex-shrink-0"></i>
                         </a>
                         {% endif %}
 
                         {% if batch.gdrive_path %}
                         <a href="{{ batch.gdrive_url|default:batch.gdrive_path }}" target="_blank" rel="noopener noreferrer"
-                           class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center space-x-2 transition-all shadow-sm group"
-                           title="Google Drive Folder: {{ batch.gdrive_path }}">
-                            <i data-lucide="folder" class="w-4 h-4 text-blue-200 group-hover:scale-110 transition-transform"></i>
-                            <span>Open Google Drive</span>
-                            <i data-lucide="external-link" class="w-3 h-3 text-blue-200"></i>
+                           class="px-3.5 py-2 rounded-xl bg-blue-600/40 hover:bg-blue-600/50 text-blue-100 border border-blue-400/30 text-xs font-mono font-medium flex items-center space-x-2 transition-all shadow-sm group max-w-sm truncate"
+                           title="Google Drive: {{ batch.gdrive_path }}">
+                            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                            </svg>
+                            <span class="truncate">{{ batch.gdrive_path }}</span>
+                            <i data-lucide="external-link" class="w-3.5 h-3.5 text-blue-300 group-hover:text-white flex-shrink-0"></i>
                         </a>
                         {% endif %}
                     </div>
@@ -450,6 +472,12 @@
                                         <i data-lucide="award" class="w-3 h-3 mr-0.5 inline"></i> {{ s.assessed_tasks_count }} / {{ s.assignments_count }} Assessed
                                         {% if s.avg_score %}(Avg: {{ s.avg_score }}/100){% endif %}
                                     </span>
+                                    {% if s.mcq_total_sum > 0 %}
+                                    <span class="text-slate-300">•</span>
+                                    <span class="font-bold {% if s.mcq_avg_pct >= 80 %}text-emerald-600{% elif s.mcq_avg_pct >= 50 %}text-amber-600{% else %}text-indigo-600{% endif %}" title="{{ s.mcq_attempted_chapters }} Chapters Attempted">
+                                        <i data-lucide="help-circle" class="w-3 h-3 mr-0.5 inline"></i> MCQ: {{ s.mcq_score_sum }}/{{ s.mcq_total_sum }} ({{ s.mcq_avg_pct }}%)
+                                    </span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -1032,12 +1060,121 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mentor Feedback / Evaluation Remarks</label>
-                <textarea name="mentor_feedback" id="singleAssessFeedbackInput" rows="3" placeholder="Provide constructive feedback, code review comments, or next steps..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                <textarea name="mentor_feedback" id="singleAssessFeedbackInput" rows="3" placeholder="Provide constructive feedback, evaluation notes, or next steps..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500"></textarea>
             </div>
 
             <div class="pt-2 flex justify-end space-x-3">
                 <button type="button" onclick="closeModal('assessStudentModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
                 <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md">Submit Assessment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 7. Admin Edit Batch Modal -->
+<div id="editBatchModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-2xl w-full p-6 sm:p-8 space-y-5">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Batch Administration</span>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center mt-0.5">
+                    <i data-lucide="edit-3" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Edit Batch: {{ batch.code }}
+                </h3>
+            </div>
+            <button type="button" onclick="closeModal('editBatchModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'lms:edit_batch' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batch Name *</label>
+                    <input type="text" name="name" required value="{{ batch.name }}" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batch Code *</label>
+                    <input type="text" name="code" required value="{{ batch.code }}" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono uppercase outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Course Curriculum</label>
+                    <select name="course" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- No Linked Course --</option>
+                        {% for c in all_courses|default:courses %}
+                        <option value="{{ c.id }}" {% if batch.course_id == c.id %}selected{% endif %}>{{ c.title }} ({{ c.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Batch Status *</label>
+                    <select name="status" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="UPCOMING" {% if batch.status == 'UPCOMING' %}selected{% endif %}>Upcoming</option>
+                        <option value="ONGOING" {% if batch.status == 'ONGOING' %}selected{% endif %}>Ongoing / Active</option>
+                        <option value="COMPLETED" {% if batch.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                        <option value="ARCHIVED" {% if batch.status == 'ARCHIVED' %}selected{% endif %}>Archived</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Date</label>
+                    <input type="date" name="start_date" value="{{ batch.start_date|date:'Y-m-d'|default:'' }}" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">End Date</label>
+                    <input type="date" name="end_date" value="{{ batch.end_date|date:'Y-m-d'|default:'' }}" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Schedule Days</label>
+                    <input type="text" name="schedule_days" value="{{ batch.schedule_days }}" placeholder="e.g. Mon, Wed, Fri" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Class Time</label>
+                    <input type="text" name="schedule_time" value="{{ batch.schedule_time }}" placeholder="e.g. 19:00 - 21:00 IST" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Schedule Summary</label>
+                    <input type="text" name="schedule" value="{{ batch.schedule }}" placeholder="e.g. Mon, Wed, Fri @ 19:00" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Zoom / Meeting Link</label>
+                    <input type="text" name="zoom_link" value="{{ batch.zoom_link }}" placeholder="https://zoom.us/j/..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">GitHub Repo</label>
+                    <input type="text" name="github_path" value="{{ batch.github_path }}" placeholder="https://github.com/..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Google Drive</label>
+                    <input type="text" name="gdrive_path" value="{{ batch.gdrive_path }}" placeholder="https://drive.google.com/..." class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description / Syllabus Notes</label>
+                <textarea name="description" rows="2" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">{{ batch.description }}</textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('editBatchModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Save Batch Changes</span>
+                </button>
             </div>
         </form>
     </div>

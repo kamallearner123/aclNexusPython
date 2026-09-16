@@ -98,13 +98,25 @@
 
             <div class="space-y-2">
                 <label for="id_submission_url" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Deliverable URL <span class="text-red-500">*</span>
+                    GitHub Repository / Deliverable URL <span class="text-red-500">*</span>
                 </label>
                 {{ form.submission_url }}
                 {% if form.submission_url.errors %}
                 <p class="text-xs text-red-600 font-semibold mt-1">{{ form.submission_url.errors.0 }}</p>
                 {% endif %}
-                <span class="text-[11px] text-slate-400 block">Enter a valid GitHub PR, repository, or shared Google Colab URL.</span>
+                <span class="text-[11px] text-slate-400 block">Enter a GitHub repository URL (e.g. https://github.com/user/repo or username/repo), PR, or Colab link.</span>
+            </div>
+
+            <div class="space-y-2">
+                <label for="id_github_path" class="block text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                    <span>GitHub Solution Path / Folder</span>
+                    <span class="text-[10px] font-semibold text-slate-400 normal-case">Optional</span>
+                </label>
+                {{ form.github_path }}
+                {% if form.github_path.errors %}
+                <p class="text-xs text-red-600 font-semibold mt-1">{{ form.github_path.errors.0 }}</p>
+                {% endif %}
+                <span class="text-[11px] text-slate-400 block">Specify the subfolder or file path inside your repository (e.g. <code>assignments/day01</code> or <code>solution.py</code>).</span>
             </div>
 
             <div class="space-y-2">

@@ -121,6 +121,12 @@ class Lesson(LMSBaseModel):
     def __str__(self):
         return f"{self.module.course.code} - L{self.order}: {self.title}"
 
+    @property
+    def mcq_count(self):
+        if not self.content:
+            return 0
+        return self.content.count('class="mcq-container"') + self.content.count("class='mcq-container'")
+
 
 class Enrollment(LMSBaseModel):
     STATUS_CHOICES = [
@@ -134,6 +140,8 @@ class Enrollment(LMSBaseModel):
     enrolled_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
     progress_percent = models.PositiveIntegerField(default=0)
+    last_lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, blank=True, related_name='last_opened_enrollments', help_text="Last chapter/lesson opened by the student in this course")
+    last_accessed_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when the student last opened a chapter in this course")
 
     class Meta:
         constraints = [
@@ -149,6 +157,10 @@ class LessonProgress(LMSBaseModel):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='student_progress')
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
+    mcq_score = models.PositiveIntegerField(default=0, help_text="Number of MCQs answered correctly")
+    mcq_total = models.PositiveIntegerField(default=0, help_text="Total number of MCQs in this chapter")
+    mcq_completed = models.BooleanField(default=False, help_text="Whether all MCQs in this chapter were attempted")
+    mcq_submitted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -156,7 +168,13 @@ class LessonProgress(LMSBaseModel):
         ]
 
     def __str__(self):
-        return f"Enrollment {self.enrollment_id} - Lesson {self.lesson_id} ({self.completed})"
+        return f"Enrollment {self.enrollment_id} - Lesson {self.lesson_id} ({self.completed}) MCQ: {self.mcq_score}/{self.mcq_total}"
+
+    @property
+    def mcq_percent(self):
+        if self.mcq_total > 0:
+            return round((self.mcq_score / self.mcq_total) * 100)
+        return 0
 
 
 class CourseCommandMessage(LMSBaseModel):
@@ -233,11 +251,21 @@ class AssignmentSubmission(LMSBaseModel):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
     external_user_id = models.PositiveBigIntegerField(db_index=True)
     submission_url = models.URLField(help_text="GitHub PR / Repo / Colab notebook URL")
+    github_path = models.CharField(max_length=500, blank=True, default='', help_text="Specific GitHub file or directory path within the repository")
     submission_text = models.TextField(blank=True, help_text="Solution notes and architecture decisions")
     submitted_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='SUBMITTED')
     grade_score = models.PositiveIntegerField(null=True, blank=True)
     mentor_feedback = models.TextField(blank=True)
+
+    @property
+    def direct_submission_url(self):
+        url = self.submission_url or ''
+        path = (self.github_path or '').strip().strip('/')
+        if url and path and 'github.com' in url and '/tree/' not in url and '/blob/' not in url:
+            return f"{url.rstrip('/')}/tree/main/{path}"
+        return url
+
 
     class Meta:
         constraints = [
@@ -410,17 +438,32 @@ class BatchSession(LMSBaseModel):
     instructor = models.ForeignKey(LMSUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='batch_sessions')
     scheduled_date = models.DateField()
     start_time = models.TimeField()
-    end_time = models.TimeField()
-    meeting_link = models.URLField(help_text="Google Meet / Zoom URL")
+    end_time = models.TimeField(null=True, blank=True)
+    meeting_link = models.URLField(blank=True, default='', help_text="Google Meet / Zoom URL")
     recording_link = models.URLField(blank=True, null=True, help_text="Session recording URL if completed")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='UPCOMING')
     agenda = models.TextField(blank=True, help_text="Topics and lab objectives for this session")
+    assignment = models.ForeignKey('BatchAssignment', on_delete=models.SET_NULL, null=True, blank=True, related_name='linked_sessions', help_text="Associated batch assignment")
+    assignment_title = models.CharField(max_length=255, blank=True, help_text="Title of the assignment or homework task")
+    assignment_url = models.URLField(blank=True, null=True, help_text="Direct link or GitHub repo for this session's assignment")
 
     class Meta:
         ordering = ['scheduled_date', 'start_time']
 
     def __str__(self):
         return f"[{self.batch.code}] {self.title} on {self.scheduled_date}"
+
+    @property
+    def display_assignment_title(self):
+        if self.assignment:
+            return self.assignment.title
+        return self.assignment_title or ""
+
+    @property
+    def display_assignment_url(self):
+        if self.assignment:
+            return f"/lms/assignments/#assignment-{self.assignment.id}"
+        return self.assignment_url or ""
 
 
 class BatchMaterial(LMSBaseModel):
@@ -527,6 +570,16 @@ class BatchAssignmentAssessment(LMSBaseModel):
     mentor_feedback = models.TextField(blank=True)
     assessed_by = models.ForeignKey(LMSUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_batch_assessments')
     submission_url = models.URLField(blank=True, null=True)
+    github_path = models.CharField(max_length=500, blank=True, default='', help_text="Specific GitHub file or directory path within the repository")
+
+    @property
+    def direct_submission_url(self):
+        url = self.submission_url or ''
+        path = (self.github_path or '').strip().strip('/')
+        if url and path and 'github.com' in url and '/tree/' not in url and '/blob/' not in url:
+            return f"{url.rstrip('/')}/tree/main/{path}"
+        return url
+
 
     class Meta:
         constraints = [

@@ -45,6 +45,148 @@
         </div>
     </div>
 
+    <!-- Quick Resume Learning Banner -->
+    {% if primary_resume and primary_resume.resume_lesson %}
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white p-6 sm:p-7 shadow-xl border border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-2 flex-1 min-w-0">
+            <div class="flex items-center space-x-2.5">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 tracking-wide uppercase">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
+                    Resume Learning
+                </span>
+                <span class="text-xs font-bold text-indigo-200">{{ primary_resume.course.code }}</span>
+                <span class="text-xs text-slate-400">• {{ primary_resume.progress_percent }}% Completed</span>
+            </div>
+            <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight truncate">
+                Chapter {{ primary_resume.resume_lesson.order }}: {{ primary_resume.resume_lesson.title }}
+            </h3>
+            <p class="text-xs sm:text-sm text-slate-300 line-clamp-1">
+                {{ primary_resume.course.title }} &bull; Pick up right where you left off with hands-on code sandboxes and assignments.
+            </p>
+            <div class="w-full max-w-md h-2 bg-white/10 rounded-full overflow-hidden mt-2">
+                <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-500" style="width: {{ primary_resume.progress_percent }}%;"></div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 flex-shrink-0">
+            <a href="{% url 'lms:lesson_view' primary_resume.course.slug primary_resume.resume_lesson.id %}" class="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-900/40 transition-all flex items-center space-x-2 group cursor-pointer">
+                <i data-lucide="play" class="w-4 h-4 fill-current group-hover:scale-110 transition-transform"></i>
+                <span>Resume Chapter ▶</span>
+            </a>
+            <a href="{% url 'lms:course_detail' primary_resume.course.slug %}" class="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/15 flex items-center space-x-1.5">
+                <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                <span>Syllabus</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pending Assignments & Milestone Tasks Section -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                    <i data-lucide="clipboard-list" class="w-5 h-5 mr-2 text-amber-500"></i>
+                    Pending Assignments
+                </h2>
+                {% if pending_assignments %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-100 text-amber-800 border border-amber-200">
+                    {{ pending_assignments|length }} To Do
+                </span>
+                {% else %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    All Caught Up
+                </span>
+                {% endif %}
+            </div>
+            <a href="{% url 'lms:assignments_list' %}" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center space-x-1">
+                <span>View All Assignments</span>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+
+        {% if pending_assignments %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for item in pending_assignments %}
+            <div class="bg-white rounded-2xl border border-gray-200/90 shadow-soft hover:shadow-md transition-all p-5 flex flex-col justify-between space-y-4 relative overflow-hidden">
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center space-x-1.5">
+                            {% if item.course_code %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-slate-100 text-slate-700">
+                                {{ item.course_code }}
+                            </span>
+                            {% endif %}
+                            {% if item.batch_code %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {{ item.batch_code }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        {% if item.is_overdue %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200 flex items-center space-x-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                            <span>Past Due</span>
+                        </span>
+                        {% elif item.due_date %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            Due {{ item.due_date|date:"M d, g:i A" }}
+                        </span>
+                        {% else %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                            No Deadline
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h3 class="text-base font-bold text-slate-900 leading-snug line-clamp-2">
+                        {{ item.title }}
+                    </h3>
+
+                    {% if item.description %}
+                    <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        {{ item.description }}
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-3 pt-3 border-t border-gray-100">
+                    <div class="flex items-center justify-between text-xs text-slate-500">
+                        <span class="font-medium text-[11px]">{{ item.type }}</span>
+                        {% if item.max_score %}
+                        <span class="font-bold text-slate-700 text-[11px]">{{ item.max_score }} Points Max</span>
+                        {% endif %}
+                    </div>
+
+                    {% if item.type == 'Batch Task' %}
+                    <button type="button"
+                            onclick="openStudentSubmissionModal('{{ item.id }}', '{{ item.title|escapejs }}', '{{ item.batch_code|escapejs }}', '', '{{ item.max_score }}', '')"
+                            class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                        <span>Submit Solution</span>
+                    </button>
+                    {% else %}
+                    <a href="{{ item.submit_url }}" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center space-x-2 shadow-sm transition-all">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                        <span>Submit Milestone</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-2xl border border-gray-200/80 p-8 text-center text-slate-500 space-y-2">
+            <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-1">
+                <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+            </div>
+            <p class="font-bold text-slate-800 text-sm">All caught up!</p>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">You have no pending assignments right now. All milestone deliverables and batch tasks have been submitted.</p>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Active Course Command Broadcast Messages -->
     {% if active_broadcasts %}
     <div class="space-y-4">
@@ -219,101 +361,6 @@
     </div>
     {% endif %}
 
-    <!-- My Enrolled Cohorts & Batches Section -->
-    {% if student_batches %}
-    <div class="space-y-4">
-        <div class="flex items-center justify-between">
-            <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
-                <i data-lucide="layers" class="w-5 h-5 mr-2 text-indigo-600"></i>
-                My Enrolled Cohorts &amp; Batches
-            </h2>
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ student_batches|length }} Active Cohort{{ student_batches|length|pluralize }}</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {% for b in student_batches %}
-            <div class="bg-white rounded-2xl border border-gray-200/90 shadow-soft hover:shadow-md transition-all p-6 flex flex-col justify-between space-y-4 ring-1 ring-gray-900/5">
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">{{ b.code }}</span>
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if b.status == 'ONGOING' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
-                                {{ b.get_status_display }}
-                            </span>
-                        </div>
-                        <a href="{% url 'lms:batch_detail' b.pk %}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1">
-                            <span>Open Hub</span>
-                            <i data-lucide="arrow-right" class="w-3 h-3"></i>
-                        </a>
-                    </div>
-
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-900 leading-snug">{{ b.name }}</h3>
-                        {% if b.course %}
-                        <p class="text-xs font-semibold text-slate-500 mt-1 flex items-center">
-                            <i data-lucide="book-open" class="w-3.5 h-3.5 mr-1 text-indigo-500"></i>
-                            Associated Curriculum: <strong class="text-slate-700 ml-1">{{ b.course.title }}</strong>
-                        </p>
-                        {% endif %}
-                    </div>
-
-                    {% if b.full_schedule %}
-                    <div class="flex items-center text-xs text-slate-600 space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-600 flex-shrink-0"></i>
-                        <span class="font-medium">{{ b.full_schedule }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- GitHub & Google Drive Repositories (Prominent) -->
-                <div class="pt-3 border-t border-gray-100 space-y-3">
-                    <div class="flex flex-wrap items-center gap-2.5">
-                        {% if b.github_path %}
-                        <a href="{{ b.github_url|default:b.github_path }}" target="_blank" rel="noopener noreferrer"
-                           class="flex-1 min-w-[130px] py-2 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-xs group"
-                           title="Open Cohort GitHub Repository: {{ b.github_path }}">
-                            <i data-lucide="git-branch" class="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform"></i>
-                            <span>GitHub Repo</span>
-                            <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
-                        </a>
-                        {% else %}
-                        <span class="text-xs text-slate-400 italic">No GitHub link set</span>
-                        {% endif %}
-
-                        {% if b.gdrive_path %}
-                        <a href="{{ b.gdrive_url|default:b.gdrive_path }}" target="_blank" rel="noopener noreferrer"
-                           class="flex-1 min-w-[130px] py-2 px-3.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-xs group"
-                           title="Open Cohort Google Drive: {{ b.gdrive_path }}">
-                            <i data-lucide="folder" class="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform"></i>
-                            <span>Google Drive</span>
-                            <i data-lucide="external-link" class="w-3 h-3 text-blue-400"></i>
-                        </a>
-                        {% else %}
-                        <span class="text-xs text-slate-400 italic">No GDrive link set</span>
-                        {% endif %}
-                    </div>
-
-                    <div class="flex items-center justify-between text-xs pt-1">
-                        {% if b.zoom_link %}
-                        <a href="{{ b.zoom_url|default:b.zoom_link }}" target="_blank" rel="noopener noreferrer" class="font-bold text-rose-600 hover:text-rose-700 flex items-center space-x-1.5">
-                            <i data-lucide="video" class="w-3.5 h-3.5"></i>
-                            <span>Join Live Class Room</span>
-                        </a>
-                        {% else %}
-                        <span class="text-[11px] text-slate-400">Schedule updates posted here</span>
-                        {% endif %}
-
-                        <a href="{% url 'lms:batch_detail' b.pk %}" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center space-x-1 shadow-xs transition-all">
-                            <span>Enter Batch Hub</span>
-                            <i data-lucide="arrow-right" class="w-3 h-3"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Enrolled Courses Grid -->
     <div class="space-y-4">
@@ -362,17 +409,28 @@
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Enrolled Batch</span>
                                 <a href="{% url 'lms:batch_detail' b.pk %}" class="text-[11px] font-black text-indigo-600 hover:underline">{{ b.code }}</a>
                             </div>
-                            <div class="flex items-center space-x-2">
+                            <div class="space-y-1.5">
                                 {% if b.github_path %}
-                                <a href="{{ b.github_url|default:b.github_path }}" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center justify-center space-x-1.5" title="GitHub: {{ b.github_path }}">
-                                    <i data-lucide="git-branch" class="w-3 h-3 text-indigo-400"></i>
-                                    <span>GitHub</span>
+                                <a href="{{ b.github_url|default:b.github_path }}" target="_blank" rel="noopener noreferrer" class="w-full py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-mono flex items-center space-x-2 transition-all group" title="GitHub: {{ b.github_path }}">
+                                    <svg class="w-3.5 h-3.5 flex-shrink-0 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                                    </svg>
+                                    <span class="truncate flex-1">{{ b.github_path }}</span>
+                                    <i data-lucide="external-link" class="w-3 h-3 text-slate-400 group-hover:text-white flex-shrink-0"></i>
                                 </a>
                                 {% endif %}
                                 {% if b.gdrive_path %}
-                                <a href="{{ b.gdrive_url|default:b.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="flex-1 py-1.5 px-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] font-bold flex items-center justify-center space-x-1.5" title="Google Drive: {{ b.gdrive_path }}">
-                                    <i data-lucide="folder" class="w-3 h-3 text-blue-600"></i>
-                                    <span>Drive</span>
+                                <a href="{{ b.gdrive_url|default:b.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="w-full py-1.5 px-2.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[11px] font-mono flex items-center space-x-2 transition-all group" title="Google Drive: {{ b.gdrive_path }}">
+                                    <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+                                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                                    </svg>
+                                    <span class="truncate flex-1">{{ b.gdrive_path }}</span>
+                                    <i data-lucide="external-link" class="w-3 h-3 text-blue-500 group-hover:text-blue-700 flex-shrink-0"></i>
                                 </a>
                                 {% endif %}
                             </div>
@@ -394,10 +452,21 @@
                         </div>
                     </div>
 
-                    <a href="{% url 'lms:course_detail' enr.course.slug %}" class="w-full py-2.5 px-4 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-2">
-                        <span>Continue Learning</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                    </a>
+                    <div class="space-y-2 pt-1">
+                        {% if enr.resume_lesson %}
+                        <a href="{% url 'lms:lesson_view' enr.course.slug enr.resume_lesson.id %}" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-between shadow-md shadow-indigo-600/20 group" title="Resume: {{ enr.resume_lesson.title }}">
+                            <div class="flex items-center space-x-2 truncate pr-2">
+                                <i data-lucide="play-circle" class="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform flex-shrink-0"></i>
+                                <span class="truncate">Resume Chapter {{ enr.resume_lesson.order }}: {{ enr.resume_lesson.title }}</span>
+                            </div>
+                            <i data-lucide="arrow-right" class="w-4 h-4 flex-shrink-0 group-hover:translate-x-1 transition-transform"></i>
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'lms:course_detail' enr.course.slug %}" class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1.5 border border-slate-200/80">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                            <span>Course Syllabus &amp; Overview</span>
+                        </a>
+                    </div>
                 </div>
             </div>
             {% endfor %}
@@ -466,5 +535,112 @@
         </div>
     </div>
 
+    <!-- Student Batch Assignment Submission Modal -->
+    <div id="studentBatchSubmissionModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-gray-100 relative animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-start justify-between border-b border-gray-100 pb-4">
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2">
+                        <span id="modalBatchCode" class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-indigo-100 text-indigo-800"></span>
+                        <span id="modalMaxScore" class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700"></span>
+                    </div>
+                    <h3 id="modalAssignmentTitle" class="text-lg font-black text-slate-900 leading-snug"></h3>
+                    <p id="submissionModalSubtitle" class="text-xs text-slate-500"></p>
+                </div>
+                <button type="button" onclick="closeModal('studentBatchSubmissionModal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="studentBatchSubmissionForm" method="post" action="" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <span>GitHub Repository / Solution URL</span>
+                        <span class="text-[10px] font-extrabold text-rose-500 normal-case">Required</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="github" class="w-4 h-4"></i>
+                        </div>
+                        <input type="text" name="submission_url" id="modalSubmissionUrlInput" required
+                               placeholder="https://github.com/username/project-repo"
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Provide your public GitHub repository or branch link.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <span>GitHub Solution Path / Subfolder</span>
+                        <span class="text-[10px] font-semibold text-slate-400 normal-case">Optional</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="folder-code" class="w-4 h-4"></i>
+                        </div>
+                        <input type="text" name="github_path" id="modalGithubPathInput"
+                               placeholder="e.g. assignments/day02 or solutions/part1.py"
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Specify folder or filename inside the repository where the solution code resides.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Notes for Instructor (Optional)
+                    </label>
+                    <textarea name="student_notes" rows="2"
+                              placeholder="Highlight any instructions, run commands, or design details..."
+                              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('studentBatchSubmissionModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5 cursor-pointer">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Submit to Instructor</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </div>
+
+<script>
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.remove('hidden');
+        el.style.display = 'flex';
+    }
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+    }
+}
+
+function openStudentSubmissionModal(assignmentId, title, batchCode, existingUrl, maxScore, existingPath) {
+    const form = document.getElementById('studentBatchSubmissionForm');
+    form.action = `/lms/assignments/batch/${assignmentId}/submit/`;
+    document.getElementById('modalBatchCode').textContent = batchCode ? `Cohort: ${batchCode}` : '';
+    document.getElementById('modalAssignmentTitle').textContent = title;
+    document.getElementById('modalMaxScore').textContent = maxScore ? `Max Evaluation Score: ${maxScore} Points` : '';
+    document.getElementById('modalSubmissionUrlInput').value = existingUrl || '';
+    document.getElementById('modalGithubPathInput').value = existingPath || '';
+    document.getElementById('submissionModalSubtitle').textContent = `Submitting for: ${title}`;
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    openModal('studentBatchSubmissionModal');
+}
+</script>
 {% endblock %}

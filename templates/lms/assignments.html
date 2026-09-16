@@ -1,11 +1,583 @@
 {% extends 'lms/base_lms.html' %}
 {% load static %}
 
-{% block title %}Cohort Assignments &amp; Milestones | LearnHub LMS{% endblock %}
-{% block page_heading %}Cohort Tasks &amp; Deliverables{% endblock %}
+{% block title %}{% if is_trainer %}Trainer Cohort Assignments &amp; Grading{% else %}Cohort Assignments &amp; Milestones{% endif %} | LearnHub LMS{% endblock %}
+{% block page_heading %}{% if is_trainer %}Cohort Academic Evaluation &amp; Grading{% else %}Cohort Tasks &amp; Deliverables{% endif %}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-8 pb-12">
+
+    {% if is_trainer %}
+    <!-- ========================================================================================= -->
+    <!-- TRAINER & MENTOR ASSIGNMENT MANAGEMENT DASHBOARD -->
+    <!-- ========================================================================================= -->
+
+    <!-- Header Banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-6">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span class="text-xs font-black uppercase tracking-wider text-indigo-600">Cohort Academic Evaluation &amp; Assessment</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">Cohort Assignments &amp; Code Submissions</h1>
+            <p class="text-sm text-slate-500 mt-1">Create assignments and assign all students in a batch, inspect student GitHub repositories, validate solutions, and assign marks &amp; feedback.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <button type="button"
+                    onclick="openCreateAssignmentModal()"
+                    class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-2 transition-all">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>+ Create Assignment</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Trainer Metrics Strip -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Active Batches</span>
+            <span class="text-2xl font-black text-slate-900 leading-tight block mt-1">{{ trainer_batches|length }}</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Tasks Dispatched</span>
+            <span class="text-2xl font-black text-indigo-600 leading-tight block mt-1">{{ trainer_total_assignments }}</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Submissions Received</span>
+            <span class="text-2xl font-black text-blue-600 leading-tight block mt-1">{{ trainer_total_submissions }}</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Awaiting Evaluation</span>
+            <span class="text-2xl font-black {% if trainer_total_pending_evaluation > 0 %}text-amber-600 animate-pulse{% else %}text-slate-700{% endif %} leading-tight block mt-1">
+                {{ trainer_total_pending_evaluation }}
+            </span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Graded &amp; Validated</span>
+            <span class="text-2xl font-black text-emerald-600 leading-tight block mt-1">{{ trainer_total_graded }}</span>
+        </div>
+    </div>
+
+    <!-- Per-Batch Assignment Sections -->
+    {% if trainer_batch_sections %}
+    <div class="space-y-10">
+        {% for section in trainer_batch_sections %}
+        {% with batch=section.batch %}
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft overflow-hidden">
+            <!-- Batch Header Bar -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 sm:p-7 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1.5">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="px-2.5 py-0.5 rounded-md text-xs font-black bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                            {{ batch.code }}
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            {{ batch.get_status_display }}
+                        </span>
+                        <span class="text-xs text-indigo-200/80 font-medium">
+                            • {{ section.students|length }} Enrolled Student{{ section.students|length|pluralize }}
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-extrabold tracking-tight text-white flex items-center space-x-2">
+                        <span>{{ batch.name }}</span>
+                    </h2>
+                    {% if batch.course %}
+                    <p class="text-xs text-indigo-300 flex items-center">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 mr-1.5 flex-shrink-0"></i>
+                        <span>Curriculum: <strong>{{ batch.course.title }} ({{ batch.course.code }})</strong></span>
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Batch Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                    <button type="button"
+                            onclick="openCreateAssignmentModal('{{ batch.id }}', '{{ batch.code|escapejs }}')"
+                            class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center space-x-1.5 shadow-sm">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>+ Assign Task to Batch</span>
+                    </button>
+                    {% if batch.github_url %}
+                    <a href="{{ batch.github_url }}" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center space-x-1.5 border border-white/10" title="Cohort GitHub Repository">
+                        <i data-lucide="git-branch" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span>Repo</span>
+                    </a>
+                    {% endif %}
+                    {% if batch.gdrive_url %}
+                    <a href="{{ batch.gdrive_url }}" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center space-x-1.5 border border-white/10" title="Cohort Google Drive">
+                        <i data-lucide="folder" class="w-3.5 h-3.5 text-blue-400"></i>
+                        <span>Drive</span>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'lms:batch_detail' batch.pk %}" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all flex items-center space-x-1 shadow-xs">
+                        <span>Batch Hub</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Batch Assignments List with Student Submissions Tables -->
+            {% if section.assignments %}
+            <div class="divide-y divide-gray-200">
+                {% for a in section.assignments %}
+                <div class="p-6 sm:p-7 space-y-5">
+                    
+                    <!-- Assignment Card Header -->
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200/80">
+                        <div class="space-y-1.5 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black bg-indigo-100 text-indigo-800">
+                                    Task #{{ forloop.counter }}
+                                </span>
+                                {% if a.target_student %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                    Individual Task for {{ a.target_student.full_name }}
+                                </span>
+                                {% else %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+                                    <i data-lucide="users" class="w-3 h-3 mr-1"></i>
+                                    <span>Assigned to All Students ({{ a.total_students }} Learners)</span>
+                                </span>
+                                {% endif %}
+
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    {{ a.submitted_count }} / {{ a.total_students }} Submitted
+                                </span>
+
+                                {% if a.pending_grade_count > 0 %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                                    {{ a.pending_grade_count }} Awaiting Marks
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <h3 class="text-lg font-black text-slate-900 leading-snug pt-0.5">{{ a.title }}</h3>
+                            {% if a.description %}
+                            <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">{{ a.description }}</p>
+                            {% endif %}
+
+                            <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
+                                {% if a.due_date %}
+                                <span class="flex items-center text-slate-600">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>
+                                    Due: <strong>{{ a.due_date|date:"M d, Y" }} at {{ a.due_date|time:"h:i A" }}</strong>
+                                </span>
+                                {% else %}
+                                <span class="flex items-center text-slate-400 italic">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1"></i>
+                                    Open / Flexible Deadline
+                                </span>
+                                {% endif %}
+
+                                <span class="flex items-center text-slate-600">
+                                    <i data-lucide="award" class="w-3.5 h-3.5 mr-1 text-amber-600"></i>
+                                    Max Score: <strong>{{ a.max_score }} Points</strong>
+                                </span>
+
+                                {% if a.resource_url %}
+                                <a href="{{ a.resource_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1 text-indigo-600 hover:text-indigo-800 font-bold hover:underline">
+                                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                    <span>Starter Code / Repo</span>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action buttons for the assignment -->
+                        <div class="flex items-center space-x-2 flex-shrink-0 self-start lg:self-center">
+                            <form method="post" action="{% url 'lms:delete_batch_assignment' batch.id a.id %}" onsubmit="return confirm('Are you sure you want to remove this assignment? All recorded submissions will be removed.');" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Task">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Student Submissions Table -->
+                    <div class="overflow-x-auto rounded-2xl border border-gray-200">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-gray-200 bg-slate-50 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                                    <th class="py-3 px-4">Student</th>
+                                    <th class="py-3 px-4">Submission Status</th>
+                                    <th class="py-3 px-4">Solution / Deliverable Repo</th>
+                                    <th class="py-3 px-4">Marks / Score</th>
+                                    <th class="py-3 px-4">Mentor Feedback</th>
+                                    <th class="py-3 px-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-xs">
+                                {% for item in a.submissions_list %}
+                                <tr class="hover:bg-slate-50/60 transition-colors {% if item.has_submitted and not item.is_graded %}bg-amber-50/30{% endif %}">
+                                    
+                                    <!-- Student Profile -->
+                                    <td class="py-3.5 px-4 align-middle whitespace-nowrap">
+                                        <div class="flex items-center space-x-2.5">
+                                            <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs ring-1 ring-indigo-200 flex-shrink-0">
+                                                {{ item.student.first_name|slice:":1"|default:item.student.email|slice:":1"|upper }}
+                                            </div>
+                                            <div>
+                                                <span class="font-bold text-slate-900 block text-xs">{{ item.student.full_name }}</span>
+                                                <span class="text-[11px] text-slate-400 font-mono">{{ item.student.email }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Submission Status -->
+                                    <td class="py-3.5 px-4 align-middle whitespace-nowrap">
+                                        {% if item.has_submitted %}
+                                        <div class="space-y-0.5">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                <i data-lucide="check-circle-2" class="w-3 h-3 mr-1 text-emerald-600"></i>
+                                                Submitted
+                                            </span>
+                                            {% if item.submitted_at %}
+                                            <span class="text-[10px] text-slate-400 block">{{ item.submitted_at|date:"M d, H:i" }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500">
+                                            <i data-lucide="clock" class="w-3 h-3 mr-1 text-slate-400"></i>
+                                            Pending
+                                        </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Solution / Repo Link -->
+                                    <td class="py-3.5 px-4 align-middle max-w-xs">
+                                        {% if item.has_submitted %}
+                                        <div class="space-y-1">
+                                            <a href="{{ item.direct_submission_url|default:item.submission_url }}" target="_blank" rel="noopener noreferrer"
+                                               class="inline-flex items-center px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-mono text-[11px] font-bold shadow-2xs transition-colors max-w-full truncate"
+                                               title="Open {{ item.submission_url }}">
+                                                <i data-lucide="git-branch" class="w-3 h-3 mr-1.5 text-indigo-400 flex-shrink-0"></i>
+                                                <span class="truncate">{{ item.submission_url }}</span>
+                                                <i data-lucide="external-link" class="w-2.5 h-2.5 ml-1 opacity-70 flex-shrink-0"></i>
+                                            </a>
+                                            {% if item.github_path %}
+                                            <div class="text-[10px] text-slate-500 font-mono flex items-center">
+                                                <i data-lucide="folder-code" class="w-3 h-3 mr-1 text-slate-400"></i>
+                                                <span>{{ item.github_path }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-[11px] text-slate-400 italic">No solution submitted yet</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Score / Marks -->
+                                    <td class="py-3.5 px-4 align-middle whitespace-nowrap">
+                                        {% if item.is_graded %}
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl font-extrabold text-xs bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <i data-lucide="award" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i>
+                                            {{ item.score }} / {{ item.max_score }} Pts
+                                        </span>
+                                        {% elif item.has_submitted %}
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-xl font-bold text-xs bg-amber-50 text-amber-800 border border-amber-200">
+                                            <i data-lucide="clock-3" class="w-3.5 h-3.5 mr-1 text-amber-600"></i>
+                                            Needs Marks
+                                        </span>
+                                        {% else %}
+                                        <span class="text-xs text-slate-400 font-semibold">—</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Mentor Feedback -->
+                                    <td class="py-3.5 px-4 align-middle max-w-xs">
+                                        {% if item.mentor_feedback %}
+                                        <p class="text-[11px] text-slate-600 italic line-clamp-2 leading-relaxed whitespace-pre-line" title="{{ item.mentor_feedback }}">
+                                            "{{ item.mentor_feedback }}"
+                                        </p>
+                                        {% else %}
+                                        <span class="text-[11px] text-slate-400">—</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Action (Validate & Grade) -->
+                                    <td class="py-3.5 px-4 align-middle text-right whitespace-nowrap">
+                                        <button type="button"
+                                                onclick='openGradeStudentModal("{{ batch.id }}", "{{ a.id }}", "{{ a.title|escapejs }}", "{{ a.max_score }}", "{{ item.student.id }}", "{{ item.student.full_name|escapejs }}", "{{ item.student.email|escapejs }}", "{{ item.submission_url|default:""|escapejs }}", "{{ item.github_path|default:""|escapejs }}", "{{ item.direct_submission_url|default:""|escapejs }}", "{{ item.score|default:"" }}", "{{ item.status|default:"GRADED"|escapejs }}", "{{ item.mentor_feedback|default:""|escapejs }}")'
+                                                class="px-3 py-1.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition-all ml-auto {% if item.is_graded %}bg-slate-100 hover:bg-slate-200 text-slate-700{% elif item.has_submitted %}bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs{% else %}bg-indigo-50 hover:bg-indigo-100 text-indigo-700{% endif %}"
+                                                title="Validate and give marks to {{ item.student.full_name }}">
+                                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                            <span>{% if item.is_graded %}Update Marks{% else %}Validate &amp; Grade{% endif %}</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center text-slate-500 space-y-3">
+                <i data-lucide="clipboard-list" class="w-12 h-12 mx-auto text-slate-300"></i>
+                <h4 class="text-sm font-bold text-slate-800">No assignments created for this batch yet</h4>
+                <p class="text-xs text-slate-400 max-w-md mx-auto">Create and dispatch homework, coding exercises, or milestone deliverables to all enrolled students.</p>
+                <button type="button"
+                        onclick="openCreateAssignmentModal('{{ batch.id }}', '{{ batch.code|escapejs }}')"
+                        class="inline-flex items-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all">
+                    <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i>
+                    <span>+ Create First Assignment for {{ batch.code }}</span>
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-3xl border border-gray-200 p-12 text-center text-slate-500 space-y-3">
+        <i data-lucide="layers" class="w-12 h-12 mx-auto text-slate-300"></i>
+        <h3 class="text-base font-bold text-slate-800">No cohort batches assigned</h3>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto">You do not have any active teaching batches assigned to you yet.</p>
+    </div>
+    {% endif %}
+
+    <!-- ========================================================================================= -->
+    <!-- TRAINER MODAL: CREATE ASSIGNMENT & ASSIGN TO ALL STUDENTS -->
+    <!-- ========================================================================================= -->
+    <div id="createBatchAssignmentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-gray-100 relative max-h-[90vh] overflow-y-auto transform transition-all my-8">
+            
+            <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
+                <div>
+                    <span class="text-[11px] font-black uppercase tracking-wider text-indigo-600">Cohort Academic Dispatch</span>
+                    <h3 class="text-xl font-black text-slate-900 mt-0.5">Create Batch Assignment</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Dispatches a task, coding deliverable, or milestone to all students in the batch.</p>
+                </div>
+                <button type="button" onclick="closeModal('createBatchAssignmentModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form id="createBatchAssignmentForm" method="post" action="" class="space-y-5">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                <!-- Select Target Batch -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Target Cohort Batch <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="batch_id" id="modal_create_batch_id" required onchange="onModalBatchChange(this.value)"
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900 bg-white">
+                        {% for b in trainer_batches %}
+                        <option value="{{ b.id }}">{{ b.code }} — {{ b.name }} ({{ b.students.count }} Students)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Assignment Title -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Assignment Title <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="title" id="modal_create_title" required
+                           placeholder="e.g. Milestone Lab: Build Multi-Agent LangGraph System"
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                </div>
+
+                <!-- Description / Problem Statement -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Deliverable Specifications &amp; Instructions <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea name="description" id="modal_create_description" rows="3" required
+                              placeholder="Define the task, expected inputs/outputs, unit test requirements, and evaluation rubric..."
+                              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900"></textarea>
+                </div>
+
+                <!-- Due Date & Max Score -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Due Date &amp; Time
+                        </label>
+                        <input type="datetime-local" name="due_date" id="modal_create_due_date"
+                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Maximum Score (Points) <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="number" name="max_score" id="modal_create_max_score" value="100" min="1" required
+                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                    </div>
+                </div>
+
+                <!-- Starter Code / Repo Link -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center">
+                        <i data-lucide="git-branch" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>
+                        Starter Code / Template Repo URL (Optional)
+                    </label>
+                    <input type="url" name="resource_url" id="modal_create_resource_url"
+                           placeholder="https://github.com/learnhub/agentic-cli-starter"
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                </div>
+
+                <!-- Assign Target: ALL vs INDIVIDUAL -->
+                <div class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-3">
+                    <label class="block text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                        Assignment Audience <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                            <input type="radio" name="assign_target" value="ALL" checked onchange="toggleStudentTargetSelector(false)" class="accent-indigo-600 w-4 h-4">
+                            <span>Send to All Students in Batch (Recommended)</span>
+                        </label>
+                        <label class="flex items-center space-x-2.5 text-xs font-semibold text-slate-600 cursor-pointer">
+                            <input type="radio" name="assign_target" value="INDIVIDUAL" onchange="toggleStudentTargetSelector(true)" class="accent-indigo-600 w-4 h-4">
+                            <span>Assign to Specific Individual Student (Remedial or Special Lab)</span>
+                        </label>
+                    </div>
+
+                    <div id="targetStudentDropdownContainer" class="hidden pt-2">
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Select Student:</label>
+                        <select name="target_student" id="modal_target_student"
+                                class="w-full px-3.5 py-2 rounded-xl border border-indigo-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-xs text-slate-800 bg-white">
+                            <option value="">-- Choose Student --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeModal('createBatchAssignmentModal')"
+                            class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5 transition-all">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Create &amp; Assign to Batch</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- TRAINER MODAL: VALIDATE SUBMISSION & GIVE MARKS -->
+    <!-- ========================================================================================= -->
+    <div id="gradeStudentSubmissionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-gray-100 relative max-h-[90vh] overflow-y-auto transform transition-all my-8">
+            
+            <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-5">
+                <div>
+                    <span class="text-[11px] font-black uppercase tracking-wider text-emerald-600">Teacher Evaluation &amp; Grading</span>
+                    <h3 class="text-xl font-black text-slate-900 mt-0.5">Validate &amp; Grade Submission</h3>
+                    <p class="text-xs text-slate-500 mt-0.5" id="gradeModalSubtitle">Evaluate solution code and award marks.</p>
+                </div>
+                <button type="button" onclick="closeModal('gradeStudentSubmissionModal')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form id="gradeStudentSubmissionForm" method="post" action="" class="space-y-5">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <input type="hidden" name="assignment_id" id="grade_assignment_id" value="">
+                <input type="hidden" name="student_id" id="grade_student_id" value="">
+
+                <!-- Student & Assignment Context Card -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-900 text-sm" id="gradeStudentName">Student Name</span>
+                        <span class="font-mono text-[11px] text-slate-400" id="gradeStudentEmail">student@email.com</span>
+                    </div>
+                    <div class="text-slate-600 font-semibold flex items-center">
+                        <i data-lucide="file-check-2" class="w-3.5 h-3.5 mr-1.5 text-indigo-600"></i>
+                        <span id="gradeAssignmentTitle">Task Title</span>
+                    </div>
+                    <div class="text-[11px] text-slate-500" id="gradeMaxScoreDisplay">
+                        Maximum Score: 100 Points
+                    </div>
+                </div>
+
+                <!-- Solution Repository Link -->
+                <div class="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-2">
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block">Submitted Solution Repository:</span>
+                    <div id="gradeSubmissionUrlContainer">
+                        <a href="#" id="gradeDirectRepoLink" target="_blank" rel="noopener noreferrer"
+                           class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs font-bold rounded-xl transition-colors flex items-center justify-between shadow-xs">
+                            <span class="flex items-center space-x-2 truncate">
+                                <i data-lucide="github" class="w-4 h-4 text-indigo-400"></i>
+                                <span id="gradeRepoUrlText" class="truncate">https://github.com/...</span>
+                            </span>
+                            <span class="text-[11px] text-indigo-300 font-sans flex items-center ml-2 flex-shrink-0">
+                                Open Repo <i data-lucide="external-link" class="w-3 h-3 ml-1"></i>
+                            </span>
+                        </a>
+                        <p class="text-[11px] text-slate-500 mt-1 font-mono" id="gradeRepoPathText"></p>
+                    </div>
+                    <div id="gradeNoSubmissionNotice" class="hidden p-3 rounded-xl bg-amber-100/70 border border-amber-200 text-amber-900 text-xs">
+                        <i data-lucide="alert-circle" class="w-4 h-4 inline mr-1 text-amber-700"></i>
+                        Student has not submitted a repository link yet. You can still assign marks or leave feedback.
+                    </div>
+                </div>
+
+                <!-- Marks / Score & Status -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>Score / Marks <span class="text-rose-500">*</span></span>
+                            <span class="text-[11px] font-bold text-indigo-600" id="gradeMaxScoreBadge">/ 100</span>
+                        </label>
+                        <input type="number" name="score" id="grade_score_input" min="0" required
+                               placeholder="e.g. 95"
+                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-base font-extrabold text-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Status <span class="text-rose-500">*</span>
+                        </label>
+                        <select name="status" id="grade_status_select" required
+                                class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-sm text-slate-900 bg-white">
+                            <option value="GRADED">Graded &amp; Validated</option>
+                            <option value="REVISION_REQUESTED">Revision Requested (Needs Fix)</option>
+                            <option value="EXCUSED">Excused / Exempted</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Mentor Feedback -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Mentor Feedback &amp; Evaluation Remarks
+                    </label>
+                    <textarea name="mentor_feedback" id="grade_feedback_input" rows="3"
+                              placeholder="Highlight solution strengths, code readability, architecture design, or edge cases to improve..."
+                              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all outline-none text-xs text-slate-900"></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeModal('gradeStudentSubmissionModal')"
+                            class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center space-x-1.5 transition-all">
+                        <i data-lucide="check-check" class="w-4 h-4"></i>
+                        <span>Save Marks &amp; Feedback</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- ========================================================================================= -->
+    <!-- STUDENT ASSIGNMENTS VIEW (SUBMISSION & REVIEW) -->
+    <!-- ========================================================================================= -->
 
     <!-- Header Banner -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-6">
@@ -184,13 +756,21 @@
                         {% if att %}
                         <div class="space-y-2 pt-2">
                             {% if att.submission_url %}
-                            <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                                <div class="flex items-center space-x-2 min-w-0">
-                                    <i data-lucide="link" class="w-4 h-4 text-indigo-600 flex-shrink-0"></i>
-                                    <span class="text-slate-600 font-medium flex-shrink-0">Your Submitted URL:</span>
-                                    <a href="{{ att.submission_url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-indigo-700 hover:underline truncate">
+                            <div class="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                <div class="flex flex-wrap items-center gap-2 min-w-0">
+                                    <div class="flex items-center space-x-1.5 font-bold text-slate-700">
+                                        <i data-lucide="git-branch" class="w-4 h-4 text-indigo-600 flex-shrink-0"></i>
+                                        <span>Repo:</span>
+                                    </div>
+                                    <a href="{{ att.direct_submission_url|default:att.submission_url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-indigo-700 hover:underline font-semibold truncate max-w-xs sm:max-w-md">
                                         {{ att.submission_url }}
                                     </a>
+                                    {% if att.github_path %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-white border border-indigo-200 text-indigo-900 font-mono text-[11px] font-bold shadow-2xs">
+                                        <i data-lucide="folder-code" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>
+                                        Path: {{ att.github_path }}
+                                    </span>
+                                    {% endif %}
                                 </div>
                                 <span class="text-[11px] text-slate-400 flex-shrink-0">Last updated: {{ att.updated_at|date:"M d, H:i" }}</span>
                             </div>
@@ -219,7 +799,7 @@
                     <!-- Submission Action Button -->
                     <div class="flex-shrink-0 flex items-center lg:self-center">
                         <button type="button"
-                                onclick="openStudentSubmissionModal('{{ a.id }}', '{{ a.title|escapejs }}', '{{ batch.code|escapejs }}', '{{ att.submission_url|default:''|escapejs }}', '{{ a.max_score }}')"
+                                onclick="openStudentSubmissionModal('{{ a.id }}', '{{ a.title|escapejs }}', '{{ batch.code|escapejs }}', '{{ att.submission_url|default:''|escapejs }}', '{{ a.max_score }}', '{{ att.github_path|default:''|escapejs }}')"
                                 class="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 shadow-sm transition-all {% if item.has_submitted %}bg-slate-900 hover:bg-slate-800 text-white{% else %}bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20{% endif %}">
                             <i data-lucide="upload-cloud" class="w-4 h-4"></i>
                             <span>{% if item.has_submitted %}Update / Revise Submission{% else %}Submit Solution{% endif %}</span>
@@ -248,124 +828,101 @@
     </div>
     {% endif %}
 
-    <!-- Optional Curriculum Milestones Section -->
-    {% if assignment_cards %}
-    <div class="pt-8 border-t border-gray-200 space-y-4">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center">
-                    <i data-lucide="bookmark" class="w-5 h-5 mr-2 text-indigo-600"></i>
-                    Course Curriculum Milestones (Self-Paced)
-                </h2>
-                <p class="text-xs text-slate-500 mt-0.5">Core curricular milestone projects aligned with course catalog syllabi.</p>
+    <!-- Student Batch Assignment Submission Modal -->
+    <div id="studentBatchSubmissionModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+        <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                        <i data-lucide="upload-cloud" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                        Submit Solution Deliverable
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5" id="submissionModalSubtitle">Cohort Assignment Submission</p>
+                </div>
+                <button onclick="closeModal('studentBatchSubmissionModal')" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {% for item in assignment_cards %}
-            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft hover:shadow-lg transition-all p-6 sm:p-7 flex flex-col justify-between space-y-4">
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wide">
-                            {{ item.assignment.course.code }} • Milestone {{ item.assignment.order }}
-                        </span>
+            <form id="studentBatchSubmissionForm" method="post" action="" class="space-y-4">
+                {% csrf_token %}
 
-                        {% if item.submission %}
-                        <span class="px-3 py-1 rounded-full text-xs font-bold {% if item.submission.status == 'REVIEWED' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif item.submission.status == 'REVISION_REQUESTED' %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
-                            {{ item.submission.get_status_display }}
-                        </span>
-                        {% else %}
-                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
-                            Not Submitted
-                        </span>
-                        {% endif %}
-                    </div>
-
-                    <h3 class="text-base font-bold text-slate-900 leading-snug">{{ item.assignment.title }}</h3>
-                    <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">{{ item.assignment.description }}</p>
+                <div class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-1">
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block" id="modalBatchCode">BATCH</span>
+                    <h4 class="text-sm font-bold text-slate-900" id="modalAssignmentTitle">Assignment Title</h4>
+                    <span class="text-xs text-slate-500 block" id="modalMaxScore">Max Score: 100 Points</span>
                 </div>
 
-                <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <div class="text-xs text-slate-500">
-                        <span class="block">Due: <strong class="text-slate-700">{{ item.assignment.due_date|date:"M d, Y"|default:"Open" }}</strong></span>
-                    </div>
-
-                    <a href="{% url 'lms:assignment_detail' item.assignment.id %}" class="px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5 shadow-sm">
-                        <span>Details</span>
-                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                    </a>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        GitHub Repository / Project URL *
+                    </label>
+                    <input type="text" name="submission_url" id="modalSubmissionUrlInput" required
+                           placeholder="https://github.com/yourusername/project-repo or username/repo"
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-[11px] text-slate-400 mt-1">Provide a public GitHub repository, username/repo, or Google Colab link.</p>
                 </div>
-            </div>
-            {% endfor %}
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                        <span>GitHub Solution Path / Folder</span>
+                        <span class="text-[10px] font-semibold text-slate-400 normal-case">Optional</span>
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="folder-code" class="w-4 h-4"></i>
+                        </div>
+                        <input type="text" name="github_path" id="modalGithubPathInput"
+                               placeholder="e.g. assignments/day01 or notebooks/solution.ipynb"
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Specify the subfolder or file path inside your repository where this assignment solution resides.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Notes for Teacher / Mentor (Optional)
+                    </label>
+                    <textarea name="student_notes" rows="3"
+                              placeholder="Highlight key architecture decisions, test coverage, or edge cases handled..."
+                              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('studentBatchSubmissionModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Submit to Instructor</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     {% endif %}
 
 </div>
 
-<!-- Student Batch Assignment Submission Modal -->
-<div id="studentBatchSubmissionModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
-    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
-        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
-            <div>
-                <h3 class="text-lg font-bold text-slate-900 flex items-center">
-                    <i data-lucide="upload-cloud" class="w-5 h-5 mr-2 text-indigo-600"></i>
-                    Submit Solution Deliverable
-                </h3>
-                <p class="text-xs text-slate-500 mt-0.5" id="submissionModalSubtitle">Cohort Assignment Submission</p>
-            </div>
-            <button onclick="closeModal('studentBatchSubmissionModal')" class="text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-        </div>
-
-        <form id="studentBatchSubmissionForm" method="post" action="" class="space-y-4">
-            {% csrf_token %}
-
-            <div class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-1">
-                <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block" id="modalBatchCode">BATCH</span>
-                <h4 class="text-sm font-bold text-slate-900" id="modalAssignmentTitle">Assignment Title</h4>
-                <span class="text-xs text-slate-500 block" id="modalMaxScore">Max Score: 100 Points</span>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Solution Repository / Project URL *
-                </label>
-                <input type="url" name="submission_url" id="modalSubmissionUrlInput" required
-                       placeholder="https://github.com/yourusername/project-repo or live link"
-                       class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500">
-                <p class="text-[11px] text-slate-400 mt-1">Provide a public GitHub repository, Google Colab notebook, or live application link.</p>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Notes for Teacher / Mentor (Optional)
-                </label>
-                <textarea name="student_notes" rows="3"
-                          placeholder="Highlight key architecture decisions, test coverage, or edge cases handled..."
-                          class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-            </div>
-
-            <div class="pt-2 flex justify-end space-x-3">
-                <button type="button" onclick="closeModal('studentBatchSubmissionModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
-                    Cancel
-                </button>
-                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5">
-                    <i data-lucide="check" class="w-4 h-4"></i>
-                    <span>Submit to Instructor</span>
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
+// Batch students map for populating individual student selector
+const batchStudentsMap = {
+    {% if is_trainer %}
+    {% for b in trainer_batches %}
+    "{{ b.id }}": [
+        {% for s in b.students.all %}
+        { id: "{{ s.id }}", name: "{{ s.full_name|escapejs }}", email: "{{ s.email|escapejs }}" },
+        {% endfor %}
+    ],
+    {% endfor %}
+    {% endif %}
+};
+
 function openModal(id) {
     const el = document.getElementById(id);
     if (el) {
         el.classList.remove('hidden');
-        el.style.display = 'flex';
+        el.classList.add('flex');
     }
 }
 
@@ -373,21 +930,149 @@ function closeModal(id) {
     const el = document.getElementById(id);
     if (el) {
         el.classList.add('hidden');
-        el.style.display = 'none';
+        el.classList.remove('flex');
     }
 }
 
-function openStudentSubmissionModal(assignmentId, title, batchCode, existingUrl, maxScore) {
+function onModalBatchChange(batchId) {
+    const form = document.getElementById('createBatchAssignmentForm');
+    if (form) {
+        form.action = `/lms/batches/${batchId}/assignments/add/`;
+    }
+    const studentSelect = document.getElementById('modal_target_student');
+    if (studentSelect) {
+        studentSelect.innerHTML = '<option value="">-- Choose Student --</option>';
+        const students = batchStudentsMap[batchId] || [];
+        students.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = `${s.name} (${s.email})`;
+            studentSelect.appendChild(opt);
+        });
+    }
+}
+
+function toggleStudentTargetSelector(show) {
+    const container = document.getElementById('targetStudentDropdownContainer');
+    if (container) {
+        if (show) {
+            container.classList.remove('hidden');
+        } else {
+            container.classList.add('hidden');
+            const studentSelect = document.getElementById('modal_target_student');
+            if (studentSelect) studentSelect.value = "";
+        }
+    }
+}
+
+function openCreateAssignmentModal(batchId, batchCode) {
+    const batchSelect = document.getElementById('modal_create_batch_id');
+    if (batchId && batchSelect) {
+        batchSelect.value = batchId;
+    }
+    const currentBatchId = batchSelect ? batchSelect.value : (batchId || "");
+    if (currentBatchId) {
+        onModalBatchChange(currentBatchId);
+    }
+
+    // Reset fields
+    document.getElementById('modal_create_title').value = "";
+    document.getElementById('modal_create_description').value = "";
+    document.getElementById('modal_create_resource_url').value = "";
+    document.getElementById('modal_create_max_score').value = "100";
+    
+    // Set default target to ALL
+    const allRadio = document.querySelector('input[name="assign_target"][value="ALL"]');
+    if (allRadio) {
+        allRadio.checked = true;
+        toggleStudentTargetSelector(false);
+    }
+
+    // Default due date to 1 week from now
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    nextWeek.setHours(23, 59, 0, 0);
+    const dueDateInput = document.getElementById('modal_create_due_date');
+    if (dueDateInput) {
+        dueDateInput.value = nextWeek.toISOString().slice(0, 16);
+    }
+
+    openModal('createBatchAssignmentModal');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function openGradeStudentModal(batchId, assignmentId, assignmentTitle, maxScore, studentId, studentName, studentEmail, submissionUrl, githubPath, directUrl, currentScore, currentStatus, currentFeedback) {
+    const form = document.getElementById('gradeStudentSubmissionForm');
+    if (!form) return;
+
+    form.action = `/lms/batches/${batchId}/assignments/assess/`;
+    document.getElementById('grade_assignment_id').value = assignmentId;
+    document.getElementById('grade_student_id').value = studentId;
+
+    document.getElementById('gradeStudentName').textContent = studentName || "Student";
+    document.getElementById('gradeStudentEmail').textContent = studentEmail || "";
+    document.getElementById('gradeAssignmentTitle').textContent = assignmentTitle || "Assignment";
+    document.getElementById('gradeMaxScoreDisplay').textContent = `Maximum Evaluation Score: ${maxScore || 100} Points`;
+    document.getElementById('gradeMaxScoreBadge').textContent = `/ ${maxScore || 100}`;
+
+    const scoreInput = document.getElementById('grade_score_input');
+    scoreInput.max = maxScore || 100;
+    scoreInput.value = currentScore || "";
+
+    const statusSelect = document.getElementById('grade_status_select');
+    statusSelect.value = currentStatus || "GRADED";
+
+    const feedbackInput = document.getElementById('grade_feedback_input');
+    feedbackInput.value = currentFeedback || "";
+
+    // Deliverable display
+    const urlContainer = document.getElementById('gradeSubmissionUrlContainer');
+    const noSubNotice = document.getElementById('gradeNoSubmissionNotice');
+    const directLink = document.getElementById('gradeDirectRepoLink');
+    const repoText = document.getElementById('gradeRepoUrlText');
+    const pathText = document.getElementById('gradeRepoPathText');
+
+    if (submissionUrl) {
+        urlContainer.classList.remove('hidden');
+        noSubNotice.classList.add('hidden');
+        directLink.href = directUrl || submissionUrl;
+        repoText.textContent = submissionUrl;
+        pathText.textContent = githubPath ? `Solution Path: ${githubPath}` : "";
+    } else {
+        urlContainer.classList.add('hidden');
+        noSubNotice.classList.remove('hidden');
+    }
+
+    openModal('gradeStudentSubmissionModal');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function openStudentSubmissionModal(assignmentId, title, batchCode, existingUrl, maxScore, existingPath) {
     const form = document.getElementById('studentBatchSubmissionForm');
     form.action = `/lms/assignments/batch/${assignmentId}/submit/`;
     document.getElementById('modalBatchCode').textContent = `Cohort: ${batchCode}`;
     document.getElementById('modalAssignmentTitle').textContent = title;
     document.getElementById('modalMaxScore').textContent = `Max Evaluation Score: ${maxScore} Points`;
     document.getElementById('modalSubmissionUrlInput').value = existingUrl || '';
+    document.getElementById('modalGithubPathInput').value = existingPath || '';
     document.getElementById('submissionModalSubtitle').textContent = `Submitting for: ${title}`;
 
     if (typeof lucide !== 'undefined') lucide.createIcons();
     openModal('studentBatchSubmissionModal');
 }
+
+// Close on backdrop click
+document.addEventListener('DOMContentLoaded', function() {
+    ['createBatchAssignmentModal', 'gradeStudentSubmissionModal', 'studentBatchSubmissionModal'].forEach(id => {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal(id);
+                }
+            });
+        }
+    });
+});
 </script>
 {% endblock %}

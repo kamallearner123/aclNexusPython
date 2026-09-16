@@ -89,11 +89,15 @@ class PasswordUpdateForm(forms.Form):
 class AssignmentSubmissionForm(forms.ModelForm):
     class Meta:
         model = AssignmentSubmission
-        fields = ['submission_url', 'submission_text']
+        fields = ['submission_url', 'github_path', 'submission_text']
         widgets = {
-            'submission_url': forms.URLInput(attrs={
-                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm',
-                'placeholder': 'https://github.com/user/repository or Colab link'
+            'submission_url': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm font-mono',
+                'placeholder': 'https://github.com/user/repository or username/repo'
+            }),
+            'github_path': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm font-mono',
+                'placeholder': 'e.g. assignments/day01 or notebooks/solution.ipynb'
             }),
             'submission_text': forms.Textarea(attrs={
                 'rows': 4,
@@ -349,6 +353,79 @@ class CourseCreateForm(forms.ModelForm):
         return slug
 
 
+class CourseEditForm(forms.ModelForm):
+    lead_instructor = forms.ModelChoiceField(
+        queryset=LMSUser.objects.filter(role__in=['MENTOR', 'MANAGER', 'ADMIN'], is_active=True),
+        required=False,
+        empty_label="-- Select Lead Faculty Mentor / Teacher --",
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm'
+        })
+    )
+    slug = forms.SlugField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+            'placeholder': 'e.g. multi-agent-systems (optional, auto-generated)'
+        })
+    )
+    thumbnail = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+            'placeholder': 'genai.svg'
+        })
+    )
+
+    class Meta:
+        model = Course
+        fields = ['code', 'title', 'slug', 'category', 'difficulty_level', 'status', 'short_description', 'description', 'thumbnail']
+        widgets = {
+            'code': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'e.g. AI-2026, CLOUD-101'
+            }),
+            'title': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'e.g. Multi-Agent Systems & Generative Workflows'
+            }),
+            'slug': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm'
+            }),
+            'category': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'e.g. Artificial Intelligence, Cloud Computing'
+            }),
+            'difficulty_level': forms.Select(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm'
+            }),
+            'status': forms.Select(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm'
+            }),
+            'short_description': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'Short summary / tagline'
+            }),
+            'description': forms.Textarea(attrs={
+                'rows': 4,
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'Detailed syllabus and course deliverables breakdown...'
+            }),
+            'thumbnail': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'genai.svg'
+            }),
+        }
+
+    def clean_slug(self):
+        from django.utils.text import slugify
+        slug = self.cleaned_data.get('slug')
+        title = self.cleaned_data.get('title')
+        if not slug and title:
+            slug = slugify(title)
+        return slug
+
+
 class LMSUserCreateForm(forms.Form):
     ROLE_CHOICES = [
         ('STUDENT', 'Student (Learner)'),
@@ -497,20 +574,20 @@ class BatchForm(forms.ModelForm):
         })
     )
     github_path = forms.CharField(
-        required=True,
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm font-mono',
             'placeholder': 'e.g. https://github.com/apt-computing-labs/agentic-ai or org/repo'
         }),
-        label="GitHub Path / Repository URL *"
+        label="GitHub Path / Repository URL"
     )
     gdrive_path = forms.CharField(
-        required=True,
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm font-mono',
             'placeholder': 'e.g. https://drive.google.com/drive/folders/...'
         }),
-        label="Google Drive Path / Resource Folder URL *"
+        label="Google Drive Path / Resource Folder URL"
     )
     zoom_link = forms.CharField(
         required=False,
@@ -817,7 +894,11 @@ class StudentPaymentSubmissionForm(forms.Form):
 class BatchSessionForm(forms.ModelForm):
     class Meta:
         model = BatchSession
-        fields = ['batch', 'title', 'instructor', 'scheduled_date', 'start_time', 'end_time', 'meeting_link', 'recording_link', 'status', 'agenda']
+        fields = [
+            'batch', 'title', 'instructor', 'scheduled_date', 'start_time', 'end_time',
+            'meeting_link', 'recording_link', 'status', 'agenda',
+            'assignment', 'assignment_title', 'assignment_url'
+        ]
         widgets = {
             'batch': forms.Select(attrs={
                 'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm'
@@ -857,12 +938,54 @@ class BatchSessionForm(forms.ModelForm):
                 'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm',
                 'placeholder': 'Topics covered, prerequisites, and session deliverables...'
             }),
+            'assignment': forms.Select(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm'
+            }),
+            'assignment_title': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'e.g. Milestone Lab 02: Build RAG with LangChain'
+            }),
+            'assignment_url': forms.URLInput(attrs={
+                'class': 'w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm',
+                'placeholder': 'https://github.com/... or assignment submission link'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if 'batch' in self.fields:
             self.fields['batch'].required = False
+        if 'instructor' in self.fields:
+            self.fields['instructor'].required = False
+        if 'meeting_link' in self.fields:
+            self.fields['meeting_link'].required = False
+        if 'recording_link' in self.fields:
+            self.fields['recording_link'].required = False
+        if 'end_time' in self.fields:
+            self.fields['end_time'].required = False
+        if 'assignment' in self.fields:
+            self.fields['assignment'].required = False
+            batch = kwargs.get('initial', {}).get('batch') or (self.instance.batch if getattr(self, 'instance', None) and self.instance.pk else None)
+            if batch:
+                self.fields['assignment'].queryset = BatchAssignment.objects.filter(batch=batch, is_active=True)
+            else:
+                self.fields['assignment'].queryset = BatchAssignment.objects.filter(is_active=True)
+        if 'assignment_title' in self.fields:
+            self.fields['assignment_title'].required = False
+        if 'assignment_url' in self.fields:
+            self.fields['assignment_url'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get('batch') and getattr(self, 'instance', None) and getattr(self.instance, 'batch_id', None):
+            cleaned_data['batch'] = self.instance.batch
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        if start_time and not end_time:
+            from datetime import datetime, date, timedelta
+            dummy_dt = datetime.combine(date.today(), start_time) + timedelta(hours=1, minutes=30)
+            cleaned_data['end_time'] = dummy_dt.time()
+        return cleaned_data
 
 
 class BatchMaterialForm(forms.ModelForm):

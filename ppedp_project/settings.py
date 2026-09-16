@@ -27,6 +27,15 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['www.aclnexus.com', '.aclnexus.com', 'localhost', '127.0.0.1', 'testserver']
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8082',
+    'http://127.0.0.1:8082',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://www.aclnexus.com',
+    'https://aclnexus.com',
+]
+
 
 # Application definition
 

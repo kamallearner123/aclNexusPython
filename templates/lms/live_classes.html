@@ -116,8 +116,17 @@
                     {% endif %}
                 </div>
 
-                <!-- Batch Quick Action Links -->
+                <!-- Batch Quick Action Links & Trainer Add Button -->
                 <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                    {% if is_trainer or b.can_manage %}
+                    <button type="button"
+                            onclick="openCreateSessionModal('{{ b.id }}', '{{ b.name|escapejs }}', '{{ b.code|escapejs }}')"
+                            class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all"
+                            title="Schedule New Live Session">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>+ Add Live Session</span>
+                    </button>
+                    {% endif %}
                     {% if b.zoom_link %}
                     <a href="{{ b.zoom_url|default:b.zoom_link }}" target="_blank" rel="noopener noreferrer"
                        class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all"
@@ -150,146 +159,203 @@
                 </div>
             </div>
 
-            <!-- Table of Sessions -->
-            {% if b.batch_sessions %}
+            <!-- Table of Sessions: Date | Topic | Status | Video Link | Recorded Link | Assignment -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-gray-200/80 bg-slate-50/70 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                            <th class="py-3.5 px-5">#</th>
-                            <th class="py-3.5 px-5">Scheduled Date &amp; Time</th>
-                            <th class="py-3.5 px-5">Topic &amp; Agenda</th>
-                            <th class="py-3.5 px-5">Mentor / Instructor</th>
-                            <th class="py-3.5 px-5">Status</th>
-                            <th class="py-3.5 px-5 text-right">Action / Class Video</th>
+                        <tr class="border-b border-gray-200 bg-slate-50/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
+                            <th class="py-3.5 px-4 sm:px-5">Date</th>
+                            <th class="py-3.5 px-4 sm:px-5">Topic</th>
+                            <th class="py-3.5 px-4 sm:px-5">Status</th>
+                            <th class="py-3.5 px-4 sm:px-5">Video Link</th>
+                            <th class="py-3.5 px-4 sm:px-5">Recorded Link</th>
+                            <th class="py-3.5 px-4 sm:px-5">Assignment</th>
+                            {% if is_trainer or b.can_manage %}
+                            <th class="py-3.5 px-4 sm:px-5 text-right">Actions</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 text-xs">
-                        {% for s in b.batch_sessions %}
-                        <!-- Ongoing sessions highlighted in green color -->
-                        <tr class="transition-colors {% if s.is_ongoing %}bg-emerald-500/10 border-l-4 border-l-emerald-500 ring-1 ring-emerald-500/20{% elif s.is_done %}bg-white hover:bg-slate-50/60{% else %}bg-white hover:bg-blue-50/40{% endif %}">
-                            
-                            <!-- Session Index -->
-                            <td class="py-4 px-5 font-black text-slate-600 align-middle">
-                                {% if s.is_ongoing %}
-                                <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[11px] shadow-sm animate-pulse">
-                                    {{ forloop.counter }}
-                                </span>
-                                {% else %}
-                                <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[11px]">
-                                    {{ forloop.counter }}
-                                </span>
-                                {% endif %}
-                            </td>
+                        {% if b.batch_sessions %}
+                            {% for s in b.batch_sessions %}
+                            <!-- Ongoing sessions highlighted in green tint -->
+                            <tr class="transition-colors {% if s.is_ongoing or s.status == 'LIVE' %}bg-emerald-500/10 border-l-4 border-l-emerald-500 ring-1 ring-emerald-500/20{% elif s.is_done or s.status == 'COMPLETED' %}bg-white hover:bg-slate-50/60{% else %}bg-white hover:bg-blue-50/40{% endif %}">
+                                
+                                <!-- 1. Date -->
+                                <td class="py-4 px-4 sm:px-5 align-middle whitespace-nowrap">
+                                    <div class="space-y-0.5">
+                                        <span class="font-extrabold text-slate-900 block text-xs">
+                                            {{ s.scheduled_date|date:"M d, Y" }}
+                                        </span>
+                                        <span class="text-[11px] font-medium text-slate-500 flex items-center">
+                                            <i data-lucide="clock" class="w-3 h-3 mr-1 text-slate-400"></i>
+                                            {{ s.start_time|time:"g:i A" }}{% if s.end_time %} - {{ s.end_time|time:"g:i A" }}{% endif %} IST
+                                        </span>
+                                    </div>
+                                </td>
 
-                            <!-- Scheduled Date & Time -->
-                            <td class="py-4 px-5 align-middle">
-                                <div class="space-y-0.5">
-                                    <span class="font-extrabold text-slate-900 block text-xs">
-                                        {{ s.scheduled_date|date:"l, M d, Y" }}
-                                    </span>
-                                    <span class="text-[11px] font-medium text-slate-500 flex items-center">
-                                        <i data-lucide="clock" class="w-3 h-3 mr-1 text-slate-400"></i>
-                                        {{ s.start_time|time:"g:i A" }}{% if s.end_time %} - {{ s.end_time|time:"g:i A" }}{% endif %} IST
-                                    </span>
-                                </div>
-                            </td>
-
-                            <!-- Topic & Agenda -->
-                            <td class="py-4 px-5 align-middle max-w-xs sm:max-w-md">
-                                <div class="space-y-1">
-                                    <h4 class="font-bold text-slate-900 text-sm leading-snug">
-                                        {{ s.title }}
-                                    </h4>
-                                    {% if s.agenda %}
-                                    <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                                        {{ s.agenda }}
-                                    </p>
-                                    {% endif %}
-                                </div>
-                            </td>
-
-                            <!-- Instructor -->
-                            <td class="py-4 px-5 align-middle">
-                                {% if s.instructor %}
-                                <div class="flex items-center space-x-2.5">
-                                    <img src="{{ s.instructor.avatar_url|default:'https://ui-avatars.com/api/?name='|add:s.instructor.email }}" alt="{{ s.instructor.full_name }}" class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-200 flex-shrink-0">
-                                    <span class="font-bold text-slate-800 text-xs truncate max-w-[130px]">
-                                        {{ s.instructor.full_name }}
-                                    </span>
-                                </div>
-                                {% else %}
-                                <span class="text-xs text-slate-400 italic">Faculty Assigned</span>
-                                {% endif %}
-                            </td>
-
-                            <!-- Status Badge -->
-                            <td class="py-4 px-5 align-middle">
-                                {% if s.is_ongoing %}
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-black bg-emerald-600 text-white shadow-sm animate-pulse">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-white mr-1.5"></span>
-                                    LIVE NOW
-                                </span>
-                                {% elif s.is_done %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                    <i data-lucide="check-circle-2" class="w-3 h-3 mr-1 text-slate-500"></i>
-                                    COMPLETED
-                                </span>
-                                {% else %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                    <i data-lucide="calendar" class="w-3 h-3 mr-1 text-blue-500"></i>
-                                    UPCOMING
-                                </span>
-                                {% endif %}
-                            </td>
-
-                            <!-- Action / Video Link -->
-                            <td class="py-4 px-5 align-middle text-right">
-                                <div class="flex items-center justify-end space-x-2">
-                                    {% if s.is_ongoing %}
-                                    <!-- Highlighted in Green button -->
-                                    <a href="{{ s.meeting_link|default:b.zoom_url }}" target="_blank" rel="noopener noreferrer"
-                                       class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md shadow-emerald-700/20 hover:shadow-emerald-700/30 flex items-center space-x-1.5 transition-all">
-                                        <i data-lucide="video" class="w-3.5 h-3.5"></i>
-                                        <span>Join Live Session Now &rarr;</span>
-                                    </a>
-                                    {% elif s.is_done %}
-                                        {% if s.recording_link %}
-                                        <a href="{{ s.recording_link }}" target="_blank" rel="noopener noreferrer"
-                                           class="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs flex items-center space-x-1.5 transition-colors shadow-xs"
-                                           title="Watch Recorded Lecture Video">
-                                            <i data-lucide="play-circle" class="w-4 h-4 text-indigo-600"></i>
-                                            <span>Watch Class Video</span>
-                                            <i data-lucide="external-link" class="w-3 h-3 text-indigo-400"></i>
-                                        </a>
-                                        {% else %}
-                                        <span class="text-[11px] font-semibold text-slate-400 italic">Recording Processing</span>
+                                <!-- 2. Topic -->
+                                <td class="py-4 px-4 sm:px-5 align-middle min-w-[200px] max-w-xs sm:max-w-md">
+                                    <div class="space-y-1">
+                                        <h4 class="font-bold text-slate-900 text-sm leading-snug">
+                                            {{ s.title }}
+                                        </h4>
+                                        {% if s.agenda %}
+                                        <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                                            {{ s.agenda }}
+                                        </p>
                                         {% endif %}
+                                        {% if s.instructor %}
+                                        <div class="flex items-center space-x-1.5 text-[11px] text-slate-500 pt-0.5">
+                                            <i data-lucide="user-check" class="w-3 h-3 text-indigo-500"></i>
+                                            <span class="font-semibold text-slate-700">{{ s.instructor.full_name }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <!-- 3. Status -->
+                                <td class="py-4 px-4 sm:px-5 align-middle whitespace-nowrap">
+                                    {% if s.is_ongoing or s.status == 'LIVE' %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs animate-pulse">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-600 mr-1.5"></span>
+                                        LIVE NOW
+                                    </span>
+                                    {% elif s.status == 'COMPLETED' or s.is_done %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                        <i data-lucide="check-circle-2" class="w-3 h-3 mr-1 text-slate-500"></i>
+                                        Completed
+                                    </span>
+                                    {% elif s.status == 'CANCELLED' %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                        <i data-lucide="x-circle" class="w-3 h-3 mr-1 text-rose-500"></i>
+                                        Cancelled
+                                    </span>
                                     {% else %}
-                                        {% if s.meeting_link %}
-                                        <a href="{{ s.meeting_link }}" target="_blank" rel="noopener noreferrer"
-                                           class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-1.5 transition-colors shadow-xs">
-                                            <i data-lucide="video" class="w-3.5 h-3.5"></i>
-                                            <span>Join Meeting</span>
-                                        </a>
-                                        {% else %}
-                                        <span class="text-[11px] font-medium text-slate-400">Link Opens At Class Time</span>
-                                        {% endif %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                        <i data-lucide="calendar" class="w-3 h-3 mr-1 text-blue-500"></i>
+                                        Upcoming
+                                    </span>
                                     {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                                </td>
+
+                                <!-- 4. Video Link -->
+                                <td class="py-4 px-4 sm:px-5 align-middle whitespace-nowrap">
+                                    {% if s.meeting_link %}
+                                    <a href="{{ s.meeting_link }}" target="_blank" rel="noopener noreferrer"
+                                       class="inline-flex items-center px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-xs transition-colors"
+                                       title="Join Class: {{ s.meeting_link }}">
+                                        <i data-lucide="video" class="w-3.5 h-3.5 mr-1.5"></i>
+                                        <span>Join Class</span>
+                                        <i data-lucide="external-link" class="w-3 h-3 ml-1 opacity-75"></i>
+                                    </a>
+                                    {% elif b.zoom_link %}
+                                    <a href="{{ b.zoom_url|default:b.zoom_link }}" target="_blank" rel="noopener noreferrer"
+                                       class="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-200 transition-colors"
+                                       title="Use Batch Class Room: {{ b.zoom_url|default:b.zoom_link }}">
+                                        <i data-lucide="video" class="w-3.5 h-3.5 mr-1.5 text-slate-500"></i>
+                                        <span>Batch Room</span>
+                                    </a>
+                                    {% else %}
+                                    <span class="text-xs text-slate-400 italic">Not set</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 5. Recorded Link -->
+                                <td class="py-4 px-4 sm:px-5 align-middle whitespace-nowrap">
+                                    {% if s.recording_link %}
+                                    <a href="{{ s.recording_link }}" target="_blank" rel="noopener noreferrer"
+                                       class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs shadow-xs transition-colors"
+                                       title="Watch Class Recording: {{ s.recording_link }}">
+                                        <i data-lucide="play-circle" class="w-3.5 h-3.5 mr-1.5 text-indigo-600"></i>
+                                        <span>Watch Recording</span>
+                                        <i data-lucide="external-link" class="w-3 h-3 ml-1 opacity-75"></i>
+                                    </a>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-lg bg-slate-50 text-slate-400 text-xs">
+                                        <i data-lucide="clock" class="w-3 h-3 mr-1 text-slate-400"></i>
+                                        <span>Pending</span>
+                                    </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 6. Assignment -->
+                                <td class="py-4 px-4 sm:px-5 align-middle whitespace-nowrap max-w-[200px]">
+                                    {% if s.assignment %}
+                                    <a href="{% url 'lms:assignments_list' %}#assignment-{{ s.assignment.id }}"
+                                       class="inline-flex items-center px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-colors group"
+                                       title="View Assignment: {{ s.assignment.title }}">
+                                        <i data-lucide="file-check-2" class="w-3.5 h-3.5 mr-1.5 text-amber-600 flex-shrink-0"></i>
+                                        <span class="truncate max-w-[150px]">{{ s.assignment.title }}</span>
+                                        <i data-lucide="arrow-right" class="w-3 h-3 ml-1 text-amber-600 opacity-60 group-hover:translate-x-0.5 transition-transform"></i>
+                                    </a>
+                                    {% elif s.assignment_url %}
+                                    <a href="{{ s.assignment_url }}" target="_blank" rel="noopener noreferrer"
+                                       class="inline-flex items-center px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition-colors group"
+                                       title="{{ s.display_assignment_title|default:'Assignment Link' }}">
+                                        <i data-lucide="external-link" class="w-3.5 h-3.5 mr-1.5 text-amber-600 flex-shrink-0"></i>
+                                        <span class="truncate max-w-[150px]">{{ s.display_assignment_title|default:"Assignment Link" }}</span>
+                                    </a>
+                                    {% elif s.assignment_title %}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-medium">
+                                        <i data-lucide="file-text" class="w-3 h-3 mr-1 text-slate-500"></i>
+                                        <span class="truncate max-w-[150px]">{{ s.assignment_title }}</span>
+                                    </span>
+                                    {% else %}
+                                    <span class="text-xs text-slate-400 italic">None assigned</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 7. Trainer Actions -->
+                                {% if is_trainer or b.can_manage %}
+                                <td class="py-4 px-4 sm:px-5 align-middle text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end space-x-1.5">
+                                        <button type="button"
+                                                onclick='openEditSessionModal({{ s.id }}, "{{ b.id }}", "{{ s.title|escapejs }}", "{{ s.scheduled_date|date:"Y-m-d" }}", "{{ s.start_time|time:"H:i" }}", "{{ s.end_time|time:"H:i" }}", "{{ s.status|escapejs }}", "{{ s.meeting_link|escapejs }}", "{{ s.recording_link|default:""|escapejs }}", "{{ s.assignment_id|default:"" }}", "{{ s.assignment_title|default:""|escapejs }}", "{{ s.assignment_url|default:""|escapejs }}", "{{ s.agenda|default:""|escapejs }}", "{{ s.instructor_id|default:"" }}")'
+                                                class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-bold flex items-center space-x-1 transition-colors"
+                                                title="Edit Session details">
+                                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                            <span>Edit</span>
+                                        </button>
+                                        <form method="post" action="{% url 'lms:delete_batch_session' s.id %}" onsubmit="return confirm('Are you sure you want to remove this session?');" class="inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                            <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Delete Session">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Informative empty state row maintaining the table structure -->
+                            <tr>
+                                <td colspan="{% if is_trainer or b.can_manage %}7{% else %}6{% endif %}" class="py-12 px-6 text-center text-slate-400">
+                                    <div class="max-w-md mx-auto space-y-3">
+                                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-600">
+                                            <i data-lucide="calendar" class="w-6 h-6"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm font-bold text-slate-700">No scheduled sessions found for this batch yet</h4>
+                                            <p class="text-xs text-slate-500 mt-1">Live class dates, video links, recordings, and assignments will appear here once posted.</p>
+                                        </div>
+                                        {% if is_trainer or b.can_manage %}
+                                        <button type="button"
+                                                onclick="openCreateSessionModal('{{ b.id }}', '{{ b.name|escapejs }}', '{{ b.code|escapejs }}')"
+                                                class="inline-flex items-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all">
+                                            <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i>
+                                            <span>Schedule First Live Session</span>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <div class="p-8 text-center text-slate-400 text-xs">
-                <i data-lucide="calendar" class="w-8 h-8 mx-auto text-slate-300 mb-2"></i>
-                <p class="font-semibold text-slate-600">No scheduled sessions found for this batch yet.</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">The faculty instructor will post class dates and meeting links shortly.</p>
-            </div>
-            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -305,5 +371,275 @@
     {% endif %}
 
 </div>
+
+<!-- Trainer Schedule / Edit Live Session Modal -->
+<div id="sessionTrainerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-gray-100 relative max-h-[90vh] overflow-y-auto transform transition-all my-8">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
+            <div>
+                <span class="text-[11px] font-black uppercase tracking-wider text-indigo-600" id="modalBatchBadge">Cohort Session Manager</span>
+                <h3 class="text-xl font-black text-slate-900 mt-0.5" id="modalTitle">Schedule Live Session</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Fill session details below. Updates immediately reflect in the live schedule table.</p>
+            </div>
+            <button type="button" onclick="closeSessionTrainerModal()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form id="sessionTrainerForm" method="post" action="" class="space-y-5">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="batch_id" id="modal_batch_id" value="">
+
+            <!-- Topic / Title -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Topic / Session Title <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" name="title" id="modal_title" required
+                       placeholder="e.g. Session 1: Introduction to Agentic Architecture & Tool Use"
+                       class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+            </div>
+
+            <!-- Date, Start Time, End Time -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Date <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="date" name="scheduled_date" id="modal_scheduled_date" required
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Start Time <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="time" name="start_time" id="modal_start_time" required
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        End Time
+                    </label>
+                    <input type="time" name="end_time" id="modal_end_time"
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                </div>
+            </div>
+
+            <!-- Status & Instructor -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Status <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="status" id="modal_status" required
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900 bg-white">
+                        <option value="UPCOMING">Upcoming (Scheduled)</option>
+                        <option value="LIVE">Live / In Progress Now</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Assigned Trainer / Instructor
+                    </label>
+                    <select name="instructor" id="modal_instructor"
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900 bg-white">
+                        <option value="">-- Select Trainer --</option>
+                        {% for ins in instructors %}
+                        <option value="{{ ins.id }}">{{ ins.full_name }} ({{ ins.role }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Video Link & Recorded Link -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center">
+                        <i data-lucide="video" class="w-3.5 h-3.5 mr-1 text-blue-600"></i>
+                        Video Link (Live Meeting)
+                    </label>
+                    <input type="url" name="meeting_link" id="modal_meeting_link"
+                           placeholder="https://meet.google.com/... or https://zoom.us/..."
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center">
+                        <i data-lucide="play-circle" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>
+                        Recorded Link (Class Replay)
+                    </label>
+                    <input type="url" name="recording_link" id="modal_recording_link"
+                           placeholder="https://drive.google.com/... or YouTube link"
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900">
+                </div>
+            </div>
+
+            <!-- Assignment Section -->
+            <div class="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="file-check-2" class="w-4 h-4 text-amber-600"></i>
+                    <span class="text-xs font-bold text-amber-900 uppercase tracking-wider">Associated Assignment</span>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Select from Cohort Assignments:</label>
+                    <select name="assignment" id="modal_assignment"
+                            class="w-full px-3.5 py-2 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none text-xs text-slate-800 bg-white">
+                        <option value="">-- No Linked Batch Assignment --</option>
+                    </select>
+                </div>
+                <div class="pt-1 border-t border-amber-200/60">
+                    <p class="text-[11px] text-slate-500 mb-2">Or enter a custom assignment title &amp; URL:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="text" name="assignment_title" id="modal_assignment_title"
+                               placeholder="e.g. Milestone Lab: Tool Calling Agent"
+                               class="w-full px-3 py-2 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none text-xs text-slate-900 bg-white">
+                        <input type="url" name="assignment_url" id="modal_assignment_url"
+                               placeholder="https://github.com/... or task URL"
+                               class="w-full px-3 py-2 rounded-xl border border-amber-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none text-xs text-slate-900 bg-white">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agenda / Notes -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Agenda &amp; Discussion Points
+                </label>
+                <textarea name="agenda" id="modal_agenda" rows="2"
+                          placeholder="Topics covered, lab prerequisites, code walkthrough milestones..."
+                          class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none text-sm text-slate-900"></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+                <button type="button" onclick="closeSessionTrainerModal()"
+                        class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span id="modalSubmitBtn">Save Session</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Batch assignments map for dynamic assignment population
+const batchAssignmentsMap = {
+    {% for b in student_batches %}
+    "{{ b.id }}": [
+        {% for a in b.available_assignments %}
+        { id: "{{ a.id }}", title: "{{ a.title|escapejs }}" },
+        {% endfor %}
+    ],
+    {% endfor %}
+};
+
+function populateBatchAssignments(batchId, selectedAssignmentId) {
+    const sel = document.getElementById('modal_assignment');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- No Linked Batch Assignment --</option>';
+    const assignments = batchAssignmentsMap[batchId] || [];
+    assignments.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.id;
+        opt.textContent = a.title;
+        if (selectedAssignmentId && String(selectedAssignmentId) === String(a.id)) {
+            opt.selected = true;
+        }
+        sel.appendChild(opt);
+    });
+}
+
+function openCreateSessionModal(batchId, batchName, batchCode) {
+    const modal = document.getElementById('sessionTrainerModal');
+    const form = document.getElementById('sessionTrainerForm');
+    if (!modal || !form) return;
+
+    form.action = `/lms/batches/${batchId}/sessions/add/`;
+    document.getElementById('modal_batch_id').value = batchId;
+    document.getElementById('modalBatchBadge').textContent = `${batchCode} • ${batchName}`;
+    document.getElementById('modalTitle').textContent = "Schedule Live Session";
+    document.getElementById('modalSubmitBtn').textContent = "Schedule & Publish Session";
+
+    // Defaults
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    document.getElementById('modal_scheduled_date').value = todayStr;
+    document.getElementById('modal_start_time').value = "19:00";
+    document.getElementById('modal_end_time').value = "20:30";
+    document.getElementById('modal_title').value = "";
+    document.getElementById('modal_status').value = "UPCOMING";
+    document.getElementById('modal_meeting_link').value = "";
+    document.getElementById('modal_recording_link').value = "";
+    document.getElementById('modal_assignment_title').value = "";
+    document.getElementById('modal_assignment_url').value = "";
+    document.getElementById('modal_agenda').value = "";
+    document.getElementById('modal_instructor').value = "";
+
+    populateBatchAssignments(batchId, null);
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.lucide) lucide.createIcons();
+}
+
+function openEditSessionModal(sessionId, batchId, title, scheduledDate, startTime, endTime, status, meetingLink, recordingLink, assignmentId, assignmentTitle, assignmentUrl, agenda, instructorId) {
+    const modal = document.getElementById('sessionTrainerModal');
+    const form = document.getElementById('sessionTrainerForm');
+    if (!modal || !form) return;
+
+    form.action = `/lms/batches/sessions/${sessionId}/edit/`;
+    document.getElementById('modal_batch_id').value = batchId;
+    document.getElementById('modalTitle').textContent = "Edit Live Session";
+    document.getElementById('modalSubmitBtn').textContent = "Save Changes";
+
+    document.getElementById('modal_title').value = title || "";
+    document.getElementById('modal_scheduled_date').value = scheduledDate || "";
+    document.getElementById('modal_start_time').value = startTime || "";
+    document.getElementById('modal_end_time').value = endTime || "";
+    document.getElementById('modal_status').value = status || "UPCOMING";
+    document.getElementById('modal_meeting_link').value = meetingLink || "";
+    document.getElementById('modal_recording_link').value = recordingLink || "";
+    document.getElementById('modal_assignment_title').value = assignmentTitle || "";
+    document.getElementById('modal_assignment_url').value = assignmentUrl || "";
+    document.getElementById('modal_agenda').value = agenda || "";
+    document.getElementById('modal_instructor').value = instructorId || "";
+
+    populateBatchAssignments(batchId, assignmentId);
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.lucide) lucide.createIcons();
+}
+
+function closeSessionTrainerModal() {
+    const modal = document.getElementById('sessionTrainerModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Close on backdrop click
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('sessionTrainerModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeSessionTrainerModal();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
+
 

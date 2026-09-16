@@ -86,7 +86,7 @@
                 <p class="mt-2 text-center text-sm text-gray-500">Welcome back! Please enter your details.</p>
             </div>
             
-            <form class="mt-8 space-y-6" method="post">
+            <form id="loginForm" class="mt-8 space-y-6" method="post">
                 {% csrf_token %}
                 {% if form.errors %}
                     <div class="rounded-lg bg-red-50 p-4 border border-red-100">
@@ -115,7 +115,7 @@
                 </div>
 
                 <div class="pt-4">
-                    <button type="submit" class="flex w-full justify-center rounded-xl bg-brand-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-all active:scale-[0.98]">Sign In</button>
+                    <button type="submit" id="loginSubmitBtn" class="flex w-full justify-center rounded-xl bg-brand-600 px-3 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-all active:scale-[0.98]">Sign In</button>
                 </div>
                 <input type="hidden" name="next" value="{{ next|default:'' }}">
             </form>
@@ -125,7 +125,49 @@
     <script>
         // Set today's date
         const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', dateOptions);
+        const dateEl = document.getElementById('current-date');
+        if (dateEl) {
+            dateEl.textContent = new Date().toLocaleDateString('en-US', dateOptions);
+        }
+
+        // Helper to read cookies
+        function getCsrfCookie() {
+            if (!document.cookie) return null;
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const c = cookies[i].trim();
+                if (c.startsWith('csrftoken=')) {
+                    return decodeURIComponent(c.substring(10));
+                }
+            }
+            return null;
+        }
+
+        // 1. Force fresh reload if page is restored from browser back/forward cache (bfcache)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted || (window.performance && window.performance.navigation && window.performance.navigation.type === 2)) {
+                window.location.reload();
+            }
+        });
+
+        // 2. Synchronize hidden csrfmiddlewaretoken with active csrftoken cookie on load & submit
+        const form = document.getElementById('loginForm');
+        function syncCsrfToken() {
+            const activeToken = getCsrfCookie();
+            if (form && activeToken) {
+                const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+                if (csrfInput) {
+                    csrfInput.value = activeToken;
+                }
+            }
+        }
+
+        if (form) {
+            syncCsrfToken();
+            form.addEventListener('submit', function() {
+                syncCsrfToken();
+            });
+        }
     </script>
 
 </body>
