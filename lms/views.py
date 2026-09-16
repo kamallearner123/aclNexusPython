@@ -664,6 +664,7 @@ def execute_python_code_view(request):
     """
     Executes Python snippets submitted from the interactive lesson reader.
     Captures stdout and stderr in real-time with a strict execution timeout.
+    Safely resolves the true Python interpreter in uWSGI / PythonAnywhere / Gunicorn / Docker environments.
     """
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'stdout': '', 'stderr': 'Authentication required. Please log in to run code.'}, status=401)
@@ -672,7 +673,9 @@ def execute_python_code_view(request):
         return JsonResponse({'error': 'POST required'}, status=405)
 
     import json
+    import os
     import sys
+    import shutil
     import subprocess
 
     code = ''
@@ -688,12 +691,68 @@ def execute_python_code_view(request):
     if not code.strip():
         return JsonResponse({'success': True, 'stdout': '', 'stderr': 'No code provided.'})
 
+    def _resolve_python_executable():
+        # 1. Check if sys.executable is an actual python binary (NOT uwsgi, gunicorn, etc.)
+        current_exe = sys.executable or ''
+        base_exe = os.path.basename(current_exe).lower()
+        if 'python' in base_exe and not any(x in base_exe for x in ['uwsgi', 'gunicorn', 'celery']):
+            if os.path.exists(current_exe) and os.access(current_exe, os.X_OK):
+                return current_exe
+
+        # 2. Check virtualenv or environment bin directory if sys.prefix is set
+        if hasattr(sys, 'prefix') and sys.prefix:
+            for name in ['python3', 'python']:
+                candidate = os.path.join(sys.prefix, 'bin', name)
+                if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                    return candidate
+                candidate_win = os.path.join(sys.prefix, 'Scripts', f'{name}.exe')
+                if os.path.exists(candidate_win) and os.access(candidate_win, os.X_OK):
+                    return candidate_win
+
+        # 3. Check VIRTUAL_ENV environment variable
+        venv = os.environ.get('VIRTUAL_ENV')
+        if venv:
+            for name in ['python3', 'python']:
+                candidate = os.path.join(venv, 'bin', name)
+                if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                    return candidate
+
+        # 4. Check system PATH via shutil.which
+        for name in ['python3', 'python']:
+            which_path = shutil.which(name)
+            if which_path and os.access(which_path, os.X_OK):
+                return which_path
+
+        # 5. Check common Unix/Linux server locations (including PythonAnywhere: /usr/bin/python3.x)
+        py_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+        common_paths = [
+            f'/usr/bin/python{py_ver}',
+            f'/usr/local/bin/python{py_ver}',
+            '/usr/bin/python3',
+            '/usr/local/bin/python3',
+            '/usr/bin/python',
+            '/usr/local/bin/python',
+        ]
+        for candidate in common_paths:
+            if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+
+        return 'python3'
+
+    py_bin = _resolve_python_executable()
+
+    env = os.environ.copy()
+    env['PYTHONUNBUFFERED'] = '1'
+    env['PYTHONDONTWRITEBYTECODE'] = '1'
+
     try:
         res = subprocess.run(
-            [sys.executable, '-c', code],
+            [py_bin, '-'],
+            input=code,
             capture_output=True,
             text=True,
-            timeout=5,
+            timeout=8,
+            env=env,
         )
         return JsonResponse({
             'success': res.returncode == 0,
@@ -705,7 +764,7 @@ def execute_python_code_view(request):
         return JsonResponse({
             'success': False,
             'stdout': '',
-            'stderr': 'Execution timed out (5.0 second safety limit exceeded). Check for infinite loops.',
+            'stderr': 'Execution timed out (8.0 second safety limit exceeded). Check for infinite loops or long operations.',
             'exit_code': -1,
         })
     except Exception as e:
