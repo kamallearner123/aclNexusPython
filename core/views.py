@@ -13,12 +13,31 @@ from .forms import CustomUserCreationForm, EmployeeCreationForm, EmployeeEditFor
 from .utils import get_daily_ai_news
 
 
-@login_required
 def landing_page(request):
     """
     Global App Hub Landing Page.
     """
     return render(request, 'core/landing.html')
+
+
+@login_required
+def login_dispatcher(request):
+    """
+    Intelligent post-login redirector based on domain permissions:
+    - Pure LMS users (e.g. students) route directly to LearnHub LMS
+    - Pure PMS users (e.g. developers/clients) route to Project Management Dashboard
+    - Shared / Admin accounts route to Nexus Hub Landing Page
+    """
+    from lms.middleware import has_pms_access, has_lms_access
+    pms = has_pms_access(request.user)
+    lms = has_lms_access(request.user)
+
+    if lms and not pms:
+        return redirect('lms:dashboard')
+    elif pms and not lms:
+        return redirect('dashboard')
+    else:
+        return redirect('landing_page')
 
 def is_pm(user):
     return user.roles.filter(name='Project Manager').exists()
@@ -47,6 +66,11 @@ def dashboard(request):
         return redirect('engineer_dashboard')
     elif is_client(request.user):
         return redirect('client_dashboard')
+    elif not request.user.is_superuser and not request.user.is_staff:
+        from lms.middleware import has_lms_access
+        if has_lms_access(request.user):
+            return redirect('lms:dashboard')
+        return redirect('landing_page')
     
     context = {
     'active_projects': Project.objects.filter(status='ACTIVE').count(),
@@ -268,15 +292,16 @@ def client_edit(request, pk):
 @user_passes_test(is_admin)
 def employee_reset_password(request, pk):
     employee = get_object_or_404(User, pk=pk)
+    next_url = request.POST.get("next", "/system-admin/?tab=engineers")
 
     if request.method == "POST":
         new_password = request.POST.get("password")
 
         if not new_password:
-            messages.error(request, "Password cannot be empty")
-            return redirect('/system-admin/?tab=engineers')
+            messages.error(request, "Password cannot be empty.")
+            return redirect(next_url)
 
-        employee.password = make_password(new_password)
+        employee.set_password(new_password)
         employee.save()
 
         messages.success(
@@ -284,7 +309,7 @@ def employee_reset_password(request, pk):
             f"Password reset successfully for {employee.email}"
         )
 
-        return redirect('/system-admin/?tab=engineers')
+        return redirect(next_url)
 
 @login_required
 @user_passes_test(is_admin)

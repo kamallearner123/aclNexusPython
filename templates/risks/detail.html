@@ -1,76 +1,123 @@
 {% extends 'base.html' %}
 
-{% block title %}Risk Details{% endblock %}
+{% block title %}[{{ risk.risk_id }}] {{ risk.title }} - Risk Details{% endblock %}
 
 {% block content %}
-
-<div class="flex justify-between items-center mb-6">
-
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
     <div>
-        <a href="{% url 'risks_register' %}"
-           class="text-sm text-gray-500 hover:text-brand-600">
-            ← Back to Risk Register
+        <a href="{% url 'risks_register' %}" class="text-xs font-semibold text-slate-500 hover:text-brand-600 inline-flex items-center mb-2 transition-colors">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5 mr-1"></i> Back to Risk Register
         </a>
-
-        <h2 class="text-2xl font-bold mt-2">
-            {{ risk.title }}
-        </h2>
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                {{ risk.risk_id }}
+            </span>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">
+                {{ risk.title }}
+            </h1>
+        </div>
     </div>
 
-    <a href="{% url 'risk_update' risk.pk %}"
-       class="bg-brand-600 text-white px-5 py-2 rounded-lg hover:bg-brand-700">
-        Edit Risk
-    </a>
-
+    <div class="flex items-center gap-2">
+        <a href="{% url 'risk_update' risk.pk %}" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors">
+            <i data-lucide="pencil" class="w-3.5 h-3.5 mr-1.5"></i> Edit Risk
+        </a>
+        <form method="POST" action="{% url 'risk_delete' risk.id %}" class="inline-block m-0" onsubmit="return confirm('Are you sure you want to delete this risk?');">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-xs font-semibold text-rose-600 border border-rose-200 hover:bg-rose-50 transition-colors">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1.5"></i> Delete
+            </button>
+        </form>
+    </div>
 </div>
 
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Left Column: Description & Mitigation Plan -->
+    <div class="lg:col-span-8 space-y-6">
+        <!-- Description Card -->
+        <div class="bg-white rounded-xl shadow-soft border border-gray-200/80 p-6">
+            <h2 class="text-sm font-bold text-slate-900 mb-3 flex items-center">
+                <i data-lucide="file-text" class="w-4 h-4 mr-2 text-brand-600"></i> Description
+            </h2>
+            <div class="text-slate-700 text-sm leading-relaxed">
+                {{ risk.description|default:"No detailed description provided." }}
+            </div>
+        </div>
 
-<div class="bg-white rounded-xl shadow p-6">
+        <!-- Mitigation Plan Card -->
+        <div class="bg-white rounded-xl shadow-soft border border-gray-200/80 p-6">
+            <h2 class="text-sm font-bold text-slate-900 mb-3 flex items-center">
+                <i data-lucide="shield-check" class="w-4 h-4 mr-2 text-emerald-600"></i> Mitigation Strategy & Action Plan
+            </h2>
+            <div class="text-slate-700 text-sm prose max-w-none">
+                {% if risk.mitigation_plan %}
+                    {{ risk.mitigation_plan|safe }}
+                {% else %}
+                    <p class="text-slate-400 italic">No mitigation plan logged yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 
-    <table class="table-auto w-full">
+    <!-- Right Column: Risk Metadata -->
+    <div class="lg:col-span-4 space-y-6">
+        <div class="bg-white rounded-xl shadow-soft border border-gray-200/80 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+                <h3 class="text-sm font-bold text-slate-900">Risk Assessment</h3>
+            </div>
+            <div class="p-5 space-y-3.5 text-xs">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <span class="text-slate-500 font-medium">Project</span>
+                    <a href="{% url 'project_detail' risk.project.pk %}" class="font-bold text-brand-600 hover:underline">
+                        {{ risk.project.name }}
+                    </a>
+                </div>
 
-        <tr class="border-b">
-            <td class="font-semibold py-3 w-48">Risk ID</td>
-            <td>{{ risk.risk_id }}</td>
-        </tr>
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <span class="text-slate-500 font-medium">Risk Level</span>
+                    <div>
+                        {% if risk.risk_level == 'CRITICAL' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">Critical</span>
+                        {% elif risk.risk_level == 'HIGH' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-200">High</span>
+                        {% elif risk.risk_level == 'MEDIUM' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">Medium</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">Low</span>
+                        {% endif %}
+                    </div>
+                </div>
 
-        <tr class="border-b">
-            <td class="font-semibold py-3">Project</td>
-            <td>{{ risk.project }}</td>
-        </tr>
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <span class="text-slate-500 font-medium">Probability</span>
+                    <span class="font-semibold text-slate-800">{{ risk.get_probability_display|default:risk.probability }}</span>
+                </div>
 
-        <tr class="border-b">
-            <td class="font-semibold py-3">Title</td>
-            <td>{{ risk.title }}</td>
-        </tr>
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <span class="text-slate-500 font-medium">Impact</span>
+                    <span class="font-semibold text-slate-800">{{ risk.get_impact_display|default:risk.impact }}</span>
+                </div>
 
-        <tr class="border-b">
-            <td class="font-semibold py-3">Description</td>
-            <td>{{ risk.description|default:"-" }}</td>
-        </tr>
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <span class="text-slate-500 font-medium">Risk Score</span>
+                    <span class="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{ risk.risk_score }}</span>
+                </div>
 
-        <tr class="border-b">
-            <td class="font-semibold py-3">Owner</td>
-            <td>{{ risk.owner|default:"Unassigned" }}</td>
-        </tr>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500 font-medium">Risk Owner</span>
+                    <div class="flex items-center gap-1.5 font-semibold text-slate-800">
+                        {% if risk.owner %}
+                            <img src="https://ui-avatars.com/api/?name={{ risk.owner.email }}&background=random" class="w-5 h-5 rounded-full" alt="Avatar">
+                            <span>{{ risk.owner.first_name|default:risk.owner.email }}</span>
+                        {% else %}
+                            <span class="text-slate-400 italic">Unassigned</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <tr class="border-b">
-            <td class="font-semibold py-3">Risk Level</td>
-            <td>{{ risk.get_risk_level_display }}</td>
-        </tr>
-
-        <tr class="border-b">
-            <td class="font-semibold py-3">Risk Score</td>
-            <td>{{ risk.risk_score }}</td>
-        </tr>
-
-        <tr>
-            <td class="font-semibold py-3">Mitigation Plan</td>
-            <td>{{ risk.mitigation_plan|default:"-" }}</td>
-        </tr>
-
-    </table>
-
+        {% include 'core/includes/attachments.html' with object=risk model_name='Risk' %}
+    </div>
 </div>
-
 {% endblock %}

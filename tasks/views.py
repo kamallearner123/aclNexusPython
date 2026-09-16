@@ -114,9 +114,11 @@ def task_detail(request, pk):
         timestamp__gte=task.created_at
     ).order_by('-timestamp')
     
+    from datetime import date
     return render(request, 'tasks/detail.html', {
         'task': task,
-        'activities': activities
+        'activities': activities,
+        'today': date.today(),
     })
 
 @login_required
@@ -163,15 +165,19 @@ def task_update(request, pk):
 def update_task_status(request):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST
+                
             task_id = data.get('task_id')
             new_status = data.get('status')
             
             user_roles = request.user.roles.values_list('name', flat=True)
-            is_architect = 'Architect' in user_roles or request.user.is_superuser
+            can_close = any(r in user_roles for r in ['Architect', 'Project Manager', 'Lead', 'Manager']) or request.user.is_superuser or request.user.is_staff
             
-            if new_status == 'CLOSED' and not is_architect:
-                return JsonResponse({'success': False, 'error': 'Only Architects can close tasks.'}, status=403)
+            if new_status == 'CLOSED' and not can_close:
+                return JsonResponse({'success': False, 'error': 'Only Architects, Project Managers, or Team Leads can close tasks.'}, status=403)
                 
             hours_spent = data.get('hours_spent', 0)
             
@@ -181,13 +187,21 @@ def update_task_status(request):
             
             try:
                 from decimal import Decimal
-                task.hours_spent += Decimal(str(hours_spent))
+                if hours_spent:
+                    task.hours_spent += Decimal(str(hours_spent))
             except (ValueError, TypeError, Exception):
                 pass
                 
             task.save()
             
-            return JsonResponse({'success': True})
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return JsonResponse({
+                    'success': True,
+                    'new_status': task.status,
+                    'new_status_display': task.get_status_display(),
+                    'hours_spent': str(task.hours_spent)
+                })
+            return redirect('task_detail', pk=task.pk)
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
     return JsonResponse({'success': False}, status=405)
@@ -211,17 +225,18 @@ def user_calendar(request):
     """
     User Calendar View displaying assigned tasks using FullCalendar.
     """
-    from django.db.models import Q
     import json
     
-    # Get tasks assigned to the user or created by the user
+    # Strictly query only tasks assigned to the current user by default
     user = request.user
-    q_task = Q(assignee=user) | Q(created_by=user)
-    user_teams = list(user.teams.values_list('id', flat=True))
-    if user_teams:
-        q_task |= Q(project__teams__in=user_teams)
+    view_all = request.GET.get('view') == 'all'
+    user_roles = user.roles.values_list('name', flat=True)
+    can_view_all = user.is_superuser or user.is_staff or 'Project Manager' in user_roles
     
-    my_tasks = Task.objects.filter(q_task).distinct()
+    if view_all and can_view_all:
+        my_tasks = Task.objects.all().select_related('project')
+    else:
+        my_tasks = Task.objects.filter(assignee=user).select_related('project')
     
     events = []
     for task in my_tasks:
@@ -244,6 +259,8 @@ def user_calendar(request):
             })
             
     context = {
-        'events_json': json.dumps(events)
+        'events_json': json.dumps(events),
+        'can_view_all': can_view_all,
+        'view_all': view_all,
     }
     return render(request, 'tasks/calendar.html', context)

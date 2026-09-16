@@ -36,7 +36,7 @@
                     <label for="{{ form.project.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">Project scope</label>
                     <select name="{{ form.project.name }}" id="{{ form.project.id_for_label }}" class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500">
                         {% for value, label in form.project.field.choices %}
-                        <option value="{{ value }}" {% if form.project.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}" {% if form.project.value|stringformat:"s" == value|stringformat:"s" or not form.project.value and not value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </div>

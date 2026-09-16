@@ -6,3 +6,5 @@ backups/
 media/
 venv/
 .venv/
+*.recent.sqlite3
+.DS_Store

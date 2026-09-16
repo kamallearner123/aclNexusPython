@@ -170,6 +170,13 @@
                     Notes
                 </a>
 
+                {% if user_has_lms_access %}
+                <a href="{% url 'lms:dashboard' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'lms' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="graduation-cap" class="w-4 h-4 mr-3 {% if 'lms' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
+                    LearnHub LMS
+                </a>
+                {% endif %}
+
                 {% else %}
                 <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-3 mt-2">Overview</div>
 
@@ -193,7 +200,12 @@
                 {% if not request.user.is_client %}
                 <a href="{% url 'my_team' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'team' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
                     <i data-lucide="users" class="w-4 h-4 mr-3 {% if 'team' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
-                    Team
+                    <span class="flex-1">Team</span>
+                    {% if unread_team_messages_count > 0 %}
+                    <span class="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-rose-600 rounded-full shadow-sm animate-pulse">
+                        {{ unread_team_messages_count }}
+                    </span>
+                    {% endif %}
                 </a>
                 {% endif %}
                 
@@ -229,6 +241,13 @@
                     <i data-lucide="file-text" class="w-4 h-4 mr-3 {% if 'notes' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
                     Notes
                 </a>
+
+                {% if user_has_lms_access %}
+                <a href="{% url 'lms:dashboard' %}" class="group flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 {% if 'lms' in request.path %}bg-brand-600 text-white shadow-md shadow-brand-900/20 ring-1 ring-white/10{% else %}text-slate-400 hover:text-slate-100 hover:bg-slate-800/50{% endif %}">
+                    <i data-lucide="graduation-cap" class="w-4 h-4 mr-3 {% if 'lms' in request.path %}text-white{% else %}text-slate-500 group-hover:text-brand-400{% endif %} transition-colors"></i>
+                    LearnHub LMS
+                </a>
+                {% endif %}
                 {% endif %}
             </nav>
         </div>
@@ -292,6 +311,19 @@
         <!-- Main Scrollable Area -->
         <main class="flex-1 overflow-y-auto relative z-10">
             <div class="p-6 md:p-10 w-full max-w-[1600px] mx-auto min-h-full">
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                    <div class="px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="{% if message.tags == 'success' %}check-circle-2{% elif message.tags == 'error' %}alert-circle{% else %}info{% endif %}" class="w-4 h-4"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">&times;</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 {% block content %}
                 {% endblock %}
             </div>

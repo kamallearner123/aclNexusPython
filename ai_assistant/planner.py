@@ -41,9 +41,13 @@ class Planner:
 
     def plan(self, state):
         report_type = state.report_type or self.infer_report_type(state.question)
-        preset = REPORT_PRESETS.get(report_type, REPORT_PRESETS['project_health'])
+        preset = REPORT_PRESETS.get(report_type, REPORT_PRESETS['portfolio'])
 
-        if preset.get('requires_project') and not state.project_id:
+        if not state.project_id and (report_type == 'portfolio' or report_type == 'project_health'):
+            # Default to scanning all projects across the portfolio
+            report_type = 'portfolio'
+            preset = REPORT_PRESETS['portfolio']
+        elif preset.get('requires_project') and not state.project_id:
             project = tools.get_accessible_projects(self.user).first()
             if not project:
                 raise PermissionDenied('No accessible project is available for this report.')

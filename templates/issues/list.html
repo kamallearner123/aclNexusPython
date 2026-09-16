@@ -1,59 +1,175 @@
 {% extends 'base.html' %}
 
-{% block title %}Issue Tracker - PPEDP{% endblock %}
+{% block title %}Issue Tracker - Project Management{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-4">
-    <h2 class="h3 mb-0 text-gray-800 font-bold">Issue Tracker</h2>
-    <a href="{% url 'issue_create' %}" class="inline-flex items-center justify-center rounded-md bg-rose-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-rose-500 transition-colors btn-sm"><i data-lucide="bug-fill" class="w-4 h-4 mr-1"></i> Log Issue</a>
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Issue Tracker</h1>
+        <p class="text-xs text-slate-500 mt-1">Track, prioritize, and resolve project bugs, blockers, and feature issues.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{% url 'issue_create' %}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-rose-500 transition-colors">
+            <i data-lucide="alert-circle" class="w-4 h-4 mr-1.5"></i> Log New Issue
+        </a>
+    </div>
 </div>
 
-<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
-    <div class="p-6 p-0">
-        <div class="min-w-full divide-y divide-gray-300-responsive">
-            <table class="min-w-full divide-y divide-gray-300 table-hover align-middle mb-0">
-                <thead class="min-w-full divide-y divide-gray-300-light">
-                    <tr>
-                        <th class="ps-4">Title</th>
-                        <th>Project</th>
-                        <th>Type</th>
-                        <th>Severity</th>
-                        <th>Status</th>
-                        <th>Logged By</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for issue in issues %}
-                    <tr>
-                        <td class="ps-4 font-semibold text-brand-600">{{ issue.title }}</td>
-                        <td>{{ issue.project.code }}</td>
-                        <td>{{ issue.get_issue_type_display }}</td>
-                        <td>
-                            <span class="badge {% if issue.severity == 'CRITICAL' %}bg-danger{% elif issue.severity == 'MAJOR' %}bg-warning text-dark{% elif issue.severity == 'MINOR' %}bg-info{% else %}bg-secondary{% endif %}">
-                                {{ issue.get_severity_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge {% if issue.status == 'OPEN' %}bg-danger{% elif issue.status == 'IN_PROGRESS' %}bg-warning text-dark{% elif issue.status == 'RESOLVED' %}bg-success{% else %}bg-secondary{% endif %}">
-                                {{ issue.get_status_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if issue.created_by %}
-                                {{ issue.created_by.email }}
-                            {% else %}
-                                <span class="text-gray-500">System</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center py-6 text-gray-500">No issues found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Search & Filter Bar -->
+<div class="bg-white rounded-xl shadow-soft border border-gray-200/80 p-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="sm:col-span-2">
+            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Search Issues</label>
+            <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                <input type="text" id="issueSearchInput" placeholder="Filter by title, project, or type..." class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 focus:border-brand-500 focus:ring-brand-500 outline-none">
+            </div>
+        </div>
+        <div>
+            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Severity</label>
+            <select id="issueSeverityFilter" class="w-full py-1.5 px-3 text-xs rounded-lg border border-gray-300 focus:border-brand-500 focus:ring-brand-500 outline-none bg-white">
+                <option value="">All Severities</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="MAJOR">Major</option>
+                <option value="MINOR">Minor</option>
+                <option value="TRIVIAL">Trivial</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Status</label>
+            <select id="issueStatusFilter" class="w-full py-1.5 px-3 text-xs rounded-lg border border-gray-300 focus:border-brand-500 focus:ring-brand-500 outline-none bg-white">
+                <option value="">All Statuses</option>
+                <option value="OPEN">Open</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="RESOLVED">Resolved</option>
+                <option value="CLOSED">Closed</option>
+            </select>
         </div>
     </div>
 </div>
+
+<!-- Issues Table -->
+<div class="bg-white rounded-xl shadow-soft border border-gray-200/80 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-left" id="issuesTable">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Issue Title</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Severity</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Logged By</th>
+                    <th scope="col" class="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100 text-xs">
+                {% for issue in issues %}
+                <tr class="hover:bg-slate-50/70 transition-colors issue-row" data-severity="{{ issue.severity }}" data-status="{{ issue.status }}" data-text="{{ issue.title }} {{ issue.project.code }} {{ issue.project.name }} {{ issue.get_issue_type_display }}">
+                    <td class="px-5 py-3.5">
+                        <a href="{% url 'issue_detail' issue.pk %}" class="font-bold text-slate-900 hover:text-brand-600 transition-colors">
+                            {{ issue.title }}
+                        </a>
+                        {% if issue.description %}
+                        <p class="text-[11px] text-slate-400 truncate max-w-sm mt-0.5">{{ issue.description|striptags }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap font-medium text-slate-600">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[11px]">
+                            {{ issue.project.code }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap text-slate-600 font-medium">
+                        {{ issue.get_issue_type_display }}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap">
+                        {% if issue.severity == 'CRITICAL' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">Critical</span>
+                        {% elif issue.severity == 'MAJOR' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-200">Major</span>
+                        {% elif issue.severity == 'MINOR' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">Minor</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">Trivial</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap">
+                        {% if issue.status == 'OPEN' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">Open</span>
+                        {% elif issue.status == 'IN_PROGRESS' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">In Progress</span>
+                        {% elif issue.status == 'RESOLVED' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Resolved</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">Closed</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap text-slate-600">
+                        {% if issue.created_by %}
+                            <div class="flex items-center gap-1.5">
+                                <img src="https://ui-avatars.com/api/?name={{ issue.created_by.email }}&background=random" class="w-5 h-5 rounded-full" alt="Avatar">
+                                <span>{{ issue.created_by.first_name|default:issue.created_by.email }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-slate-400 italic">System</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{% url 'issue_detail' issue.pk %}" class="p-1 text-slate-400 hover:text-slate-600 transition-colors" title="View Details">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </a>
+                            <a href="{% url 'issue_update' issue.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 transition-colors" title="Edit Issue">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5 mr-1"></i> Edit
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">
+                        <i data-lucide="check-circle" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                        No issues currently logged in the tracker.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('issueSearchInput');
+        const severityFilter = document.getElementById('issueSeverityFilter');
+        const statusFilter = document.getElementById('issueStatusFilter');
+        const rows = document.querySelectorAll('.issue-row');
+
+        function filterIssues() {
+            const query = searchInput.value.toLowerCase().trim();
+            const severity = severityFilter.value;
+            const status = statusFilter.value;
+
+            rows.forEach(row => {
+                const text = row.getAttribute('data-text').toLowerCase();
+                const rowSeverity = row.getAttribute('data-severity');
+                const rowStatus = row.getAttribute('data-status');
+
+                const matchesQuery = !query || text.includes(query);
+                const matchesSeverity = !severity || rowSeverity === severity;
+                const matchesStatus = !status || rowStatus === status;
+
+                if (matchesQuery && matchesSeverity && matchesStatus) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterIssues);
+        if (severityFilter) severityFilter.addEventListener('change', filterIssues);
+        if (statusFilter) statusFilter.addEventListener('change', filterIssues);
+    });
+</script>
 {% endblock %}

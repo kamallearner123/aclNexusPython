@@ -1,0 +1,2101 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}Faculty Mentor Dashboard | LearnHub LMS{% endblock %}
+{% block page_heading %}Faculty Mentor / Instructor Operations{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 pb-12">
+
+    <!-- Header Hero Banner -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 text-white p-8 sm:p-10 shadow-xl border border-slate-800">
+        <div class="absolute -right-16 -top-16 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-3 max-w-2xl">
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 rounded-full bg-purple-500/30 text-purple-200 text-xs font-black uppercase tracking-wider border border-purple-400/30">
+                        Faculty Mentor &amp; Instructor
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                        Active Term
+                    </span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                    Welcome back, {{ lms_user.full_name }}!
+                </h1>
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    Lead your assigned engineering cohorts, deliver live sessions, track daily class attendance, and dispatch milestone assignments to individuals or entire batches.
+                </p>
+            </div>
+
+            <!-- View Switcher & Actions -->
+            <div class="flex flex-wrap items-center gap-3 flex-shrink-0">
+                <button type="button" onclick="openModal('mentorCreateBatchAssignmentModal')" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-md shadow-purple-600/30 flex items-center space-x-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>+ Create New Assignment</span>
+                </button>
+                <a href="{% url 'lms:dashboard' %}?view=learner" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all border border-white/20 flex items-center space-x-1.5">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                    <span>Preview Learner View</span>
+                </a>
+                {% if is_admin %}
+                <a href="{% url 'lms:dashboard' %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-all flex items-center space-x-1.5">
+                    <i data-lucide="shield" class="w-4 h-4"></i>
+                    <span>Admin Operations</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Metric Strip -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- 1. Assigned Batches -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-200/90 shadow-soft flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="award" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Assigned Batches</span>
+                <span class="text-2xl font-black text-slate-900 leading-tight block mt-0.5">{{ total_batches_count }}</span>
+            </div>
+        </div>
+
+        <!-- 2. Students Mentored -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-200/90 shadow-soft flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Students Enrolled</span>
+                <span class="text-2xl font-black text-slate-900 leading-tight block mt-0.5">{{ total_students_count }}</span>
+            </div>
+        </div>
+
+        <!-- 3. Scheduled Sessions -->
+        <div class="bg-white rounded-2xl p-5 border border-gray-200/90 shadow-soft flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="video" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Live Sessions</span>
+                <span class="text-2xl font-black text-slate-900 leading-tight block mt-0.5">{{ total_sessions_count }}</span>
+            </div>
+        </div>
+
+        <!-- 4. Assignments Given -->
+        <a href="#assignmentsSection" class="bg-white rounded-2xl p-5 border border-gray-200/90 shadow-soft flex items-center space-x-4 hover:border-purple-300 hover:shadow-md transition-all group">
+            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-100 transition-colors">
+                <i data-lucide="clipboard-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Tasks Assigned</span>
+                <span class="text-2xl font-black text-slate-900 leading-tight block mt-0.5">{{ total_assignments_count }}</span>
+            </div>
+        </a>
+
+        <!-- 5. Student Doubt Messages -->
+        <a href="#studentDoubtsSection" class="bg-white rounded-2xl p-5 border border-gray-200/90 shadow-soft flex items-center space-x-4 hover:border-indigo-300 hover:shadow-md transition-all group">
+            <div class="w-12 h-12 rounded-2xl {% if total_unread_chat_count > 0 %}bg-emerald-50 text-emerald-600 animate-pulse{% else %}bg-indigo-50 text-indigo-600{% endif %} flex items-center justify-center flex-shrink-0">
+                <i data-lucide="messages-square" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Students Chat</span>
+                    {% if total_unread_chat_count > 0 %}
+                    <span class="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">{{ total_unread_chat_count }} New</span>
+                    {% endif %}
+                </div>
+                <span class="text-2xl font-black text-slate-900 leading-tight block mt-0.5">{{ total_inquiries_count }} <span class="text-xs font-normal text-slate-400">Questions</span></span>
+            </div>
+        </a>
+    </div>
+
+    <!-- My Batches / Cohorts Section -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                    <i data-lucide="layers" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    My Mentorship Batches &amp; Cohorts
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Click into any batch to view all students, give assignments, and track attendance.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for b in mentor_batches %}
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft hover:shadow-xl transition-all duration-300 p-6 flex flex-col justify-between space-y-4">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-md text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            {{ b.code }}
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if b.status == 'ONGOING' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-slate-100 text-slate-700{% endif %}">
+                            {{ b.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 leading-snug">{{ b.name }}</h3>
+                        {% if b.course %}
+                        <p class="text-xs text-indigo-600 font-semibold mt-0.5 flex items-center">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5 mr-1 flex-shrink-0"></i>
+                            {{ b.course.title }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    {% if b.full_schedule %}
+                    <div class="flex items-center text-xs text-slate-600 space-x-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-600 flex-shrink-0"></i>
+                        <span class="font-medium truncate">{{ b.full_schedule }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                        <span class="flex items-center font-bold text-slate-700">
+                            <i data-lucide="users" class="w-4 h-4 mr-1 text-slate-400"></i>
+                            {{ b.students.count }} Enrolled Students
+                        </span>
+                        <span class="text-slate-400">{{ b.sessions.count }} Sessions</span>
+                    </div>
+                </div>
+
+                <!-- Primary Enter Batch Button & Actions -->
+                <div class="pt-4 border-t border-gray-100 space-y-2">
+                    <a href="{% url 'lms:batch_detail' b.pk %}" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-md shadow-indigo-600/20 transition-all">
+                        <span>Enter Batch Hub</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <a href="{% url 'lms:batch_detail' b.pk %}#tab-sessions" class="py-1.5 px-2 rounded-lg bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 text-center font-bold text-[11px] flex items-center justify-center space-x-1 transition-colors">
+                            <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span>Attendance</span>
+                        </a>
+                        <a href="{% url 'lms:batch_detail' b.pk %}#tab-assignments" class="py-1.5 px-2 rounded-lg bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-slate-200 text-center font-bold text-[11px] flex items-center justify-center space-x-1 transition-colors">
+                            <i data-lucide="award" class="w-3.5 h-3.5 text-purple-600"></i>
+                            <span>Assignments</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full bg-white rounded-3xl border border-gray-200 p-12 text-center text-xs text-slate-400 space-y-3">
+                <i data-lucide="inbox" class="w-12 h-12 mx-auto text-slate-300"></i>
+                <p class="text-sm font-bold text-slate-700">No active cohorts assigned yet.</p>
+                <p class="text-slate-500">Contact the academic administrator to assign you as a mentor to running batches.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- All Cohort Sessions & Class Schedule -->
+    <div class="space-y-4 pt-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-3">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                    <i data-lucide="video" class="w-5 h-5 mr-2 text-rose-600"></i>
+                    Cohort Live Sessions &amp; Classes ({{ all_sessions|length }})
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Start live meeting links, review student attendance rates, or mark attendance for any session.</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Filter Pills -->
+                <div class="bg-slate-100 p-1 rounded-xl flex items-center space-x-1 text-xs font-bold">
+                    <button type="button" onclick="filterSessions('all', this)" class="session-filter-btn px-3 py-1.5 rounded-lg bg-white text-slate-900 shadow-xs transition-all">
+                        All ({{ all_sessions|length }})
+                    </button>
+                    <button type="button" onclick="filterSessions('upcoming', this)" class="session-filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                        Upcoming ({{ upcoming_sessions|length }})
+                    </button>
+                    <button type="button" onclick="filterSessions('pending', this)" class="session-filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                        Pending Attendance
+                    </button>
+                    <button type="button" onclick="filterSessions('marked', this)" class="session-filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                        Attendance Marked
+                    </button>
+                </div>
+
+                <button type="button" onclick="openModal('mentorAddSessionModal')" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-md shadow-rose-600/20 transition-all">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>+ Schedule Session</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sessions Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="mentorSessionsGrid">
+            {% for ses in all_sessions %}
+            <div class="session-card bg-white rounded-3xl border border-gray-200/90 shadow-soft p-5 space-y-4 flex flex-col justify-between hover:shadow-lg hover:border-slate-300 transition-all"
+                 data-session-id="{{ ses.id }}"
+                 data-batch-id="{{ ses.batch_id }}"
+                 data-has-attendance="{% if ses.has_attendance %}true{% else %}false{% endif %}"
+                 data-is-upcoming="{% if ses.status in 'LIVE,UPCOMING' %}true{% else %}false{% endif %}">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2.5 py-1 rounded-md text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {{ ses.batch.code }}
+                            </span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full {% if ses.status == 'LIVE' %}bg-rose-100 text-rose-700 animate-pulse{% elif ses.status == 'UPCOMING' %}bg-blue-100 text-blue-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {{ ses.get_status_display }}
+                            </span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-600 flex items-center">
+                            <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-indigo-600"></i>
+                            {{ ses.scheduled_date|date:"M d, Y" }} • {{ ses.start_time|time:"h:i A" }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <h4 class="text-base font-bold text-slate-900 leading-snug">{{ ses.title }}</h4>
+                        <p class="text-xs text-indigo-600 font-semibold mt-0.5">{{ ses.batch.name }}</p>
+                    </div>
+
+                    {% if ses.agenda %}
+                    <p class="text-xs text-slate-500 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">{{ ses.agenda|truncatechars:140 }}</p>
+                    {% endif %}
+
+                    <!-- Attendance Rate Indicator Pill -->
+                    {% if ses.has_attendance %}
+                    <div class="pt-1">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5 mr-1.5 text-emerald-600"></i>
+                            Attendance Marked: {{ ses.present_count }} / {{ ses.total_students }} Present ({{ ses.attendance_pct }}%)
+                        </span>
+                    </div>
+                    {% else %}
+                    <div class="pt-1">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center">
+                            <i data-lucide="clock" class="w-3.5 h-3.5 mr-1.5 text-amber-600"></i>
+                            Attendance Pending ({{ ses.total_students }} students enrolled)
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Session Live Actions -->
+                <div class="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center space-x-2">
+                        {% if ses.meeting_link %}
+                        <a href="{{ ses.meeting_link }}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-sm transition-colors">
+                            <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                            <span>Start / Join Class</span>
+                        </a>
+                        <button type="button" onclick="copyMeetingLink('{{ ses.meeting_link|escapejs }}', this)" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" title="Copy meeting link">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        </button>
+                        {% else %}
+                        <span class="text-slate-400 text-xs italic px-1">No meeting link</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <!-- Direct Mark Attendance Button -->
+                        <button type="button" onclick="openMentorAttendanceModal('{{ ses.id }}')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-colors" title="Mark attendance directly for this class">
+                            <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
+                            <span>📋 Mark Attendance</span>
+                        </button>
+
+                        <a href="{% url 'lms:batch_detail' ses.batch_id %}#tab-sessions" class="p-2 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 transition-colors" title="Open Batch Hub">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full p-12 rounded-3xl bg-white border border-gray-200 text-center text-xs text-slate-400 space-y-2">
+                <i data-lucide="calendar-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
+                <p class="font-bold text-slate-700 text-sm">No live sessions currently scheduled.</p>
+                <p>Click "+ Schedule Session" above to create an upcoming class with Zoom / Google Meet.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 1. Student Doubt Desk & Inquiries -->
+    <div id="studentDoubtsSection" class="space-y-4 pt-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-3">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                    <i data-lucide="messages-square" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Students Chat &amp; Doubt Desk ({{ all_student_inquiries|length }})
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Read student questions submitted from their doubt desk, reply directly with code hints, and assist with assignments.</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2.5">
+                {% if total_unread_chat_count > 0 %}
+                <span class="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200 flex items-center space-x-1.5 animate-pulse">
+                    <i data-lucide="bell" class="w-3.5 h-3.5"></i>
+                    <span>{{ total_unread_chat_count }} Unread Question{% if total_unread_chat_count != 1 %}s{% endif %}</span>
+                </span>
+                {% else %}
+                <span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold flex items-center space-x-1.5">
+                    <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i>
+                    <span>All Inquiries Addressed</span>
+                </span>
+                {% endif %}
+
+                <a href="{% url 'lms:teacher_student_chats' %}" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1.5 shadow-sm transition-all">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                    <span>Open Full Chat Workspace</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Toolbar: Filters and Search -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 p-3 rounded-2xl border border-slate-200/80">
+            <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold" id="inquiriesFilterGroup">
+                <button type="button" onclick="filterStudentInquiries('all', this)" class="inq-filter-btn px-3 py-1.5 rounded-xl bg-white text-slate-900 shadow-xs border border-gray-200/80 transition-all">
+                    All Messages ({{ all_student_inquiries|length }})
+                </button>
+                <button type="button" onclick="filterStudentInquiries('unread', this)" class="inq-filter-btn px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all">
+                    Needs Reply ({{ total_unread_chat_count }})
+                </button>
+                <button type="button" onclick="filterStudentInquiries('replied', this)" class="inq-filter-btn px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all">
+                    Replied
+                </button>
+            </div>
+
+            <div class="relative min-w-[220px]">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text"
+                       oninput="filterInquiriesSearch(this.value)"
+                       placeholder="Search student or message..."
+                       class="w-full pl-8 pr-3 py-1.5 text-xs bg-white rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <!-- Student Messages List -->
+        {% if all_student_inquiries %}
+        <div class="space-y-3.5" id="studentInquiriesList">
+            {% for inq in all_student_inquiries %}
+            <div class="inquiry-card bg-white rounded-3xl border border-gray-200/90 shadow-soft p-5 space-y-3.5 hover:shadow-md hover:border-indigo-200 transition-all"
+                 data-is-read="{% if inq.is_read %}true{% else %}false{% endif %}"
+                 data-has-reply="{% if inq.has_reply %}true{% else %}false{% endif %}"
+                 data-search-text="{{ inq.student_name|lower }} {{ inq.student_email|lower }} {{ inq.message|lower }}">
+                
+                <!-- Student Header & Meta -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <img src="{{ inq.student_avatar }}" alt="{{ inq.student_name }}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-100 flex-shrink-0">
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-2">
+                                <h4 class="text-sm font-bold text-slate-900 truncate">{{ inq.student_name }}</h4>
+                                {% if inq.batch %}
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    {{ inq.batch.code }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-[11px] text-slate-400 font-mono truncate">{{ inq.student_email }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 flex-shrink-0">
+                        {% if not inq.is_read %}
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center space-x-1 animate-pulse">
+                            <i data-lucide="bell" class="w-3 h-3"></i>
+                            <span>New Question</span>
+                        </span>
+                        {% elif inq.has_reply %}
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center space-x-1">
+                            <i data-lucide="check-check" class="w-3 h-3"></i>
+                            <span>Replied</span>
+                        </span>
+                        {% else %}
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                            Read
+                        </span>
+                        {% endif %}
+
+                        <span class="text-[11px] text-slate-400 font-medium">
+                            {{ inq.created_at|date:"M d, Y • h:i A" }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Message Speech Bubble -->
+                <div class="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100/80 text-xs sm:text-sm text-slate-800 leading-relaxed font-normal whitespace-pre-wrap">
+                    "{{ inq.message }}"
+                </div>
+
+                <!-- Actions & Inline Reply Options -->
+                <div class="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2">
+                        <!-- Primary Modal Reply Button -->
+                        <button type="button"
+                                onclick="openMentorReplyModal('{{ inq.student_id }}', '{{ inq.student_name|escapejs }}', '{{ inq.student_email|escapejs }}', '{{ inq.student_avatar|escapejs }}')"
+                                class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center space-x-1.5">
+                            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                            <span>Reply to Student</span>
+                        </button>
+
+                        <!-- Quick Inline Reply Toggle -->
+                        <button type="button"
+                                onclick="toggleInlineReply('inline-reply-{{ inq.id }}')"
+                                class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors flex items-center space-x-1">
+                            <i data-lucide="corner-down-right" class="w-3.5 h-3.5 text-slate-500"></i>
+                            <span>Quick Reply ▾</span>
+                        </button>
+                    </div>
+
+                    <a href="{% url 'lms:teacher_student_chats' %}?student_id={{ inq.student_id }}"
+                       class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1">
+                        <span>Full Conversation</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    </a>
+                </div>
+
+                <!-- Collapsible Quick Inline Reply Form -->
+                <div id="inline-reply-{{ inq.id }}" class="hidden pt-3 border-t border-gray-100">
+                    <form onsubmit="sendInlineMentorReply('{{ inq.student_id }}', 'inline-input-{{ inq.id }}', 'inline-btn-{{ inq.id }}', event)" class="space-y-2.5">
+                        <textarea id="inline-input-{{ inq.id }}"
+                                  rows="2"
+                                  placeholder="Type your quick reply or code solution hint to {{ inq.student_name }}..."
+                                  class="w-full text-xs rounded-2xl border border-gray-200 p-3 outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/70"></textarea>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-slate-400">Response is delivered directly to student doubt desk.</span>
+                            <button type="submit"
+                                    id="inline-btn-{{ inq.id }}"
+                                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center space-x-1.5">
+                                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                                <span>Send Reply</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-3xl border border-gray-200 p-8 text-center text-xs text-slate-400 space-y-2">
+            <i data-lucide="messages-square" class="w-8 h-8 text-slate-300 mx-auto"></i>
+            <p class="font-bold text-slate-700 text-sm">No student doubts or inquiries yet.</p>
+            <p class="text-slate-400">When students ask questions from their doubt desk, their messages will appear here for you to read and reply.</p>
+        </div>
+        {% endif %}
+
+        <!-- Conversation Threads Summary Cards -->
+        {% if mentor_chat_threads %}
+        <div class="pt-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Active Student Threads ({{ mentor_chat_threads|length }})</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for thread in mentor_chat_threads %}
+                <div class="bg-white rounded-2xl border border-gray-200 p-4 flex items-center justify-between space-x-3 hover:border-indigo-300 transition-all">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <img src="{{ thread.student_avatar }}" alt="{{ thread.student_name }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 flex-shrink-0">
+                        <div class="min-w-0">
+                            <div class="flex items-center space-x-1.5">
+                                <h5 class="text-xs font-bold text-slate-900 truncate">{{ thread.student_name }}</h5>
+                                {% if thread.unread_count > 0 %}
+                                <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800">{{ thread.unread_count }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-[11px] text-slate-500 truncate italic">"{{ thread.latest_message }}"</p>
+                        </div>
+                    </div>
+                    <button type="button"
+                            onclick="openMentorReplyModal('{{ thread.student_id }}', '{{ thread.student_name|escapejs }}', '{{ thread.student_email|escapejs }}', '{{ thread.student_avatar|escapejs }}')"
+                            class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-lg transition-colors flex-shrink-0">
+                        Reply
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 2. Assignments Hub & Student Submissions Status Report -->
+    <div id="assignmentsSection" class="space-y-6 pt-4">
+        <!-- Section Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
+                        Evaluations &amp; Reports
+                    </span>
+                    <span class="text-xs text-slate-400 font-medium">• {{ mentor_batches|length }} Cohorts</span>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 flex items-center">
+                    <i data-lucide="clipboard-list" class="w-6 h-6 mr-2 text-purple-600"></i>
+                    Assignments &amp; Students Status Report
+                </h2>
+                <p class="text-xs text-slate-500 max-w-3xl">
+                    Inspect individual student submission status, review solution repositories, grade milestones with instant feedback, and dispatch new assignments to batches or individuals.
+                </p>
+            </div>
+            <div class="flex items-center space-x-3 flex-shrink-0">
+                <button type="button" onclick="openModal('mentorCreateBatchAssignmentModal')"
+                        class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl flex items-center space-x-2 shadow-lg shadow-purple-600/25 hover:shadow-purple-600/40 transition-all transform hover:-translate-y-0.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>+ Create New Assignment</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Metrics Summary Cards Strip -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div class="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Tasks</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-black text-slate-900">{{ assignment_report_stats.total_assignments }}</span>
+                    <span class="p-1.5 rounded-lg bg-purple-50 text-purple-700"><i data-lucide="layers" class="w-4 h-4"></i></span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Active Milestones</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Expected</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-black text-slate-900">{{ assignment_report_stats.total_expected }}</span>
+                    <span class="p-1.5 rounded-lg bg-slate-100 text-slate-600"><i data-lucide="users" class="w-4 h-4"></i></span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Student Deliverables</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block">Submitted</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-black text-emerald-600">{{ assignment_report_stats.total_submitted }}</span>
+                    <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700"><i data-lucide="check-circle-2" class="w-4 h-4"></i></span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Repos &amp; Links Received</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600 block">Needs Grading</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-black {% if assignment_report_stats.total_pending_grading > 0 %}text-amber-600{% else %}text-slate-900{% endif %}">
+                        {{ assignment_report_stats.total_pending_grading }}
+                    </span>
+                    <span class="p-1.5 rounded-lg bg-amber-50 text-amber-700"><i data-lucide="clock" class="w-4 h-4"></i></span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Awaiting Evaluation</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">Graded</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-black text-indigo-600">{{ assignment_report_stats.total_graded }}</span>
+                    <span class="p-1.5 rounded-lg bg-indigo-50 text-indigo-700"><i data-lucide="award" class="w-4 h-4"></i></span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Scores Awarded</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-gray-200/90 shadow-2xs space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider {% if assignment_report_stats.total_overdue > 0 %}text-rose-600{% else %}text-slate-400{% endif %} block">Overdue</span>
+                <div class="flex items-center justify-between">
+                    <span class="text-xl font-black {% if assignment_report_stats.total_overdue > 0 %}text-rose-600{% else %}text-slate-900{% endif %}">
+                        {{ assignment_report_stats.total_overdue }}
+                    </span>
+                    <span class="p-1.5 rounded-lg bg-rose-50 text-rose-700"><i data-lucide="alert-circle" class="w-4 h-4"></i></span>
+                </div>
+                <span class="text-[10px] text-slate-400 block">Past Due Deadline</span>
+            </div>
+        </div>
+
+        <!-- View Switcher Tabs -->
+        <div class="flex items-center justify-between border-b border-gray-200/80 pb-1">
+            <div class="flex items-center space-x-2">
+                <button type="button" id="tabBtnStudentReport" onclick="switchAssignmentsViewTab('report')"
+                        class="px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-2">
+                    <i data-lucide="table" class="w-4 h-4"></i>
+                    <span>Students Status Report ({{ student_assignment_reports|length }})</span>
+                </button>
+                <button type="button" id="tabBtnDispatchedTasks" onclick="switchAssignmentsViewTab('tasks')"
+                        class="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-bold text-xs hover:bg-white/80 transition-all flex items-center space-x-2">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    <span>Cohort Dispatched Tasks ({{ mentor_assignments|length }})</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- View 1: Students Assignments Status Report -->
+        <div id="assignmentReportsView" class="space-y-4">
+            <!-- Filter & Search Controls Bar -->
+            <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs space-y-3">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <!-- Status Filter Pills -->
+                    <div class="flex items-center flex-wrap gap-1.5 text-xs">
+                        <button type="button" onclick="setReportStatusFilter('all', this)"
+                                class="report-status-pill px-3 py-1.5 rounded-xl bg-purple-600 text-white shadow-xs font-bold transition-all">
+                            All ({{ assignment_report_stats.total_expected }})
+                        </button>
+                        <button type="button" onclick="setReportStatusFilter('needs_grading', this)"
+                                class="report-status-pill px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold transition-all flex items-center space-x-1">
+                            <span>Needs Grading</span>
+                            {% if assignment_report_stats.total_pending_grading > 0 %}
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">{{ assignment_report_stats.total_pending_grading }}</span>
+                            {% endif %}
+                        </button>
+                        <button type="button" onclick="setReportStatusFilter('graded', this)"
+                                class="report-status-pill px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold transition-all">
+                            Graded ({{ assignment_report_stats.total_graded }})
+                        </button>
+                        <button type="button" onclick="setReportStatusFilter('pending', this)"
+                                class="report-status-pill px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold transition-all">
+                            Pending ({{ assignment_report_stats.total_not_submitted }})
+                        </button>
+                        <button type="button" onclick="setReportStatusFilter('overdue', this)"
+                                class="report-status-pill px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold transition-all flex items-center space-x-1">
+                            <span>Overdue</span>
+                            {% if assignment_report_stats.total_overdue > 0 %}
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">{{ assignment_report_stats.total_overdue }}</span>
+                            {% endif %}
+                        </button>
+                    </div>
+
+                    <!-- Dropdowns and Search Input -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Batch Filter -->
+                        <select id="reportBatchFilter" onchange="filterAssignmentReportRows()"
+                                class="px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="all">All Batches</option>
+                            {% for b in mentor_batches %}
+                            <option value="{{ b.id }}">{{ b.code }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <!-- Assignment Filter -->
+                        <select id="reportAssignmentFilter" onchange="filterAssignmentReportRows()"
+                                class="px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-semibold text-slate-700 bg-white outline-none focus:ring-2 focus:ring-purple-500 max-w-[200px] truncate">
+                            <option value="all">All Assignments</option>
+                            {% for ma in mentor_assignments %}
+                            <option value="{{ ma.id }}">{{ ma.title|truncatechars:28 }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <!-- Live Search Input -->
+                        <div class="relative min-w-[200px]">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="reportSearchInput" oninput="filterAssignmentReportRows()"
+                                   placeholder="Search student or task..."
+                                   class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50/60 focus:bg-white transition-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Status Report Table -->
+            {% if student_assignment_reports %}
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse" id="mentorAssignmentReportTable">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-gray-200 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                                <th class="py-3.5 px-4 sm:px-6">Student</th>
+                                <th class="py-3.5 px-3">Cohort</th>
+                                <th class="py-3.5 px-4">Assignment / Deadline</th>
+                                <th class="py-3.5 px-4">Submission Status</th>
+                                <th class="py-3.5 px-4">Score &amp; Status</th>
+                                <th class="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-xs">
+                            {% for rep in student_assignment_reports %}
+                            <tr class="assignment-report-row hover:bg-purple-50/20 transition-colors"
+                                id="report-row-{{ rep.assignment_id }}-{{ rep.student_id }}"
+                                data-status="{% if rep.is_graded %}graded{% elif rep.has_submitted %}needs_grading{% elif rep.is_overdue %}overdue{% else %}pending{% endif %}"
+                                data-batch-id="{{ rep.batch_id }}"
+                                data-assignment-id="{{ rep.assignment_id }}"
+                                data-search="{{ rep.student_name|lower }} {{ rep.student_email|lower }} {{ rep.assignment_title|lower }} {{ rep.batch_code|lower }}">
+
+                                <!-- 1. Student Identity -->
+                                <td class="py-3.5 px-4 sm:px-6">
+                                    <div class="flex items-center space-x-3 min-w-[180px]">
+                                        <img src="{{ rep.student_avatar }}" alt="{{ rep.student_name }}" class="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200 flex-shrink-0">
+                                        <div class="min-w-0">
+                                            <span class="font-bold text-slate-900 block truncate">{{ rep.student_name }}</span>
+                                            <span class="text-[11px] text-slate-400 font-mono block truncate">{{ rep.student_email }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- 2. Cohort / Batch -->
+                                <td class="py-3.5 px-3 whitespace-nowrap">
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-black bg-purple-50 text-purple-700 border border-purple-200">
+                                        {{ rep.batch_code }}
+                                    </span>
+                                </td>
+
+                                <!-- 3. Assignment & Deadline -->
+                                <td class="py-3.5 px-4 max-w-xs">
+                                    <div class="space-y-1">
+                                        <span class="font-bold text-slate-900 block leading-snug">{{ rep.assignment_title }}</span>
+                                        <div class="flex items-center space-x-2 text-[11px] text-slate-500">
+                                            <span>Max: {{ rep.max_score }} Pts</span>
+                                            {% if rep.due_date %}
+                                            <span>• Due: {{ rep.due_date|date:"M d, Y" }}</span>
+                                            {% endif %}
+                                            {% if rep.is_overdue %}
+                                            <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-100 text-rose-700 border border-rose-200">Overdue</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- 4. Submission Status & Repo Link -->
+                                <td class="py-3.5 px-4 whitespace-nowrap">
+                                    {% if rep.has_submitted %}
+                                    <div class="space-y-1">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center space-x-1">
+                                                <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                                <span>Submitted</span>
+                                            </span>
+                                            <a href="{{ rep.submission_url }}" target="_blank" rel="noopener noreferrer"
+                                               class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-mono font-bold flex items-center space-x-1 transition-all shadow-2xs group"
+                                               title="Inspect repository / demo URL">
+                                                <i data-lucide="external-link" class="w-3 h-3 text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                                                <span>Repo ↗</span>
+                                            </a>
+                                        </div>
+                                        {% if rep.submitted_at %}
+                                        <span class="text-[10px] text-slate-400 block">{{ rep.submitted_at|date:"M d • h:i A" }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <div class="space-y-1">
+                                        {% if rep.is_overdue %}
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center space-x-1">
+                                            <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                            <span>Not Submitted</span>
+                                        </span>
+                                        {% else %}
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 flex items-center space-x-1">
+                                            <i data-lucide="clock" class="w-3 h-3"></i>
+                                            <span>Pending Submission</span>
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 5. Score & Evaluation -->
+                                <td class="py-3.5 px-4 whitespace-nowrap report-score-col" id="report-score-cell-{{ rep.assignment_id }}-{{ rep.student_id }}">
+                                    {% if rep.is_graded %}
+                                    <div class="space-y-1">
+                                        <div class="flex items-center space-x-1.5">
+                                            <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 score-badge">
+                                                {{ rep.score }} / {{ rep.max_score }} Pts
+                                            </span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 status-badge">
+                                                {{ rep.status }}
+                                            </span>
+                                        </div>
+                                        {% if rep.mentor_feedback %}
+                                        <p class="text-[11px] text-slate-500 italic max-w-xs truncate feedback-text" title="{{ rep.mentor_feedback }}">
+                                            "{{ rep.mentor_feedback }}"
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                    {% elif rep.has_submitted %}
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center space-x-1 w-fit animate-pulse">
+                                        <i data-lucide="hourglass" class="w-3 h-3"></i>
+                                        <span>Needs Grading</span>
+                                    </span>
+                                    {% else %}
+                                    <span class="text-slate-400 font-mono text-xs">—</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- 6. Action Buttons -->
+                                <td class="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <button type="button"
+                                                id="grade-btn-{{ rep.assignment_id }}-{{ rep.student_id }}"
+                                                data-score="{{ rep.score|default_if_none:'' }}"
+                                                data-status="{{ rep.status }}"
+                                                data-feedback="{{ rep.mentor_feedback }}"
+                                                onclick="openMentorGradeModal('{{ rep.batch_id }}', '{{ rep.assignment_id }}', '{{ rep.assignment_title|escapejs }}', '{{ rep.student_id }}', '{{ rep.student_name|escapejs }}', '{{ rep.student_email|escapejs }}', '{{ rep.student_avatar|escapejs }}', '{{ rep.batch_code|escapejs }}', '{{ rep.max_score }}', this.dataset.score, this.dataset.status, this.dataset.feedback, '{{ rep.submission_url|default_if_none:''|escapejs }}')"
+                                                class="px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-2xs flex items-center space-x-1 {% if rep.is_graded %}bg-slate-100 hover:bg-slate-200 text-slate-700{% elif rep.has_submitted %}bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/20{% else %}bg-indigo-50 hover:bg-indigo-100 text-indigo-700{% endif %}">
+                                            <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                                            <span class="btn-label">{% if rep.is_graded %}Update Grade{% elif rep.has_submitted %}Grade Now{% else %}Evaluate{% endif %}</span>
+                                        </button>
+                                        <button type="button"
+                                                onclick="openMentorReplyModal('{{ rep.student_id }}', '{{ rep.student_name|escapejs }}', '{{ rep.student_email|escapejs }}', '{{ rep.student_avatar|escapejs }}')"
+                                                class="p-1.5 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                                title="Send guidance message to {{ rep.student_name }}">
+                                            <i data-lucide="message-square" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty Filter State -->
+                <div id="reportTableEmptyState" class="hidden p-12 text-center space-y-2">
+                    <i data-lucide="filter-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
+                    <p class="font-bold text-slate-700 text-sm">No assignment records match the selected filter.</p>
+                    <p class="text-xs text-slate-400">Try selecting a different status filter, batch, or clearing the search box.</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="bg-white rounded-3xl border border-gray-200 p-8 text-center text-xs text-slate-400 space-y-2">
+                <i data-lucide="clipboard-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
+                <p class="font-bold text-slate-700 text-sm">No assignments dispatched yet.</p>
+                <p class="text-slate-400">Click "+ Create New Assignment" above to dispatch milestone tasks to your cohorts.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- View 2: Dispatched Cohort Assignment Cards -->
+        <div id="dispatchedTasksView" class="hidden space-y-4">
+            {% if mentor_assignments %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {% for ma in mentor_assignments %}
+                <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-5 space-y-4 flex flex-col justify-between hover:shadow-lg transition-all">
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black bg-purple-50 text-purple-700 border border-purple-200">
+                                    {{ ma.batch.code }}
+                                </span>
+                                {% if ma.target_student %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                    Individual: {{ ma.target_student.full_name }}
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                                    All Students in Cohort
+                                </span>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs font-bold text-slate-500">
+                                Max: {{ ma.max_score }} Pts
+                            </span>
+                        </div>
+
+                        <div>
+                            <h4 class="text-base font-bold text-slate-900 leading-snug">{{ ma.title }}</h4>
+                            <p class="text-xs text-purple-600 font-semibold mt-0.5">{{ ma.batch.name }}</p>
+                        </div>
+
+                        <p class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-100 line-clamp-2">
+                            {{ ma.description }}
+                        </p>
+
+                        <!-- Submissions & Grading Pill -->
+                        <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                            <span class="px-2.5 py-1 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center space-x-1">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                                <span>{{ ma.submissions_count }} / {{ ma.total_students }} Submissions</span>
+                            </span>
+                            <span class="px-2.5 py-1 rounded-full font-bold bg-purple-50 text-purple-700 border border-purple-200 flex items-center space-x-1">
+                                <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                                <span>{{ ma.graded_count }} Graded</span>
+                            </span>
+                            {% if ma.due_date %}
+                            <span class="text-slate-500 text-[11px] ml-auto">
+                                Due: {{ ma.due_date|date:"M d, Y" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
+                        {% if ma.resource_url %}
+                        <a href="{{ ma.resource_url }}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            <span>Starter Repo</span>
+                        </a>
+                        {% else %}
+                        <span class="text-[11px] text-slate-400">No starter code URL</span>
+                        {% endif %}
+                        <a href="{% url 'lms:batch_detail' ma.batch_id %}#tab-assignments" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-purple-700 text-white font-bold text-xs flex items-center space-x-1 shadow-sm transition-colors">
+                            <span>Review &amp; Grade in Hub</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white rounded-3xl border border-gray-200 p-8 text-center text-xs text-slate-400 space-y-2">
+                <i data-lucide="clipboard-x" class="w-8 h-8 text-slate-300 mx-auto"></i>
+                <p class="font-bold text-slate-700 text-sm">No batch assignments dispatched yet.</p>
+                <p class="text-slate-400">Click "+ Create New Assignment" above to distribute milestone tasks to your cohorts.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<!-- 1. Mentor Mark Attendance Modal -->
+<div id="mentorAttendanceModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-2xl w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="clipboard-check" class="w-5 h-5 mr-2 text-emerald-600"></i>
+                    Mark Class Attendance
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5" id="mentorAttendanceSubtitle">Select class session and mark student attendance status.</p>
+            </div>
+            <button onclick="closeModal('mentorAttendanceModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="mentorAttendanceForm" method="post" action="" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="session_id" id="mentorAttendanceSessionIdInput" value="">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+            <!-- Session Meta Card -->
+            <div class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between">
+                <div class="space-y-0.5">
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block" id="mentorAttBatchCode">BATCH</span>
+                    <h4 class="text-sm font-bold text-slate-900" id="mentorAttSessionTitle">Session Title</h4>
+                    <span class="text-xs text-slate-500 block" id="mentorAttSessionTime">Date &amp; Time</span>
+                </div>
+                <div id="mentorAttMeetingLinkWrap"></div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs">
+                <span class="font-bold text-slate-600">Quick Mark:</span>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="markAllMentorAttendance('PRESENT')" class="px-3 py-1 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold transition-colors">
+                        ✓ All Present
+                    </button>
+                    <button type="button" onclick="markAllMentorAttendance('ABSENT')" class="px-3 py-1 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold transition-colors">
+                        ✗ All Absent
+                    </button>
+                    <button type="button" onclick="markAllMentorAttendance('LATE')" class="px-3 py-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold transition-colors">
+                        ⏱ All Late
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students List with Attendance Radio Pills -->
+            <div class="max-h-80 overflow-y-auto pr-1 space-y-2.5 divide-y divide-gray-100" id="mentorAttendanceStudentsList">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <div class="pt-3 flex justify-between items-center border-t border-gray-100">
+                <a id="mentorAttBatchDetailLink" href="#" class="text-xs font-bold text-indigo-600 hover:underline flex items-center">
+                    <span>Open in Batch Hub</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5 ml-1"></i>
+                </a>
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeModal('mentorAttendanceModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center space-x-1.5">
+                        <i data-lucide="check-check" class="w-4 h-4"></i>
+                        <span>Save Attendance Register</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 2. Mentor Schedule Session Modal -->
+<div id="mentorAddSessionModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                <i data-lucide="video" class="w-5 h-5 mr-2 text-rose-600"></i>
+                Schedule Live Class / Session
+            </h3>
+            <button onclick="closeModal('mentorAddSessionModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form id="mentorAddSessionForm" method="post" action="{% url 'lms:add_general_session' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+            <!-- Zoom Auto-Parse Box -->
+            <div class="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-black text-sky-400 uppercase tracking-wider flex items-center">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 mr-1.5 text-amber-400"></i>
+                        Paste Zoom / Meet Invite (Auto-Fills Form)
+                    </label>
+                    <span id="mentorZoomParseBadge" class="text-[10px] text-emerald-400 font-bold hidden">✓ Parsed Successfully</span>
+                </div>
+                <textarea id="mentorZoomInviteInput" oninput="parseMentorZoomInvitation(this)" rows="3" placeholder="Paste full Zoom or Google Meet invitation here (Topic, Time, Join Zoom Meeting link, Meeting ID, Passcode)..." class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 font-mono outline-none focus:ring-1 focus:ring-sky-500"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Cohort / Batch *</label>
+                <select name="batch_id" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-rose-500">
+                    {% for b in mentor_batches %}
+                    <option value="{{ b.id }}">{{ b.code }} — {{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Session Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Class 2: Dynamic Multi-Agent Collaboration" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-rose-500">
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
+                    <input type="date" name="scheduled_date" required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Time *</label>
+                    <input type="time" name="start_time" required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">End Time</label>
+                    <input type="time" name="end_time" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-rose-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Live Meeting URL (Zoom / Meet)</label>
+                <input type="url" name="meeting_link" placeholder="https://us06web.zoom.us/j/... or https://meet.google.com/..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-rose-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Agenda / Discussion Topics</label>
+                <textarea name="agenda" rows="2" placeholder="Topics covered in this session..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-rose-500"></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal('mentorAddSessionModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md">Schedule Class</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 3. Mentor Create / Assign Task to All Students Modal -->
+<div id="mentorCreateBatchAssignmentModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-xl w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div class="space-y-0.5">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="clipboard-plus" class="w-5 h-5 mr-2 text-purple-600"></i>
+                    Assign Task to Cohort Students
+                </h3>
+                <p class="text-xs text-slate-500">Dispatch assignments to all students in a batch or specific individuals.</p>
+            </div>
+            <button onclick="closeModal('mentorCreateBatchAssignmentModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="mentorCreateAssignmentForm" method="post" action="{% url 'lms:mentor_create_assignment' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Cohort / Batch *</label>
+                <select name="batch_id" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                    {% for b in mentor_batches %}
+                    <option value="{{ b.id }}">{{ b.code }} — {{ b.name }} ({{ b.students.count }} Students)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Target Audience Selector -->
+            <div class="p-3.5 bg-purple-50/70 rounded-2xl border border-purple-100 space-y-2">
+                <label class="block text-xs font-bold text-purple-900 uppercase tracking-wider">Target Audience *</label>
+                <div class="flex items-center space-x-4 text-xs font-bold">
+                    <label class="flex items-center space-x-1.5 cursor-pointer text-slate-800">
+                        <input type="radio" name="target_audience" value="ALL" checked onchange="toggleMentorTargetStudent(this.value)" class="accent-purple-600">
+                        <span>All Students in Cohort (Recommended)</span>
+                    </label>
+                    <label class="flex items-center space-x-1.5 cursor-pointer text-slate-800">
+                        <input type="radio" name="target_audience" value="INDIVIDUAL" onchange="toggleMentorTargetStudent(this.value)" class="accent-purple-600">
+                        <span>Individual Student</span>
+                    </label>
+                </div>
+                <div id="mentorIndividualStudentWrap" class="hidden pt-2">
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Pick Individual Student:</label>
+                    <select name="target_student_id" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">-- Choose Student --</option>
+                        {% for s in mentor_students %}
+                        <option value="{{ s.id }}">{{ s.full_name }} ({{ s.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Assignment Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Milestone 4: Vector Embeddings &amp; RAG Pipeline" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Due Date &amp; Time</label>
+                    <input type="datetime-local" name="due_date" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Maximum Points</label>
+                    <input type="number" name="max_score" value="100" min="10" max="1000" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Starter Code / GitHub Repo URL</label>
+                <input type="url" name="resource_url" placeholder="https://github.com/organization/starter-template" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Instructions &amp; Problem Statement *</label>
+                <textarea name="description" rows="3" required placeholder="Detailed requirements, deliverables, test suite expectations..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal('mentorCreateBatchAssignmentModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-600/20 flex items-center space-x-1.5">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    <span>Dispatch Assignment</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 3b. Mentor Grade Student Assignment Modal -->
+<div id="mentorGradeStudentModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-5">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="award" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Evaluate Student Assignment
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Review repository solution and award marks with feedback.</p>
+            </div>
+            <button onclick="closeModal('mentorGradeStudentModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="mentorGradeStudentForm" method="post" action="" onsubmit="submitMentorGradeForm(event)" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" id="gradeModalBatchId" name="batch_id" value="">
+            <input type="hidden" id="gradeModalAssignmentId" name="assignment_id" value="">
+            <input type="hidden" id="gradeModalStudentId" name="student_id" value="">
+
+            <!-- Student Profile Badge -->
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+                <div class="flex items-center space-x-3 min-w-0">
+                    <img id="gradeModalStudentAvatar" src="" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-200 flex-shrink-0" alt="">
+                    <div class="min-w-0">
+                        <div class="flex items-center space-x-1.5">
+                            <h4 class="text-sm font-bold text-slate-900 truncate" id="gradeModalStudentName">Student Name</h4>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200" id="gradeModalBatchCode">BATCH</span>
+                        </div>
+                        <p class="text-xs text-slate-400 font-mono truncate" id="gradeModalStudentEmail">student@example.com</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignment Info -->
+            <div class="p-3 bg-purple-50/60 rounded-xl border border-purple-100 space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-purple-900 uppercase tracking-wider text-[10px]">Assignment</span>
+                    <span class="font-bold text-purple-700 text-xs" id="gradeModalMaxScoreText">100 Pts</span>
+                </div>
+                <p class="text-sm font-extrabold text-slate-900" id="gradeModalAssignmentTitle">Assignment Title</p>
+            </div>
+
+            <!-- Student Submission Link Container -->
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Student Submission URL</label>
+                <div id="gradeModalSubmissionLinkWrap">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Score and Status -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Awarded Score *</label>
+                    <input type="number" id="gradeModalScoreInput" name="score" min="0" max="100" required placeholder="e.g. 95" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Evaluation Status *</label>
+                    <select id="gradeModalStatusSelect" name="status" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="GRADED">GRADED (Accepted)</option>
+                        <option value="REVISION_REQUESTED">REVISION_REQUESTED</option>
+                        <option value="EXCUSED">EXCUSED</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Mentor Feedback -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Feedback &amp; Mentor Notes</label>
+                <textarea id="gradeModalFeedbackInput" name="mentor_feedback" rows="3" placeholder="Provide constructive feedback, code architecture tips, or praise for student..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal('mentorGradeStudentModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" id="gradeModalSubmitBtn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Save Assessment &amp; Grade</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 4. Mentor Reply to Student Doubt Modal -->
+<div id="mentorReplyChatModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-2xl w-full h-[640px] flex flex-col overflow-hidden">
+
+        <!-- Modal Header -->
+        <div class="p-5 border-b border-gray-100 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center space-x-3.5 min-w-0">
+                <img id="replyModalStudentAvatar" src="" class="w-11 h-11 rounded-full object-cover ring-2 ring-indigo-400/40 flex-shrink-0" alt="">
+                <div class="min-w-0">
+                    <div class="flex items-center space-x-2">
+                        <h3 class="text-base font-bold text-white truncate" id="replyModalStudentName">Student Name</h3>
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                    </div>
+                    <p class="text-xs text-indigo-300 font-mono truncate" id="replyModalStudentEmail">student@example.com</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="refreshMentorStudentChat()" class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors" title="Refresh conversation">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="replyRefreshIcon"></i>
+                </button>
+                <button type="button" onclick="closeModal('mentorReplyChatModal')" class="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Reply Chips -->
+        <div class="px-5 py-2.5 bg-slate-50 border-b border-gray-100 flex items-center gap-2 overflow-x-auto text-[11px] flex-shrink-0">
+            <span class="text-slate-400 font-bold flex-shrink-0">Quick Reply:</span>
+            <button type="button" onclick="setMentorQuickReply('Reviewed your solution and left detailed comments.')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 flex-shrink-0 font-medium transition-colors">
+                Reviewed Solution
+            </button>
+            <button type="button" onclick="setMentorQuickReply('Please verify your unit tests pass before re-submitting.')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 flex-shrink-0 font-medium transition-colors">
+                Verify Unit Tests
+            </button>
+            <button type="button" onclick="setMentorQuickReply('Let us discuss this architectural challenge in our upcoming live class!')" class="px-2.5 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 flex-shrink-0 font-medium transition-colors">
+                Discuss in Live Session
+            </button>
+        </div>
+
+        <!-- Chat Conversation Messages -->
+        <div class="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/40" id="mentorReplyMessagesContainer">
+            <div id="mentorReplyLoading" class="text-center py-12 text-slate-400 text-xs">
+                <i data-lucide="loader-2" class="w-6 h-6 mx-auto animate-spin mb-2 text-indigo-600"></i>
+                <span>Loading student inquiry conversation...</span>
+            </div>
+            <div id="mentorReplyMessagesList" class="space-y-3.5 hidden">
+                <!-- Messages populated via JS -->
+            </div>
+        </div>
+
+        <!-- Reply Input Form -->
+        <div class="p-4 border-t border-gray-100 bg-white flex-shrink-0">
+            <form id="mentorReplyForm" onsubmit="sendMentorReplyMessage(event)" class="space-y-2">
+                {% csrf_token %}
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="mentorReplyInput" name="message" required
+                           placeholder="Type guidance or reply to student..."
+                           autocomplete="off"
+                           class="flex-1 px-4 py-3 rounded-2xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/60 focus:bg-white transition-all">
+                    <button type="submit" id="mentorReplySendBtn"
+                            class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-indigo-600/20 transition-all flex-shrink-0">
+                        <span>Send Reply</span>
+                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// JSON data for sessions, students, and attendance
+const mentorSessionsData = {{ sessions_client_json|safe }};
+const mentorSessionsMap = {};
+mentorSessionsData.forEach(ses => {
+    mentorSessionsMap[ses.id] = ses;
+});
+
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.remove('hidden');
+        el.style.display = 'flex';
+    }
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+    }
+}
+
+// Attendance Modal Trigger
+function openMentorAttendanceModal(sessionId) {
+    const ses = mentorSessionsMap[sessionId];
+    if (!ses) return;
+
+    document.getElementById('mentorAttendanceSessionIdInput').value = ses.id;
+    document.getElementById('mentorAttendanceForm').action = `/lms/batches/${ses.batch_id}/attendance/mark/`;
+    document.getElementById('mentorAttBatchCode').textContent = `${ses.batch_code} — ${ses.batch_name}`;
+    document.getElementById('mentorAttSessionTitle').textContent = ses.title;
+    document.getElementById('mentorAttSessionTime').textContent = `${ses.scheduled_date} • ${ses.start_time}`;
+    document.getElementById('mentorAttendanceSubtitle').textContent = `Cohort: ${ses.batch_name}`;
+    document.getElementById('mentorAttBatchDetailLink').href = `/lms/batches/${ses.batch_id}/#tab-sessions`;
+
+    const meetWrap = document.getElementById('mentorAttMeetingLinkWrap');
+    if (ses.meeting_link) {
+        meetWrap.innerHTML = `
+            <a href="${ses.meeting_link}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs flex items-center space-x-1 shadow-xs">
+                <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                <span>Join Link</span>
+            </a>
+        `;
+    } else {
+        meetWrap.innerHTML = `<span class="text-[11px] text-slate-400 italic">No link</span>`;
+    }
+
+    const container = document.getElementById('mentorAttendanceStudentsList');
+    container.innerHTML = '';
+
+    if (ses.students && ses.students.length > 0) {
+        ses.students.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mentor-att-student-row';
+            row.dataset.studentId = s.id;
+
+            const isPresent = s.status === 'PRESENT';
+            const isAbsent = s.status === 'ABSENT';
+            const isLate = s.status === 'LATE';
+
+            row.innerHTML = `
+                <div class="flex items-center space-x-3 min-w-0">
+                    <img src="${s.avatar}" class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 flex-shrink-0" alt="">
+                    <div class="min-w-0">
+                        <span class="text-xs font-bold text-slate-900 block truncate">${s.name}</span>
+                        <span class="text-[10px] text-slate-400 font-mono block truncate">${s.email}</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-1.5 flex-shrink-0">
+                    <label class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all ${isPresent ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}">
+                        <input type="radio" name="status_${s.id}" value="PRESENT" ${isPresent ? 'checked' : ''} class="hidden" onchange="updateMentorRowHighlight(this)">
+                        <span>Present</span>
+                    </label>
+                    <label class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all ${isAbsent ? 'bg-rose-50 text-rose-700 border-rose-300' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}">
+                        <input type="radio" name="status_${s.id}" value="ABSENT" ${isAbsent ? 'checked' : ''} class="hidden" onchange="updateMentorRowHighlight(this)">
+                        <span>Absent</span>
+                    </label>
+                    <label class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all ${isLate ? 'bg-amber-50 text-amber-700 border-amber-300' : 'text-slate-500 border-slate-200 hover:bg-slate-50'}">
+                        <input type="radio" name="status_${s.id}" value="LATE" ${isLate ? 'checked' : ''} class="hidden" onchange="updateMentorRowHighlight(this)">
+                        <span>Late</span>
+                    </label>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+    } else {
+        container.innerHTML = `
+            <div class="p-6 text-center text-slate-400 text-xs italic">
+                No active students currently enrolled in this batch.
+            </div>
+        `;
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    openModal('mentorAttendanceModal');
+}
+
+function markAllMentorAttendance(status) {
+    document.querySelectorAll('.mentor-att-student-row').forEach(row => {
+        const radio = row.querySelector(`input[type="radio"][value="${status}"]`);
+        if (radio) {
+            radio.checked = true;
+            updateMentorRowHighlight(radio);
+        }
+    });
+}
+
+function updateMentorRowHighlight(radio) {
+    const parentRow = radio.closest('.mentor-att-student-row');
+    if (!parentRow) return;
+
+    parentRow.querySelectorAll('label').forEach(lbl => {
+        lbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all text-slate-500 border-slate-200 hover:bg-slate-50';
+    });
+
+    const activeLbl = radio.closest('label');
+    if (activeLbl) {
+        if (radio.value === 'PRESENT') {
+            activeLbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all bg-emerald-50 text-emerald-700 border-emerald-300';
+        } else if (radio.value === 'ABSENT') {
+            activeLbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all bg-rose-50 text-rose-700 border-rose-300';
+        } else if (radio.value === 'LATE') {
+            activeLbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all bg-amber-50 text-amber-700 border-amber-300';
+        }
+    }
+}
+
+// Session Filter
+function filterSessions(filterType, btn) {
+    document.querySelectorAll('.session-filter-btn').forEach(b => {
+        b.className = 'session-filter-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all';
+    });
+    if (btn) {
+        btn.className = 'session-filter-btn px-3 py-1.5 rounded-lg bg-white text-slate-900 shadow-xs transition-all';
+    }
+
+    const cards = document.querySelectorAll('.session-card');
+    cards.forEach(card => {
+        const hasAttendance = card.dataset.hasAttendance === 'true';
+        const isUpcoming = card.dataset.isUpcoming === 'true';
+
+        if (filterType === 'all') {
+            card.classList.remove('hidden');
+        } else if (filterType === 'upcoming') {
+            if (isUpcoming) card.classList.remove('hidden'); else card.classList.add('hidden');
+        } else if (filterType === 'pending') {
+            if (!hasAttendance) card.classList.remove('hidden'); else card.classList.add('hidden');
+        } else if (filterType === 'marked') {
+            if (hasAttendance) card.classList.remove('hidden'); else card.classList.add('hidden');
+        }
+    });
+}
+
+// Copy Meeting Link
+function copyMeetingLink(url, btn) {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        setTimeout(() => {
+            btn.innerHTML = orig;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }, 1500);
+    });
+}
+
+// Zoom Invite Parser for Mentor Schedule Session Modal
+function parseMentorZoomInvitation(textarea) {
+    const raw = (textarea.value || '').trim();
+    if (!raw) return;
+    const form = document.getElementById('mentorAddSessionForm');
+    if (!form) return;
+
+    // 1. Topic / Title
+    const topicMatch = raw.match(/Topic:\s*([^\r\n]+)/i) || raw.match(/Subject:\s*([^\r\n]+)/i) || raw.match(/Meeting:\s*([^\r\n]+)/i);
+    if (topicMatch) {
+        const titleInput = form.querySelector('input[name="title"]');
+        if (titleInput) titleInput.value = topicMatch[1].trim();
+    }
+
+    // 2. URL
+    const urlMatch = raw.match(/https:\/\/[^\s]+zoom\.us\/j\/[^\s]+/i) ||
+                     raw.match(/https:\/\/meet\.google\.com\/[a-z0-9-]+/i) ||
+                     raw.match(/https:\/\/[^\s]+zoomcrc\.com\/[^\s]+/i) ||
+                     raw.match(/(?:Join Zoom Meeting|Join Meeting)[\s\r\n]+(https?:\/\/[^\s]+)/i) ||
+                     raw.match(/https?:\/\/[^\s]+/i);
+    if (urlMatch) {
+        const linkInput = form.querySelector('input[name="meeting_link"]');
+        if (linkInput) linkInput.value = (urlMatch[1] || urlMatch[0]).trim();
+    }
+
+    // 3. Date & Start Time
+    const timeMatch = raw.match(/Time:\s*([A-Za-z]+ \d{1,2}, \d{4})\s+(\d{1,2}:\d{2}\s*[AP]M)/i) ||
+                      raw.match(/(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2})/);
+    if (timeMatch) {
+        const rawDateStr = timeMatch[1].trim();
+        const rawTimeStr = timeMatch[2].trim();
+
+        const parsedDate = new Date(rawDateStr);
+        if (!isNaN(parsedDate.getTime())) {
+            const year = parsedDate.getFullYear();
+            const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(parsedDate.getDate()).padStart(2, '0');
+            const dateInput = form.querySelector('input[name="scheduled_date"]');
+            if (dateInput) dateInput.value = `${year}-${month}-${day}`;
+        }
+
+        const match12 = rawTimeStr.match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+        if (match12) {
+            let h = parseInt(match12[1], 10);
+            const m = match12[2];
+            const ampm = match12[3].toUpperCase();
+            if (ampm === 'PM' && h < 12) h += 12;
+            if (ampm === 'AM' && h === 12) h = 0;
+            const time24 = `${String(h).padStart(2, '0')}:${m}`;
+            const timeInput = form.querySelector('input[name="start_time"]');
+            if (timeInput) timeInput.value = time24;
+        }
+    }
+
+    // 4. Meeting ID & Passcode -> Agenda
+    const idMatch = raw.match(/Meeting ID:\s*([0-9\s]+)/i);
+    const passMatch = raw.match(/Passcode:\s*([^\r\n]+)/i);
+    if (idMatch || passMatch) {
+        const agendaInput = form.querySelector('textarea[name="agenda"]');
+        if (agendaInput) {
+            const extras = [];
+            if (idMatch) extras.push(`Meeting ID: ${idMatch[1].trim()}`);
+            if (passMatch) extras.push(`Passcode: ${passMatch[1].trim()}`);
+            if (!agendaInput.value.includes('Meeting ID:')) {
+                agendaInput.value = (agendaInput.value ? agendaInput.value + '\n\n' : '') + extras.join(' | ');
+            }
+        }
+    }
+
+    const badge = document.getElementById('mentorZoomParseBadge');
+    if (badge) {
+        badge.classList.remove('hidden');
+        setTimeout(() => badge.classList.add('hidden'), 4000);
+    }
+}
+
+// 5. Mentor Reply to Student Inquiries JavaScript
+let currentReplyStudentId = null;
+
+function toggleMentorTargetStudent(val) {
+    const el = document.getElementById('mentorIndividualStudentWrap');
+    if (el) {
+        if (val === 'INDIVIDUAL') {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+}
+
+function openMentorReplyModal(studentId, studentName, studentEmail, avatar) {
+    currentReplyStudentId = studentId;
+    document.getElementById('replyModalStudentName').textContent = studentName;
+    document.getElementById('replyModalStudentEmail').textContent = studentEmail;
+    document.getElementById('replyModalStudentAvatar').src = avatar;
+    document.getElementById('mentorReplyInput').value = '';
+
+    openModal('mentorReplyChatModal');
+    loadMentorStudentChat(studentId);
+}
+
+function setMentorQuickReply(text) {
+    const input = document.getElementById('mentorReplyInput');
+    input.value = text;
+    input.focus();
+}
+
+function refreshMentorStudentChat() {
+    if (currentReplyStudentId) {
+        const icon = document.getElementById('replyRefreshIcon');
+        if (icon) icon.classList.add('animate-spin');
+        loadMentorStudentChat(currentReplyStudentId, () => {
+            if (icon) icon.classList.remove('animate-spin');
+        });
+    }
+}
+
+function loadMentorStudentChat(studentId, callback) {
+    const loadingEl = document.getElementById('mentorReplyLoading');
+    const listEl = document.getElementById('mentorReplyMessagesList');
+
+    fetch(`/lms/mentor/chat/${studentId}/reply/`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                renderMentorStudentChatMessages(data.messages, data.student);
+                loadingEl.classList.add('hidden');
+                listEl.classList.remove('hidden');
+                scrollMentorChatToBottom();
+            }
+            if (callback) callback();
+        })
+        .catch(err => {
+            console.error(err);
+            loadingEl.innerHTML = `<span class="text-rose-500">Failed to load conversation.</span>`;
+            if (callback) callback();
+        });
+}
+
+function renderMentorStudentChatMessages(messages, student) {
+    const listEl = document.getElementById('mentorReplyMessagesList');
+    listEl.innerHTML = '';
+
+    if (!messages || messages.length === 0) {
+        listEl.innerHTML = `
+            <div class="text-center py-10 space-y-2">
+                <p class="text-xs font-bold text-slate-700">No messages in this thread.</p>
+                <p class="text-[11px] text-slate-400">Send an initial check-in message to ${student.name} below.</p>
+            </div>
+        `;
+        return;
+    }
+
+    messages.forEach(msg => {
+        const row = document.createElement('div');
+        row.className = `flex ${msg.is_me ? 'justify-end' : 'justify-start'} items-end space-x-2`;
+
+        if (msg.is_me) {
+            row.innerHTML = `
+                <div class="max-w-md space-y-1 text-right">
+                    <span class="block text-[10px] font-bold text-indigo-600">You (Mentor)</span>
+                    <div class="px-4 py-2.5 rounded-2xl rounded-tr-xs bg-indigo-600 text-white text-xs leading-relaxed shadow-xs inline-block text-left whitespace-pre-wrap">
+                        ${escapeHtml(msg.message)}
+                    </div>
+                    <span class="block text-[10px] text-slate-400 font-medium">${msg.created_at}</span>
+                </div>
+            `;
+        } else {
+            row.innerHTML = `
+                <img src="${student.avatar}" class="w-7 h-7 rounded-full object-cover ring-1 ring-gray-200 flex-shrink-0 mb-3" alt="">
+                <div class="max-w-md space-y-1">
+                    <span class="block text-[10px] font-bold text-slate-700">${student.name}</span>
+                    <div class="px-4 py-2.5 rounded-2xl rounded-tl-xs bg-white text-slate-800 text-xs leading-relaxed shadow-xs border border-gray-200/80 inline-block whitespace-pre-wrap">
+                        ${escapeHtml(msg.message)}
+                    </div>
+                    <span class="block text-[10px] text-slate-400 font-medium">${msg.created_at}</span>
+                </div>
+            `;
+        }
+
+        listEl.appendChild(row);
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function sendMentorReplyMessage(e) {
+    e.preventDefault();
+    if (!currentReplyStudentId) return;
+
+    const input = document.getElementById('mentorReplyInput');
+    const text = (input.value || '').trim();
+    if (!text) return;
+
+    const btn = document.getElementById('mentorReplySendBtn');
+    btn.disabled = true;
+
+    const csrfToken = document.querySelector('#mentorReplyForm input[name="csrfmiddlewaretoken"]')?.value || '{{ csrf_token }}';
+
+    fetch(`/lms/mentor/chat/${currentReplyStudentId}/reply/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+        body: new URLSearchParams({ message: text })
+    })
+    .then(async res => {
+        const rawText = await res.text();
+        try {
+            return JSON.parse(rawText);
+        } catch (e) {
+            throw new Error(`Server returned unexpected response (${res.status}): ${rawText.slice(0, 100)}`);
+        }
+    })
+    .then(data => {
+        btn.disabled = false;
+        if (data.status === 'success') {
+            input.value = '';
+            const listEl = document.getElementById('mentorReplyMessagesList');
+            const row = document.createElement('div');
+            row.className = 'flex justify-end items-end space-x-2';
+            row.innerHTML = `
+                <div class="max-w-md space-y-1 text-right">
+                    <span class="block text-[10px] font-bold text-indigo-600">You (Mentor)</span>
+                    <div class="px-4 py-2.5 rounded-2xl rounded-tr-xs bg-indigo-600 text-white text-xs leading-relaxed shadow-xs inline-block text-left whitespace-pre-wrap">
+                        ${escapeHtml(data.message.message)}
+                    </div>
+                    <span class="block text-[10px] text-slate-400 font-medium">${data.message.created_at}</span>
+                </div>
+            `;
+            listEl.appendChild(row);
+            scrollMentorChatToBottom();
+        } else {
+            alert(data.message || 'Could not send reply.');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        console.error(err);
+        alert(err.message || 'Failed to send reply.');
+    });
+}
+
+function scrollMentorChatToBottom() {
+    const container = document.getElementById('mentorReplyMessagesContainer');
+    if (container) {
+        setTimeout(() => {
+            container.scrollTop = container.scrollHeight;
+        }, 50);
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function filterStudentInquiries(filterType, btn) {
+    // Update button states
+    const btns = document.querySelectorAll('#inquiriesFilterGroup .inq-filter-btn');
+    btns.forEach(b => {
+        b.className = 'inq-filter-btn px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all';
+    });
+    if (btn) {
+        btn.className = 'inq-filter-btn px-3 py-1.5 rounded-xl bg-white text-slate-900 shadow-xs border border-gray-200/80 transition-all';
+    }
+
+    const cards = document.querySelectorAll('#studentInquiriesList .inquiry-card');
+    cards.forEach(card => {
+        const isRead = card.getAttribute('data-is-read') === 'true';
+        const hasReply = card.getAttribute('data-has-reply') === 'true';
+
+        if (filterType === 'all') {
+            card.classList.remove('hidden');
+        } else if (filterType === 'unread') {
+            if (!isRead) {
+                card.classList.remove('hidden');
+            } else {
+                card.classList.add('hidden');
+            }
+        } else if (filterType === 'replied') {
+            if (hasReply) {
+                card.classList.remove('hidden');
+            } else {
+                card.classList.add('hidden');
+            }
+        }
+    });
+}
+
+function filterInquiriesSearch(query) {
+    const q = (query || '').toLowerCase().trim();
+    const cards = document.querySelectorAll('#studentInquiriesList .inquiry-card');
+    cards.forEach(card => {
+        const searchText = (card.getAttribute('data-search-text') || '').toLowerCase();
+        if (!q || searchText.includes(q)) {
+            card.classList.remove('hidden');
+        } else {
+            card.classList.add('hidden');
+        }
+    });
+}
+
+function toggleInlineReply(drawerId) {
+    const drawer = document.getElementById(drawerId);
+    if (!drawer) return;
+    drawer.classList.toggle('hidden');
+    if (!drawer.classList.contains('hidden')) {
+        const textarea = drawer.querySelector('textarea');
+        if (textarea) textarea.focus();
+    }
+}
+
+function sendInlineMentorReply(studentId, inputId, btnId, e) {
+    e.preventDefault();
+    const input = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    const text = (input ? input.value : '').trim();
+    if (!text) return;
+
+    if (btn) btn.disabled = true;
+
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '{{ csrf_token }}';
+
+    fetch(`/lms/mentor/chat/${studentId}/reply/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+        },
+        body: new URLSearchParams({ message: text })
+    })
+    .then(async res => {
+        const rawText = await res.text();
+        try {
+            return JSON.parse(rawText);
+        } catch (e) {
+            throw new Error(`Server returned unexpected response (${res.status}): ${rawText.slice(0, 100)}`);
+        }
+    })
+    .then(data => {
+        if (btn) btn.disabled = false;
+        if (data.status === 'success') {
+            input.value = '';
+            // Change drawer to success notification
+            const drawer = input.closest('div[id^="inline-reply-"]');
+            if (drawer) {
+                drawer.innerHTML = `
+                    <div class="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-bold flex items-center space-x-2">
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Reply sent to student successfully!</span>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        } else {
+            alert(data.message || 'Failed to dispatch reply.');
+        }
+    })
+    .catch(err => {
+        if (btn) btn.disabled = false;
+        console.error(err);
+        alert(err.message || 'Failed to dispatch reply.');
+    });
+}
+
+// 6. Mentor Assignment Report & Grading JavaScript
+let currentReportStatusFilter = 'all';
+
+function switchAssignmentsViewTab(tab) {
+    const reportTabBtn = document.getElementById('tabBtnStudentReport');
+    const tasksTabBtn = document.getElementById('tabBtnDispatchedTasks');
+    const reportView = document.getElementById('assignmentReportsView');
+    const tasksView = document.getElementById('dispatchedTasksView');
+
+    if (tab === 'report') {
+        if (reportTabBtn) reportTabBtn.className = 'px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-2';
+        if (tasksTabBtn) tasksTabBtn.className = 'px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-bold text-xs hover:bg-white/80 transition-all flex items-center space-x-2';
+        if (reportView) reportView.classList.remove('hidden');
+        if (tasksView) tasksView.classList.add('hidden');
+    } else {
+        if (tasksTabBtn) tasksTabBtn.className = 'px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-xs transition-all flex items-center space-x-2';
+        if (reportTabBtn) reportTabBtn.className = 'px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-bold text-xs hover:bg-white/80 transition-all flex items-center space-x-2';
+        if (tasksView) tasksView.classList.remove('hidden');
+        if (reportView) reportView.classList.add('hidden');
+    }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function setReportStatusFilter(filterType, btn) {
+    currentReportStatusFilter = filterType;
+    document.querySelectorAll('.report-status-pill').forEach(b => {
+        b.className = 'report-status-pill px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold transition-all';
+    });
+    if (btn) {
+        btn.className = 'report-status-pill px-3 py-1.5 rounded-xl bg-purple-600 text-white shadow-xs font-bold transition-all';
+    }
+    filterAssignmentReportRows();
+}
+
+function filterAssignmentReportRows() {
+    const status = currentReportStatusFilter || 'all';
+    const batchId = document.getElementById('reportBatchFilter')?.value || 'all';
+    const assignmentId = document.getElementById('reportAssignmentFilter')?.value || 'all';
+    const query = (document.getElementById('reportSearchInput')?.value || '').toLowerCase().trim();
+
+    let visibleCount = 0;
+    const rows = document.querySelectorAll('.assignment-report-row');
+    rows.forEach(row => {
+        const rowStatus = row.dataset.status; // 'graded', 'needs_grading', 'overdue', 'pending'
+        const rowBatch = row.dataset.batchId;
+        const rowAssignment = row.dataset.assignmentId;
+        const rowSearch = row.dataset.search || '';
+
+        let matchStatus = true;
+        if (status === 'needs_grading') matchStatus = (rowStatus === 'needs_grading');
+        else if (status === 'graded') matchStatus = (rowStatus === 'graded');
+        else if (status === 'pending') matchStatus = (rowStatus === 'pending');
+        else if (status === 'overdue') matchStatus = (rowStatus === 'overdue');
+
+        let matchBatch = (batchId === 'all' || rowBatch === batchId);
+        let matchAssignment = (assignmentId === 'all' || rowAssignment === assignmentId);
+        let matchQuery = (!query || rowSearch.includes(query));
+
+        if (matchStatus && matchBatch && matchAssignment && matchQuery) {
+            row.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            row.classList.add('hidden');
+        }
+    });
+
+    const emptyEl = document.getElementById('reportTableEmptyState');
+    if (emptyEl) {
+        if (visibleCount === 0) {
+            emptyEl.classList.remove('hidden');
+        } else {
+            emptyEl.classList.add('hidden');
+        }
+    }
+}
+
+function openMentorGradeModal(batchId, assignmentId, assignmentTitle, studentId, studentName, studentEmail, studentAvatar, batchCode, maxScore, currentScore, currentStatus, currentFeedback, submissionUrl) {
+    document.getElementById('gradeModalBatchId').value = batchId;
+    document.getElementById('gradeModalAssignmentId').value = assignmentId;
+    document.getElementById('gradeModalStudentId').value = studentId;
+    document.getElementById('gradeModalStudentName').textContent = studentName;
+    document.getElementById('gradeModalStudentEmail').textContent = studentEmail;
+    document.getElementById('gradeModalStudentAvatar').src = studentAvatar;
+    document.getElementById('gradeModalBatchCode').textContent = batchCode;
+    document.getElementById('gradeModalAssignmentTitle').textContent = assignmentTitle;
+    document.getElementById('gradeModalMaxScoreText').textContent = maxScore + ' Pts';
+
+    const scoreInput = document.getElementById('gradeModalScoreInput');
+    scoreInput.max = maxScore;
+    scoreInput.value = (currentScore !== undefined && currentScore !== null && currentScore !== '') ? currentScore : '';
+
+    const statusSelect = document.getElementById('gradeModalStatusSelect');
+    statusSelect.value = currentStatus || 'GRADED';
+
+    const feedbackInput = document.getElementById('gradeModalFeedbackInput');
+    feedbackInput.value = currentFeedback || '';
+
+    const linkWrap = document.getElementById('gradeModalSubmissionLinkWrap');
+    if (submissionUrl && submissionUrl.trim() !== '') {
+        linkWrap.innerHTML = `
+            <a href="${submissionUrl}" target="_blank" rel="noopener noreferrer" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-mono text-xs font-bold rounded-xl flex items-center justify-between transition-all group">
+                <div class="flex items-center space-x-2 truncate">
+                    <i data-lucide="github" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                    <span class="truncate">${escapeHtml(submissionUrl)}</span>
+                </div>
+                <span class="ml-2 px-2 py-0.5 rounded-md bg-white/20 text-white text-[11px] font-sans flex items-center space-x-1 flex-shrink-0">
+                    <span>Open Repo</span>
+                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                </span>
+            </a>
+        `;
+    } else {
+        linkWrap.innerHTML = `
+            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 flex items-center space-x-2">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
+                <span>No repository link submitted yet by student. You can still record an in-class or manual score.</span>
+            </div>
+        `;
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    openModal('mentorGradeStudentModal');
+}
+
+function submitMentorGradeForm(e) {
+    e.preventDefault();
+    const batchId = document.getElementById('gradeModalBatchId').value;
+    const assignmentId = document.getElementById('gradeModalAssignmentId').value;
+    const studentId = document.getElementById('gradeModalStudentId').value;
+    const scoreVal = document.getElementById('gradeModalScoreInput').value;
+    const statusVal = document.getElementById('gradeModalStatusSelect').value;
+    const feedbackVal = document.getElementById('gradeModalFeedbackInput').value;
+    const submitBtn = document.getElementById('gradeModalSubmitBtn');
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-1.5"></i><span>Saving...</span>`;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    const csrfToken = document.querySelector('#mentorGradeStudentForm input[name="csrfmiddlewaretoken"]')?.value || '{{ csrf_token }}';
+
+    const params = new URLSearchParams();
+    params.append('assignment_id', assignmentId);
+    params.append('student_id', studentId);
+    params.append('score', scoreVal);
+    params.append('status', statusVal);
+    params.append('mentor_feedback', feedbackVal);
+
+    fetch(`/lms/batches/${batchId}/assignments/assess/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: params
+    })
+    .then(res => res.json())
+    .then(data => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4 mr-1.5"></i><span>Save Assessment &amp; Grade</span>`;
+        if (data.status === 'success') {
+            closeModal('mentorGradeStudentModal');
+            updateStudentReportRowInUI(assignmentId, studentId, scoreVal, data.max_score, statusVal, feedbackVal);
+            showMentorNotification(`Grade successfully saved for student!`);
+        } else {
+            alert(data.message || 'Failed to save grade.');
+        }
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    })
+    .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4 mr-1.5"></i><span>Save Assessment &amp; Grade</span>`;
+        console.error(err);
+        // Fallback standard submit
+        document.getElementById('mentorGradeStudentForm').submit();
+    });
+}
+
+function updateStudentReportRowInUI(assignmentId, studentId, score, maxScore, status, feedback) {
+    const row = document.getElementById(`report-row-${assignmentId}-${studentId}`);
+    if (!row) return;
+
+    row.dataset.status = 'graded';
+
+    const cell = document.getElementById(`report-score-cell-${assignmentId}-${studentId}`);
+    if (cell) {
+        let feedbackHtml = '';
+        if (feedback && feedback.trim()) {
+            feedbackHtml = `<p class="text-[11px] text-slate-500 italic max-w-xs truncate" title="${escapeHtml(feedback)}">"${escapeHtml(feedback)}"</p>`;
+        }
+        cell.innerHTML = `
+            <div class="space-y-1">
+                <div class="flex items-center space-x-1.5">
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200 score-badge">
+                        ${score} / ${maxScore} Pts
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 status-badge">
+                        ${escapeHtml(status)}
+                    </span>
+                </div>
+                ${feedbackHtml}
+            </div>
+        `;
+    }
+
+    const btn = document.getElementById(`grade-btn-${assignmentId}-${studentId}`);
+    if (btn) {
+        btn.dataset.score = score;
+        btn.dataset.status = status;
+        btn.dataset.feedback = feedback;
+        btn.className = 'px-3 py-1.5 rounded-xl font-bold text-xs transition-all shadow-2xs flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700';
+        const label = btn.querySelector('.btn-label');
+        if (label) label.textContent = 'Update Grade';
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function showMentorNotification(msg) {
+    let toast = document.getElementById('mentorToastNotification');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'mentorToastNotification';
+        toast.className = 'fixed bottom-6 right-6 z-50 px-4 py-3 bg-slate-900 text-white rounded-2xl shadow-xl flex items-center space-x-2 text-xs font-bold transition-all transform translate-y-12 opacity-0 duration-300 border border-slate-700';
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i><span>${escapeHtml(msg)}</span>`;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    toast.classList.remove('translate-y-12', 'opacity-0');
+    setTimeout(() => {
+        toast.classList.add('translate-y-12', 'opacity-0');
+    }, 3500);
+}
+</script>
+{% endblock %}

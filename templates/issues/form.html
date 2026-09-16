@@ -11,7 +11,7 @@
 
 <div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
     <div class="p-6 p-6">
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" id="issue-form">
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
                 <div class="md:col-span-6 mb-3">
@@ -96,11 +96,14 @@
             quill.root.innerHTML = hiddenTextarea.value;
         }
         
-        document.querySelector('form').addEventListener('submit', function() {
-            if (hiddenTextarea) {
-                hiddenTextarea.value = quill.root.innerHTML;
-            }
-        });
+        var issueForm = document.getElementById('issue-form');
+        if (issueForm) {
+            issueForm.addEventListener('submit', function() {
+                if (hiddenTextarea) {
+                    hiddenTextarea.value = quill.root.innerHTML;
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

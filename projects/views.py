@@ -53,12 +53,22 @@ def project_create(request):
     View for creating a new project.
     """
     if request.method == 'POST':
-        form = ProjectForm(request.POST)
+        form = ProjectForm(request.POST, request.FILES)
         if form.is_valid():
             project = form.save(commit=False)
             project.created_by = request.user
             project.save()
             form.save_m2m()
+            
+            # Save comment if provided
+            comment = request.POST.get('comment')
+            if comment and comment.strip():
+                from .models import ProjectComment
+                ProjectComment.objects.create(
+                    project=project,
+                    author=request.user,
+                    content=comment.strip()
+                )
             
             # Handle attachments
             from core.models import Attachment
@@ -87,8 +97,10 @@ def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk)
     
     if request.method == 'POST':
-        content = request.POST.get('comment_content')
-        if content and content.strip() and content != '<p><br></p>':
+        content = request.POST.get('comment_content', '').strip()
+        import re
+        has_text = bool(re.sub(r'<[^>]*>', '', content).strip())
+        if has_text or '<img' in content:
             from .models import ProjectComment
             ProjectComment.objects.create(project=project, author=request.user, content=content)
             return redirect('project_detail', pk=pk)
@@ -177,6 +189,12 @@ def project_update(request, pk):
             comment = request.POST.get('comment')
             if comment and comment.strip():
                 updated_project._edit_comment = comment.strip()
+                from .models import ProjectComment
+                ProjectComment.objects.create(
+                    project=updated_project,
+                    author=request.user,
+                    content=comment.strip()
+                )
                 
             updated_project.save()
             form.save_m2m()

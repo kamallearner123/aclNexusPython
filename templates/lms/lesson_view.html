@@ -1,0 +1,594 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}{{ lesson.title }} | {{ course.code }}{% endblock %}
+{% block page_heading %}{{ course.code }} • {{ lesson.title }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/material_styles.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<style>
+.lesson-textbook-content {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #1e293b;
+}
+.lesson-textbook-content h1 { font-size: 1.875rem; font-weight: 800; color: #0f172a; margin-bottom: 1rem; line-height: 1.25; }
+.lesson-textbook-content h2 { font-size: 1.35rem; font-weight: 800; color: #1e293b; margin-top: 2rem; margin-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem; }
+.lesson-textbook-content h3 { font-size: 1.125rem; font-weight: 700; color: #334155; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+.lesson-textbook-content p { margin-bottom: 1.15rem; line-height: 1.8; color: #334155; }
+.lesson-textbook-content ul, .lesson-textbook-content ol { margin-bottom: 1.25rem; padding-left: 1.5rem; }
+.lesson-textbook-content li { margin-bottom: 0.5rem; line-height: 1.7; }
+.lesson-textbook-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
+    margin: 1.75rem auto;
+    display: block;
+}
+/* CodeMirror Dark High-End IDE Styling */
+.CodeMirror {
+    height: auto !important;
+    font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 0.86rem !important;
+    line-height: 1.65 !important;
+    background-color: #0c101d !important;
+    border-radius: 0 0 1rem 1rem;
+    padding: 0.75rem 0 !important;
+}
+.CodeMirror-gutters {
+    background-color: #0c101d !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding-right: 4px;
+}
+.CodeMirror-linenumber {
+    color: #475569 !important;
+    font-size: 0.75rem !important;
+    padding: 0 8px 0 6px !important;
+}
+.cm-s-dracula .CodeMirror-cursor {
+    border-left: 2px solid #38bdf8 !important;
+}
+.cm-s-dracula span.cm-keyword { color: #ff79c6 !important; font-weight: bold; }
+.cm-s-dracula span.cm-builtin { color: #8be9fd !important; }
+.cm-s-dracula span.cm-string { color: #f1fa8c !important; }
+.cm-s-dracula span.cm-number { color: #bd93f9 !important; }
+.cm-s-dracula span.cm-def { color: #50fa7b !important; font-weight: bold; }
+.cm-s-dracula span.cm-variable { color: #f8f8f2 !important; }
+.cm-s-dracula span.cm-comment { color: #6272a4 !important; font-style: italic; }
+.cm-s-dracula span.cm-operator { color: #ff79c6 !important; }
+.cm-s-dracula span.cm-property { color: #66d9ef !important; }
+/* Ensure no underlines appear anywhere inside CodeMirror */
+.CodeMirror pre, .CodeMirror pre span, .CodeMirror pre * {
+    text-decoration: none !important;
+}
+.lesson-textbook-content code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.875rem;
+}
+.lesson-textbook-content :not(pre) > code {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 0.2rem 0.45rem;
+    border-radius: 0.375rem;
+    font-size: 0.85em;
+    border: 1px solid #e2e8f0;
+}
+.lesson-textbook-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.75rem 0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.lesson-textbook-content th, .lesson-textbook-content td {
+    padding: 0.85rem 1.15rem;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+}
+.lesson-textbook-content th {
+    background: #f8fafc;
+    font-weight: 700;
+    color: #0f172a;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+
+    <!-- Main Lesson Reader / Player Viewport (3 Columns) -->
+    <div class="lg:col-span-3 space-y-6">
+
+        <!-- Top Navigation Bar -->
+        <div class="flex items-center justify-between bg-white rounded-2xl p-4 border border-gray-200/90 shadow-soft">
+            <div class="flex items-center space-x-2 text-xs font-semibold text-slate-500 truncate">
+                <a href="{% url 'lms:course_detail' course.slug %}" class="hover:text-blue-600 flex items-center">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5 mr-1"></i>
+                    {{ course.code }}
+                </a>
+                <span>/</span>
+                <span class="text-slate-700 truncate">{{ lesson.module.title }}</span>
+            </div>
+
+            <!-- Mark Complete Form -->
+            <form action="{% url 'lms:lesson_toggle_complete' course.slug lesson.id %}" method="post" class="m-0">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                {% if is_completed %}
+                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold hover:bg-emerald-100 flex items-center space-x-1.5 transition-colors">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+                    <span>Completed</span>
+                </button>
+                {% else %}
+                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-emerald-600 hover:text-white text-xs font-bold flex items-center space-x-1.5 transition-all">
+                    <i data-lucide="circle" class="w-4 h-4"></i>
+                    <span>Mark Lesson Complete</span>
+                </button>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Lesson Header Card -->
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-8 space-y-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-blue-100 text-blue-800">
+                    {{ lesson.get_lesson_type_display }}
+                </span>
+                <span class="text-xs text-slate-400">&bull;</span>
+                <span class="text-xs font-semibold text-slate-500">{{ lesson.duration_minutes }} minutes estimated</span>
+                {% if lesson.is_required %}
+                <span class="text-xs text-slate-400">&bull;</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Required</span>
+                {% endif %}
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
+                {{ lesson.title }}
+            </h1>
+
+            <!-- Embedded Video Player (If Available) -->
+            {% if lesson.video_url %}
+            <div class="aspect-video bg-slate-950 rounded-2xl overflow-hidden shadow-lg border border-slate-800 relative flex items-center justify-center">
+                {% if 'youtube.com' in lesson.video_url or 'youtu.be' in lesson.video_url %}
+                <iframe src="{{ lesson.video_url|cut:'watch?v='|add:'https://www.youtube.com/embed/'|cut:'https://www.youtube.com/watch?v=' }}"
+                        class="w-full h-full" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                {% else %}
+                <div class="text-center text-white space-y-3 p-8">
+                    <i data-lucide="play-circle" class="w-16 h-16 mx-auto text-blue-400"></i>
+                    <p class="text-sm font-semibold">External Video Stream</p>
+                    <a href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer" class="inline-block px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-xs text-white">
+                        Open Lecture Stream &rarr;
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Hands-on Lab Links (If Lab Lesson) -->
+            {% if lesson.resource_link %}
+            <div class="bg-slate-900 text-white rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+                <div class="space-y-1 text-center sm:text-left">
+                    <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Hands-on Laboratory Environment</span>
+                    <h3 class="text-base font-bold">Starter Code Repository &amp; Notebooks</h3>
+                    <p class="text-xs text-slate-400">Clone the repository or open directly in GitHub Codespaces / Colab.</p>
+                </div>
+                <a href="{{ lesson.resource_link }}" target="_blank" rel="noopener noreferrer"
+                   class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center space-x-2 flex-shrink-0">
+                    <i data-lucide="github" class="w-4 h-4"></i>
+                    <span>Open Starter Repository</span>
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Batch Cohort Resources (GitHub & GDrive) -->
+            {% if user_batch and user_batch.github_path or user_batch and user_batch.gdrive_path %}
+            <div class="bg-slate-900/90 border border-slate-800 text-white rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+                <div class="flex items-center space-x-3">
+                    <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">{{ user_batch.code }}</span>
+                    <span class="text-xs text-slate-300 font-semibold">Cohort Repository &amp; Cloud Drive</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    {% if user_batch.github_path %}
+                    <a href="{{ user_batch.github_url|default:user_batch.github_path }}" target="_blank" rel="noopener noreferrer" class="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs border border-slate-700" title="GitHub: {{ user_batch.github_path }}">
+                        <i data-lucide="git-branch" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span>GitHub Repo</span>
+                        <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+                    </a>
+                    {% endif %}
+                    {% if user_batch.gdrive_path %}
+                    <a href="{{ user_batch.gdrive_url|default:user_batch.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="py-1.5 px-3 rounded-xl bg-blue-600/30 hover:bg-blue-600/40 text-blue-200 border border-blue-400/30 text-xs font-bold flex items-center space-x-1.5 transition-all" title="Google Drive: {{ user_batch.gdrive_path }}">
+                        <i data-lucide="folder" class="w-3.5 h-3.5 text-blue-300"></i>
+                        <span>Google Drive</span>
+                        <i data-lucide="external-link" class="w-3 h-3 text-blue-300"></i>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'lms:batch_detail' user_batch.pk %}" class="py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center space-x-1 transition-all">
+                        <span>Batch Hub &rarr;</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Main Text Content / Architecture Notes & Interactive Textbook -->
+        <div class="prose prose-slate max-w-none text-sm sm:text-base leading-relaxed text-slate-700 pt-2 lesson-textbook-content">
+            {% if lesson.content %}
+            <div class="bg-white p-6 sm:p-10 rounded-3xl border border-gray-200/90 shadow-soft">
+                {{ lesson.content|safe }}
+            </div>
+            {% else %}
+            <p class="text-slate-500 italic">Please review the video lecture and accompanying laboratory materials above.</p>
+            {% endif %}
+        </div>
+
+        <!-- Bottom Pagination Controls -->
+        <div class="flex items-center justify-between pt-2">
+            {% if prev_lesson %}
+            <a href="{% url 'lms:lesson_view' course.slug prev_lesson.id %}" class="px-5 py-2.5 rounded-xl bg-white border border-gray-200 text-slate-700 hover:bg-gray-50 text-xs font-bold flex items-center space-x-2 shadow-soft">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span>Previous: {{ prev_lesson.title|truncatechars:28 }}</span>
+            </a>
+            {% else %}
+            <div></div>
+            {% endif %}
+
+            {% if next_lesson %}
+            <a href="{% url 'lms:lesson_view' course.slug next_lesson.id %}" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center space-x-2 shadow-md shadow-blue-600/20">
+                <span>Next: {{ next_lesson.title|truncatechars:28 }}</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+            {% else %}
+            <a href="{% url 'lms:course_detail' course.slug %}" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center space-x-2 shadow-md shadow-emerald-700/20">
+                <i data-lucide="check-check" class="w-4 h-4"></i>
+                <span>Return to Course Overview</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Course Syllabus Drawer (1 Column) -->
+    <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-5 space-y-4 lg:sticky lg:top-6">
+        <div class="border-b border-gray-100 pb-3">
+            <span class="text-xs font-extrabold text-blue-600 uppercase tracking-wider block">Course Navigation</span>
+            <h3 class="text-base font-bold text-slate-900 mt-0.5">{{ course.title }}</h3>
+            <div class="mt-2 flex items-center justify-between text-xs">
+                <span class="text-slate-500 font-medium">Progress</span>
+                <span class="font-extrabold text-blue-600">{{ enrollment.progress_percent }}%</span>
+            </div>
+            <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1">
+                <div class="h-full bg-blue-600 rounded-full" style="width: {{ enrollment.progress_percent }}%;"></div>
+            </div>
+        </div>
+
+        <!-- Modules Accordion / List -->
+        <div class="space-y-4 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+            {% for mod in modules %}
+            <div class="space-y-2">
+                <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                    Module {{ mod.order }}: {{ mod.title }}
+                </span>
+
+                <div class="space-y-1">
+                    {% for l in mod.lessons.all %}
+                    <a href="{% url 'lms:lesson_view' course.slug l.id %}"
+                       class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all {% if l.id == lesson.id %}bg-blue-600 text-white shadow-sm{% elif l.id in completed_lesson_ids %}bg-slate-50 text-slate-700 hover:bg-slate-100{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-900{% endif %}">
+                        <div class="flex items-center space-x-2 truncate">
+                            {% if l.id in completed_lesson_ids %}
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 {% if l.id == lesson.id %}text-white{% else %}text-emerald-500{% endif %} flex-shrink-0"></i>
+                            {% else %}
+                            <i data-lucide="circle" class="w-3.5 h-3.5 {% if l.id == lesson.id %}text-white{% else %}text-slate-300{% endif %} flex-shrink-0"></i>
+                            {% endif %}
+                            <span class="truncate">{{ l.order }}. {{ l.title }}</span>
+                        </div>
+                        <span class="text-[10px] opacity-75 ml-2 flex-shrink-0">{{ l.duration_minutes }}m</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- CodeMirror Syntax Highlighter & Multi-Language Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+
+<script>
+// Map storing active CodeMirror editor instances
+const editorsMap = {};
+
+// Interactive Code Sandboxes Initialization
+document.addEventListener('DOMContentLoaded', function() {
+    const codeBlocks = document.querySelectorAll('.lesson-textbook-content pre');
+
+    codeBlocks.forEach((pre, idx) => {
+        const codeElem = pre.querySelector('code') || pre;
+        const rawCode = (codeElem.textContent || '').trim();
+        if (!rawCode) return;
+
+        // Detect language and configuration
+        let cmMode = 'python';
+        let langBadge = 'PYTHON 3.12';
+        let isPython = true;
+
+        const classes = ((codeElem.className || '') + ' ' + (pre.className || '')).toLowerCase();
+        
+        if (classes.includes('javascript') || classes.includes('language-js') || classes.includes('lang-js')) {
+            cmMode = 'javascript';
+            langBadge = 'JAVASCRIPT';
+            isPython = false;
+        } else if (classes.includes('bash') || classes.includes('shell') || classes.includes('language-sh')) {
+            cmMode = 'shell';
+            langBadge = 'BASH / TERMINAL';
+            isPython = false;
+        } else if (classes.includes('html') || classes.includes('markup')) {
+            cmMode = 'htmlmixed';
+            langBadge = 'HTML5';
+            isPython = false;
+        } else if (classes.includes('json')) {
+            cmMode = { name: 'javascript', json: true };
+            langBadge = 'JSON';
+            isPython = false;
+        } else if (classes.includes('sql')) {
+            cmMode = 'sql';
+            langBadge = 'SQL';
+            isPython = false;
+        } else if (classes.includes('yaml') || classes.includes('yml')) {
+            cmMode = 'yaml';
+            langBadge = 'YAML';
+            isPython = false;
+        } else if (classes.includes('css')) {
+            cmMode = 'css';
+            langBadge = 'CSS';
+            isPython = false;
+        } else {
+            // Check code heuristic
+            if (rawCode.startsWith('$') || rawCode.startsWith('curl ') || rawCode.startsWith('npm ') || rawCode.startsWith('pip install')) {
+                cmMode = 'shell';
+                langBadge = 'BASH / SHELL';
+                isPython = false;
+            } else if (rawCode.startsWith('{') && rawCode.endsWith('}')) {
+                cmMode = { name: 'javascript', json: true };
+                langBadge = 'JSON';
+                isPython = false;
+            } else {
+                cmMode = 'python';
+                langBadge = 'PYTHON 3.12';
+                isPython = true;
+            }
+        }
+
+        const sandboxId = 'code_sandbox_' + idx;
+        const textareaId = 'cm_textarea_' + idx;
+
+        const sandbox = document.createElement('div');
+        sandbox.className = 'code-sandbox rounded-2xl overflow-hidden border border-slate-800/90 my-6 shadow-2xl bg-[#0c101d] ring-1 ring-white/10';
+        sandbox.id = sandboxId;
+
+        sandbox.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between px-4 py-2.5 bg-[#141a2e] border-b border-slate-800 text-xs gap-2 select-none">
+                <div class="flex items-center space-x-2.5">
+                    <span class="w-3 h-3 rounded-full bg-[#ff5f56] inline-block shadow-sm"></span>
+                    <span class="w-3 h-3 rounded-full bg-[#ffbd2e] inline-block shadow-sm"></span>
+                    <span class="w-3 h-3 rounded-full bg-[#27c93f] inline-block shadow-sm"></span>
+                    <span class="font-mono font-bold text-slate-200 text-xs tracking-wider flex items-center ml-2">
+                        <i data-lucide="code-2" class="w-3.5 h-3.5 mr-1.5 text-sky-400"></i>
+                        ${langBadge}
+                    </span>
+                    <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950/80 border border-emerald-700/60 px-2 py-0.5 rounded-full flex items-center shadow-xs">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+                        Always Editable
+                    </span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="copyEditorCode('${sandboxId}')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-colors flex items-center space-x-1.5 border border-slate-700/50" title="Copy code snippet">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span class="copy-label">Copy</span>
+                    </button>
+                    <button type="button" onclick="resetEditorCode('${sandboxId}')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-colors flex items-center space-x-1.5 border border-slate-700/50" title="Reset snippet to original code">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                        <span>Reset</span>
+                    </button>
+                    ${isPython ? `
+                    <button type="button" onclick="runEditorPython('${sandboxId}')" class="btn-run px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs shadow-lg shadow-emerald-900/40 transition-all flex items-center space-x-1.5 cursor-pointer">
+                        <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                        <span class="run-label">▶ Run Script</span>
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="editor-mount relative bg-[#0c101d]">
+                <textarea id="${textareaId}" spellcheck="false" autocorrect="off" autocapitalize="off">${rawCode}</textarea>
+            </div>
+            <div class="terminal-drawer hidden bg-[#060913] border-t border-slate-800 p-4 font-mono text-xs">
+                <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 pb-1.5 border-b border-slate-800/80">
+                    <span class="flex items-center text-emerald-400">
+                        <i data-lucide="terminal" class="w-3.5 h-3.5 mr-1.5"></i> Live Execution Terminal
+                    </span>
+                    <div class="flex items-center space-x-3">
+                        <span class="exec-time text-slate-400 text-[10px]"></span>
+                        <button type="button" onclick="clearEditorOutput('${sandboxId}')" class="text-slate-400 hover:text-slate-200 transition-colors text-[10px] underline">Clear</button>
+                    </div>
+                </div>
+                <pre class="terminal-stdout text-emerald-300 whitespace-pre-wrap leading-relaxed font-mono overflow-x-auto selection:bg-emerald-900"></pre>
+                <pre class="terminal-stderr text-rose-400 whitespace-pre-wrap leading-relaxed font-mono overflow-x-auto mt-2 hidden selection:bg-rose-900"></pre>
+            </div>
+        `;
+
+        pre.parentNode.replaceChild(sandbox, pre);
+
+        // Instantiate CodeMirror
+        if (window.CodeMirror) {
+            const cm = CodeMirror.fromTextArea(document.getElementById(textareaId), {
+                mode: cmMode,
+                theme: 'dracula',
+                lineNumbers: true,
+                tabSize: 4,
+                indentUnit: 4,
+                indentWithTabs: false,
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                lineWrapping: true,
+                viewportMargin: Infinity,
+                spellcheck: false,
+                autocorrect: false,
+                autocapitalize: false,
+            });
+
+            editorsMap[sandboxId] = {
+                cm: cm,
+                originalCode: rawCode,
+                isPython: isPython,
+            };
+        }
+    });
+
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+});
+
+function copyEditorCode(sandboxId) {
+    const entry = editorsMap[sandboxId];
+    const box = document.getElementById(sandboxId);
+    if (!box) return;
+
+    let code = '';
+    if (entry && entry.cm) {
+        code = entry.cm.getValue();
+    } else {
+        const ta = box.querySelector('textarea');
+        code = ta ? ta.value : '';
+    }
+
+    navigator.clipboard.writeText(code).then(() => {
+        const copyLabel = box.querySelector('.copy-label');
+        if (copyLabel) {
+            const old = copyLabel.textContent;
+            copyLabel.textContent = 'Copied!';
+            setTimeout(() => { copyLabel.textContent = old; }, 2000);
+        }
+    });
+}
+
+function resetEditorCode(sandboxId) {
+    const entry = editorsMap[sandboxId];
+    const box = document.getElementById(sandboxId);
+    if (!box) return;
+
+    if (entry && entry.cm && entry.originalCode) {
+        entry.cm.setValue(entry.originalCode);
+    } else {
+        const ta = box.querySelector('textarea');
+        if (ta && entry && entry.originalCode) ta.value = entry.originalCode;
+    }
+    clearEditorOutput(sandboxId);
+}
+
+function clearEditorOutput(sandboxId) {
+    const box = document.getElementById(sandboxId);
+    if (!box) return;
+    const drawer = box.querySelector('.terminal-drawer');
+    const stdout = box.querySelector('.terminal-stdout');
+    const stderr = box.querySelector('.terminal-stderr');
+    const execTime = box.querySelector('.exec-time');
+    if (stdout) stdout.textContent = '';
+    if (stderr) { stderr.textContent = ''; stderr.classList.add('hidden'); }
+    if (execTime) execTime.textContent = '';
+    if (drawer) drawer.classList.add('hidden');
+}
+
+function runEditorPython(sandboxId) {
+    const entry = editorsMap[sandboxId];
+    const box = document.getElementById(sandboxId);
+    if (!box) return;
+
+    let code = '';
+    if (entry && entry.cm) {
+        code = entry.cm.getValue();
+    } else {
+        const ta = box.querySelector('textarea');
+        code = ta ? ta.value : '';
+    }
+
+    const btn = box.querySelector('.btn-run');
+    const drawer = box.querySelector('.terminal-drawer');
+    const stdout = box.querySelector('.terminal-stdout');
+    const stderr = box.querySelector('.terminal-stderr');
+    const execTime = box.querySelector('.exec-time');
+
+    if (!btn) return;
+
+    const originalBtnHtml = btn.innerHTML;
+    btn.innerHTML = `<svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>Running...</span>`;
+    btn.disabled = true;
+
+    // Get CSRF Token
+    const csrfMatch = document.cookie.match(/csrftoken=([^;]+)/);
+    const csrfToken = csrfMatch ? csrfMatch[1] : '';
+
+    const startTime = performance.now();
+
+    fetch('/lms/api/execute-code/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ code: code })
+    })
+    .then(r => r.json())
+    .then(data => {
+        const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+        btn.innerHTML = originalBtnHtml;
+        btn.disabled = false;
+        if (window.lucide) lucide.createIcons();
+
+        drawer.classList.remove('hidden');
+        if (execTime) execTime.textContent = `Executed in ${duration}s`;
+
+        if (data.stdout) {
+            stdout.textContent = data.stdout;
+        } else if (!data.stderr) {
+            stdout.textContent = '✓ Process finished with exit code 0 (no stdout).';
+        } else {
+            stdout.textContent = '';
+        }
+
+        if (data.stderr) {
+            stderr.textContent = data.stderr;
+            stderr.classList.remove('hidden');
+        } else {
+            stderr.textContent = '';
+            stderr.classList.add('hidden');
+        }
+    })
+    .catch(err => {
+        btn.innerHTML = originalBtnHtml;
+        btn.disabled = false;
+        if (window.lucide) lucide.createIcons();
+
+        drawer.classList.remove('hidden');
+        stdout.textContent = '';
+        stderr.textContent = 'Network or server error during execution: ' + err.message;
+        stderr.classList.remove('hidden');
+    });
+}
+</script>
+{% endblock %}

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-xh0@81#p4m*x7@p#0=p6ck&vth^o-s+@)e-01&yo3sj8g--4%8
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['www.aclnexus.com', '.aclnexus.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['www.aclnexus.com', '.aclnexus.com', 'localhost', '127.0.0.1', 'testserver']
 
 
 # Application definition
@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'issues',
     'risks',
     'ai_assistant',
+    'lms',
 ]
 
 MIDDLEWARE = [
@@ -61,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'lms.middleware.DomainAccessMiddleware',
 ]
 
 ROOT_URLCONF = 'ppedp_project.urls'
@@ -75,6 +77,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'lms.middleware.domain_access_context',
+                'teams.context_processors.unread_messages_context',
             ],
         },
     },
@@ -90,8 +94,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+    },
+    'lms': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'lms_db.sqlite3',
     }
 }
+DATABASE_ROUTERS = ['lms.router.LMSDatabaseRouter']
 
 
 # Password validation
@@ -118,7 +127,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -144,8 +153,8 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
 
 # Authentication
-LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'login'
+LOGIN_REDIRECT_URL = 'login_dispatcher'
+LOGOUT_REDIRECT_URL = 'landing_page'
 LOGIN_URL = 'login'
 
 # Increase memory limits for large rich-text payloads (Base64 images) and large file uploads

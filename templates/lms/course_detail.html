@@ -1,0 +1,651 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}{{ course.title }} | LearnHub LMS{% endblock %}
+{% block page_heading %}Course Syllabus &amp; Overview{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- Course Hero Header -->
+    <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-8 md:p-10 relative overflow-hidden">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
+            <div class="space-y-4 max-w-3xl">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-100 text-blue-800 uppercase tracking-wide">
+                        {{ course.code }}
+                    </span>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                        {{ course.category }}
+                    </span>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                        {{ course.difficulty_level }}
+                    </span>
+                </div>
+
+                <h1 class="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                    {{ course.title }}
+                </h1>
+
+                <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+                    {{ course.description }}
+                </p>
+
+                <!-- Quick Action Buttons -->
+                <div class="flex flex-wrap items-center gap-3 pt-2">
+                    {% if first_lesson %}
+                    <a href="{% url 'lms:lesson_view' course.slug first_lesson.id %}" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-blue-600/20 flex items-center space-x-2">
+                        <i data-lucide="play-circle" class="w-4 h-4"></i>
+                        <span>Start / Resume Curriculum</span>
+                    </a>
+                    {% endif %}
+                    <a href="#syllabus" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm rounded-xl transition-colors flex items-center space-x-1.5">
+                        <i data-lucide="layers" class="w-4 h-4 text-slate-500"></i>
+                        <span>View {{ total_chapters }} Chapters</span>
+                    </a>
+                    {% if is_admin %}
+                    <button type="button" onclick="openImportModal()" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-indigo-600/20 flex items-center space-x-2">
+                        <i data-lucide="folder-up" class="w-4 h-4"></i>
+                        <span>Import Material from Path</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Enrollment / Progress Box -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-6 lg:w-80 flex-shrink-0 space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Your Progress</span>
+                    <span class="text-2xl font-black text-blue-600">{{ enrollment.progress_percent }}%</span>
+                </div>
+                <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500" style="width: {{ enrollment.progress_percent }}%;"></div>
+                </div>
+                <div class="text-xs text-slate-500 space-y-1 pt-1">
+                    <div class="flex justify-between">
+                        <span>Enrollment Status:</span>
+                        <span class="font-bold text-slate-700">{{ enrollment.get_status_display }}</span>
+                    </div>
+                    {% if user_batch %}
+                    <div class="flex items-center justify-between">
+                        <span>Assigned Cohort:</span>
+                        <div class="flex items-center space-x-1.5">
+                            <a href="{% url 'lms:batch_detail' user_batch.pk %}" class="font-bold text-indigo-600 hover:underline">{{ user_batch.code }}</a>
+                            {% if user_batch.github_path %}
+                            <a href="{{ user_batch.github_url|default:user_batch.github_path }}" target="_blank" rel="noopener noreferrer" class="p-1 rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors" title="GitHub: {{ user_batch.github_path }}">
+                                <i data-lucide="git-branch" class="w-3 h-3 text-indigo-400"></i>
+                            </a>
+                            {% endif %}
+                            {% if user_batch.gdrive_path %}
+                            <a href="{{ user_batch.gdrive_url|default:user_batch.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="p-1 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors" title="Google Drive: {{ user_batch.gdrive_path }}">
+                                <i data-lucide="folder" class="w-3 h-3 text-blue-600"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between">
+                        <span>Course Chapters:</span>
+                        <span class="font-bold text-slate-700">{{ total_chapters }} Lessons</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Overview 4-Stat Strip: Chapters, Batches Running, Completed Batches, Feedback -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- 1. Chapters -->
+        <a href="#syllabus" class="bg-white p-5 rounded-2xl border border-gray-200/90 shadow-soft hover:shadow-md transition-all flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="book-open" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <span class="text-2xl font-black text-slate-900 block">{{ total_chapters }}</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Curriculum Chapters</span>
+            </div>
+        </a>
+
+        <!-- 2. Batches Running -->
+        <a href="#batches-section" class="bg-white p-5 rounded-2xl border border-gray-200/90 shadow-soft hover:shadow-md transition-all flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <span class="text-2xl font-black text-slate-900 block">{{ running_batches.count }}</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Batches Running</span>
+            </div>
+        </a>
+
+        <!-- 3. Completed Batches -->
+        <a href="#batches-section" class="bg-white p-5 rounded-2xl border border-gray-200/90 shadow-soft hover:shadow-md transition-all flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <span class="text-2xl font-black text-slate-900 block">{{ completed_batches_count }}</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Completed Batches</span>
+            </div>
+        </a>
+
+        <!-- 4. Feedback -->
+        <a href="#feedback-section" class="bg-white p-5 rounded-2xl border border-gray-200/90 shadow-soft hover:shadow-md transition-all flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="star" class="w-6 h-6 fill-amber-400 text-amber-500"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="text-2xl font-black text-slate-900">{{ avg_rating }}</span>
+                    <span class="text-xs font-bold text-amber-600">★★★★★</span>
+                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{ feedbacks_count }} Reviews / Feedback</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Active Course Command Broadcast Card (Section 08.1) -->
+    {% if command_message %}
+    <div class="bg-white rounded-3xl border border-rose-200 shadow-md p-6 sm:p-8 space-y-4 relative overflow-hidden ring-1 ring-rose-500/20">
+        <div class="flex items-center justify-between border-b border-rose-100 pb-3">
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                <span class="text-xs font-black text-rose-700 uppercase tracking-widest">Active Course Command Broadcast</span>
+            </div>
+            <span class="text-xs text-slate-400">{{ command_message.created_at|date:"M d, Y • h:i A" }} IST</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div class="lg:col-span-2 space-y-3">
+                <h3 class="text-xl font-bold text-slate-900">{{ command_message.title }}</h3>
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 text-sm text-slate-700 leading-relaxed">
+                    <span class="font-bold text-slate-900 block mb-1 text-xs uppercase tracking-wider text-rose-600">Previous Class Architectural Recap:</span>
+                    {{ command_message.previous_session_summary }}
+                </div>
+                {% if command_message.previous_session_recording_url %}
+                <a href="{{ command_message.previous_session_recording_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-xs font-bold text-rose-600 hover:text-rose-700 space-x-1.5">
+                    <i data-lucide="play-circle" class="w-4 h-4"></i>
+                    <span>Watch Previous Class Recording</span>
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Next Class Agenda -->
+            <div class="bg-slate-900 text-white rounded-2xl p-5 space-y-3 shadow-sm">
+                <div>
+                    <span class="text-[10px] font-bold text-blue-400 uppercase tracking-widest block">Next Session Agenda</span>
+                    <span class="text-sm font-bold text-white block mt-0.5">{{ command_message.next_class_topic }}</span>
+                </div>
+                <div class="flex items-center text-xs text-slate-300">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 text-blue-400"></i>
+                    <span>{{ command_message.next_class_datetime|date:"l, M d • h:i A" }} IST</span>
+                </div>
+                <a href="{{ command_message.next_class_link }}" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center space-x-2">
+                    <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                    <span>Join Class Meeting &rarr;</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Next Two Live Sessions (Section 08) -->
+    {% if next_two_sessions %}
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                <i data-lucide="video" class="w-5 h-5 mr-2 text-emerald-600"></i>
+                Upcoming Live Sessions (Next 2 Classes)
+            </h2>
+            <span class="text-xs font-bold text-slate-500">Asia/Kolkata (IST)</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {% for session in next_two_sessions %}
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col justify-between space-y-4 shadow-soft hover:shadow-md transition-all">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex flex-col items-center justify-center font-bold">
+                            <span class="text-xs uppercase tracking-wider font-semibold">{{ session.scheduled_date|date:"M" }}</span>
+                            <span class="text-xl font-extrabold leading-none">{{ session.scheduled_date|date:"d" }}</span>
+                        </div>
+                        <div>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 uppercase tracking-wide">
+                                Session #{{ forloop.counter }}
+                            </span>
+                            <h3 class="text-base font-bold text-slate-900 mt-1 leading-snug">{{ session.title }}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 pt-2 border-t border-gray-100 text-xs text-slate-600">
+                    <div class="flex items-center text-slate-500 font-medium">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 mr-1.5 text-emerald-500"></i>
+                        {{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }} IST
+                    </div>
+                    <div class="flex items-center space-x-2 pt-1">
+                        <img src="{{ session.instructor.avatar_url|default:'https://ui-avatars.com/api/?name='|add:session.instructor.email }}" alt="Avatar" class="w-5 h-5 rounded-full object-cover">
+                        <span class="font-semibold text-slate-700">Faculty: {{ session.instructor.full_name }}</span>
+                    </div>
+                </div>
+
+                <!-- Green CTA Button (Section 08.1) -->
+                <a href="{{ session.meeting_url }}" target="_blank" rel="noopener noreferrer"
+                   class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide transition-all shadow-md shadow-emerald-700/20 flex items-center justify-center space-x-2">
+                    <span>Join Live Session Now</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Course Modules & Syllabus Section -->
+    <div id="syllabus" class="space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+            <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                <i data-lucide="layers" class="w-5 h-5 mr-2 text-blue-600"></i>
+                Structured Curriculum Syllabus
+            </h2>
+            <span class="text-xs font-semibold text-slate-500">{{ modules.count }} Chapters</span>
+        </div>
+
+        <div class="space-y-4">
+            {% for module in modules %}
+            <div class="bg-white rounded-2xl border border-gray-200/90 shadow-soft overflow-hidden">
+                <div class="p-5 bg-slate-50/70 border-b border-gray-200/70 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-extrabold text-blue-600 uppercase tracking-wider block">Module {{ module.order }}</span>
+                        <h3 class="text-base font-bold text-slate-900 mt-0.5">{{ module.title }}</h3>
+                        {% if module.description %}
+                        <p class="text-xs text-slate-500 mt-1">{{ module.description }}</p>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs font-semibold text-slate-400">{{ module.lessons.count }} Lessons</span>
+                </div>
+
+                <div class="divide-y divide-gray-100">
+                    {% for lesson in module.lessons.all %}
+                    <div class="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                        <div class="flex items-center space-x-3.5">
+                            <!-- Completion Status Icon -->
+                            {% if lesson.id in completed_lesson_ids %}
+                            <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0" title="Completed">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                            </div>
+                            {% else %}
+                            <div class="w-7 h-7 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0" title="Incomplete">
+                                <i data-lucide="circle" class="w-4 h-4"></i>
+                            </div>
+                            {% endif %}
+
+                            <div>
+                                <a href="{% url 'lms:lesson_view' course.slug lesson.id %}" class="text-sm font-bold text-slate-800 hover:text-blue-600 transition-colors">
+                                    {{ lesson.order }}. {{ lesson.title }}
+                                </a>
+                                <div class="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
+                                    <span class="px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-600">
+                                        {{ lesson.get_lesson_type_display }}
+                                    </span>
+                                    <span>• {{ lesson.duration_minutes }} mins</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="{% url 'lms:lesson_view' course.slug lesson.id %}" class="px-3 py-1.5 rounded-lg text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors flex items-center space-x-1">
+                            <span>Open</span>
+                            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Course Milestone Deliverables & Verification -->
+    {% if assignments %}
+    <div class="space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+            <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                <i data-lucide="clipboard-check" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                Course Milestone Deliverables
+            </h2>
+            <span class="text-xs font-semibold text-slate-500">Mentor Verification Loops</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {% for item in assignments %}
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-soft flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">Milestone {{ item.assignment.order }}</span>
+                        {% if item.submission %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {% if item.submission.status == 'REVIEWED' %}bg-emerald-100 text-emerald-800{% elif item.submission.status == 'REVISION_REQUESTED' %}bg-amber-100 text-amber-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                            {{ item.submission.get_status_display }}
+                        </span>
+                        {% else %}
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">
+                            Pending Submission
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h3 class="text-base font-bold text-slate-900">{{ item.assignment.title }}</h3>
+                    <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">{{ item.assignment.description }}</p>
+                </div>
+
+                <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
+                    <div class="text-xs text-slate-500">
+                        <span class="block">Due: <span class="font-bold text-slate-700">{{ item.assignment.due_date|date:"M d, Y" }}</span></span>
+                        <span class="block">Max Score: <span class="font-bold text-slate-700">{{ item.assignment.max_score }} pts</span></span>
+                    </div>
+
+                    <a href="{% url 'lms:assignment_detail' item.assignment.id %}" class="px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-colors">
+                        {% if item.submission %}Review / Resubmit{% else %}Submit Solution{% endif %}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Course Faculty Mentors -->
+    {% if mentors %}
+    <div class="space-y-4">
+        <h2 class="text-xl font-extrabold text-slate-900 flex items-center border-b border-gray-200 pb-4">
+            <i data-lucide="users" class="w-5 h-5 mr-2 text-blue-600"></i>
+            Faculty Mentors &amp; Technical Leads
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for ci in mentors %}
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-soft space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center space-x-3.5">
+                        <img src="{{ ci.instructor.avatar_url|default:'https://ui-avatars.com/api/?name='|add:ci.instructor.email }}" alt="{{ ci.instructor.full_name }}" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-gray-100">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">{{ ci.instructor.full_name }}</h3>
+                            <span class="text-xs font-semibold text-blue-600 block">{{ ci.get_role_display }}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">{{ ci.instructor.bio|default:ci.instructor.specialization }}</p>
+                </div>
+
+                <div class="pt-3 border-t border-gray-100">
+                    <a href="mailto:{{ ci.instructor.email }}?subject=LearnHub Doubt: {{ course.code }}" class="w-full py-2 px-3 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 border border-slate-200">
+                        <i data-lucide="mail" class="w-3.5 h-3.5"></i>
+                        <span>Contact Mentor</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Active Batches Running & Completed Batches Section -->
+    <div id="batches-section" class="space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                    <i data-lucide="users" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Cohorts &amp; Batches
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Active running cohorts and graduated batches taking this curriculum.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
+                    {{ running_batches.count }} Running
+                </span>
+                <span class="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100">
+                    {{ completed_batches_count }} Completed
+                </span>
+            </div>
+        </div>
+
+        <!-- 1. Running Batches -->
+        <div class="space-y-3">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-800 flex items-center">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                Active Running Batches ({{ running_batches.count }})
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for b in running_batches %}
+                <div class="bg-white rounded-2xl border border-gray-200/90 shadow-soft p-5 space-y-3 hover:shadow-md transition-all">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">{{ b.code }}</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">RUNNING / ONGOING</span>
+                    </div>
+                    <h4 class="text-base font-bold text-slate-900">{{ b.name }}</h4>
+                    {% if b.full_schedule %}
+                    <div class="flex items-center text-xs text-slate-600 space-x-1.5">
+                        <i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-600 flex-shrink-0"></i>
+                        <span class="font-medium">{{ b.full_schedule }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex flex-wrap items-center justify-between pt-3 border-t border-gray-100 text-xs gap-2">
+                        <span class="text-slate-500 font-semibold">{{ b.students.count }} Enrolled Engineers</span>
+                        <div class="flex items-center space-x-1.5">
+                            {% if b.github_path %}
+                            <a href="{{ b.github_url|default:b.github_path }}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center space-x-1 shadow-xs transition-all" title="GitHub: {{ b.github_path }}">
+                                <i data-lucide="git-branch" class="w-3 h-3 text-indigo-400"></i>
+                                <span>GitHub</span>
+                            </a>
+                            {% endif %}
+                            {% if b.gdrive_path %}
+                            <a href="{{ b.gdrive_url|default:b.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs flex items-center space-x-1 transition-all" title="Google Drive: {{ b.gdrive_path }}">
+                                <i data-lucide="folder" class="w-3 h-3 text-blue-600"></i>
+                                <span>Drive</span>
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'lms:batch_detail' b.pk %}" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center space-x-1 shadow-xs transition-all">
+                                <span>Batch Hub</span>
+                                <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500">
+                    No ongoing batches currently running for this course.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 2. Completed Batches -->
+        {% if completed_batches %}
+        <div class="space-y-3 pt-2">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center">
+                <i data-lucide="award" class="w-4 h-4 mr-2 text-emerald-600"></i>
+                Graduated / Completed Batches ({{ completed_batches_count }})
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for b in completed_batches %}
+                <div class="bg-white rounded-2xl border border-gray-200 p-5 space-y-2.5 opacity-90 hover:opacity-100 transition-opacity">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black bg-slate-100 text-slate-700">{{ b.code }}</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">COMPLETED</span>
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900">{{ b.name }}</h4>
+                    <p class="text-xs text-slate-400">Graduated: {{ b.end_date|default:b.created_at|date:"M Y" }} • {{ b.students.count }} Alumni</p>
+                    <div class="pt-2 flex justify-end">
+                        <a href="{% url 'lms:batch_detail' b.pk %}" class="text-xs font-bold text-slate-600 hover:text-indigo-600 flex items-center">
+                            <span>Review Batch Archive &rarr;</span>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Course Reviews & Feedback Section -->
+    <div id="feedback-section" class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 pb-4">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-900 flex items-center">
+                    <i data-lucide="star" class="w-5 h-5 mr-2 fill-amber-400 text-amber-500"></i>
+                    Learner &amp; Mentor Feedback
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Verified reviews, architectural feedback, and curriculum ratings.</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-900">
+                    <span class="text-amber-500 font-black">★</span>
+                    <span>{{ avg_rating }} Rating ({{ feedbacks_count }} reviews)</span>
+                </div>
+                <button onclick="openFeedbackModal()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all">
+                    <i data-lucide="message-square-plus" class="w-4 h-4 text-amber-400"></i>
+                    <span>+ Leave Feedback</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {% for fb in feedbacks %}
+            <div class="bg-white rounded-2xl border border-gray-200/90 shadow-soft p-5 space-y-3 flex flex-col justify-between">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center text-amber-400 text-sm tracking-tighter">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= fb.rating %}★{% else %}<span class="text-slate-200">★</span>{% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-semibold">{{ fb.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    {% if fb.title %}
+                    <h4 class="text-sm font-bold text-slate-900">{{ fb.title }}</h4>
+                    {% endif %}
+                    <p class="text-xs text-slate-600 leading-relaxed italic">“{{ fb.comment }}”</p>
+                </div>
+                <div class="pt-3 border-t border-gray-100 flex items-center space-x-2.5">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white text-xs font-bold flex items-center justify-center">
+                        {{ fb.user.first_name|first|default:fb.user.email|first|upper }}
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-slate-900 block leading-tight">{{ fb.user.full_name }}</span>
+                        <span class="text-[10px] text-slate-400 block">{{ fb.user.role|title }}{% if fb.batch %} • {{ fb.batch.code }}{% endif %}</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full bg-white rounded-2xl border border-gray-200 p-8 text-center text-xs text-slate-500 space-y-2">
+                <i data-lucide="message-square" class="w-8 h-8 text-slate-300 mx-auto"></i>
+                <p class="font-bold text-slate-700">No feedback submitted yet.</p>
+                <p class="text-slate-400">Be the first to leave a review and share your learning experience!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Admin Import Course Material Modal -->
+{% if is_admin %}
+<div id="importMaterialModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                <i data-lucide="folder-up" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                Import Material from Path
+            </h3>
+            <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'lms:import_course_material' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="course_id" value="{{ course.id }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Course</label>
+                <input type="text" readonly value="{{ course.title }} ({{ course.code }})" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-slate-50 text-slate-700 text-sm font-semibold outline-none cursor-not-allowed">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Local Directory Path *</label>
+                <input type="text" name="directory_path" required value="/Users/kamalmukiri/Documents/1.GitHub/acl-agenctic-ai-book/AgenticAIBook/Material" placeholder="/path/to/material/folder" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="text-[11px] text-slate-400 mt-1 block">
+                    Scans all chapters/lessons (`day_*.html`, markdown, labs) and updates syllabus modules automatically.
+                </span>
+            </div>
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeImportModal()" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span>Sync &amp; Import Material</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- Leave Feedback Modal -->
+<div id="feedbackModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-md w-full p-6 sm:p-8 space-y-5">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                <i data-lucide="star" class="w-5 h-5 mr-2 fill-amber-400 text-amber-500"></i>
+                Leave Course Feedback
+            </h3>
+            <button onclick="closeFeedbackModal()" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'lms:submit_course_feedback' course.slug %}" class="space-y-4">
+            {% csrf_token %}
+            {% if user_batch %}
+            <input type="hidden" name="batch_id" value="{{ user_batch.id }}">
+            {% endif %}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Rating (1 to 5 Stars) *</label>
+                <select name="rating" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-amber-500">
+                    <option value="5" selected>★★★★★ - 5 Stars (Exceptional / Production Grade)</option>
+                    <option value="4">★★★★☆ - 4 Stars (Very Good &amp; Thorough)</option>
+                    <option value="3">★★★☆☆ - 3 Stars (Average)</option>
+                    <option value="2">★★☆☆☆ - 2 Stars (Needs Improvement)</option>
+                    <option value="1">★☆☆☆☆ - 1 Star (Poor)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Review Headline</label>
+                <input type="text" name="title" placeholder="e.g. In-depth, practical, and production ready!" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-amber-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Detailed Review &amp; Comments *</label>
+                <textarea name="comment" required rows="4" placeholder="Describe the curriculum quality, lab hands-on experience, and mentor support..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+            </div>
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeFeedbackModal()" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold shadow-md">
+                    Submit Feedback
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openImportModal() {
+    const m = document.getElementById('importMaterialModal');
+    if (m) { m.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+}
+function closeImportModal() {
+    const m = document.getElementById('importMaterialModal');
+    if (m) { m.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
+}
+function openFeedbackModal() {
+    const m = document.getElementById('feedbackModal');
+    if (m) { m.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); }
+}
+function closeFeedbackModal() {
+    const m = document.getElementById('feedbackModal');
+    if (m) { m.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); }
+}
+</script>
+{% endblock %}

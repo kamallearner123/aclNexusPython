@@ -8,13 +8,25 @@
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 
-<div class="flex justify-between items-center mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
-        <h2 class="h3 mb-1 text-gray-800 font-bold">My Calendar</h2>
-        <p class="text-sm text-gray-500">Track your assigned tasks and deadlines.</p>
+        <h2 class="text-2xl font-bold text-slate-900">{% if view_all %}Portfolio Calendar{% else %}My Calendar{% endif %}</h2>
+        <p class="text-xs text-slate-500 mt-1">{% if view_all %}Showing tasks across all projects and assignees.{% else %}Showing only tasks assigned directly to you.{% endif %}</p>
     </div>
-    <div>
-        <a href="{% url 'tasks_kanban' %}" class="btn btn-outline-secondary btn-sm"><i data-lucide="trello" class="w-4 h-4 mr-1 inline"></i> Kanban View</a>
+    <div class="flex items-center gap-2">
+        {% if can_view_all %}
+        <div class="inline-flex rounded-lg p-1 bg-slate-100 border border-slate-200 text-xs font-semibold">
+            <a href="{% url 'user_calendar' %}" class="px-3 py-1 rounded-md transition-colors {% if not view_all %}bg-white text-slate-900 shadow-sm{% else %}text-slate-500 hover:text-slate-900{% endif %}">
+                My Tasks
+            </a>
+            <a href="{% url 'user_calendar' %}?view=all" class="px-3 py-1 rounded-md transition-colors {% if view_all %}bg-white text-slate-900 shadow-sm{% else %}text-slate-500 hover:text-slate-900{% endif %}">
+                All Projects
+            </a>
+        </div>
+        {% endif %}
+        <a href="{% url 'tasks_kanban' %}" class="inline-flex items-center text-xs font-semibold text-slate-700 bg-white border border-gray-300 rounded-lg px-3 py-1.5 shadow-sm hover:bg-slate-50 transition-colors">
+            <i data-lucide="trello" class="w-3.5 h-3.5 mr-1.5"></i> Kanban View
+        </a>
     </div>
 </div>
 

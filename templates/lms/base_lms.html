@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LearnHub LMS | Apt Computing Labs{% endblock %}</title>
+
+    <!-- Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            900: '#0d1829',
+                            800: '#13233a',
+                            700: '#1e293b',
+                            600: '#2c3e55',
+                        },
+                        viewport: '#f8fafc',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+    {% load static %}
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-[#f8fafc] text-slate-800 font-sans antialiased h-full flex overflow-hidden">
+
+    <!-- Collapsible Vertical Sidebar -->
+    <aside id="main-sidebar" class="w-64 bg-[#0d1829] border-r border-[#1e293b] flex flex-col justify-between h-full z-30 flex-shrink-0 transition-all duration-300 ease-in-out shadow-2xl relative">
+        <!-- Subtle Top Glow -->
+        <div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400"></div>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Sidebar Header & Brand -->
+            <div class="h-16 flex items-center justify-between px-5 border-b border-[#1e293b] flex-shrink-0">
+                <a href="{% url 'lms:dashboard' %}" class="flex items-center space-x-3 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                        <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-extrabold text-white text-[15px] tracking-tight leading-tight">LearnHub</span>
+                        <span class="text-[10px] font-semibold text-blue-400 tracking-wider uppercase">LMS Portal</span>
+                    </div>
+                </a>
+                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors" title="Collapse Sidebar">
+                    <i data-lucide="panel-left-close" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-3.5 space-y-1 overflow-y-auto flex-1 text-sm font-medium">
+                {% if is_lms_admin or is_admin or lms_user.role == 'ADMIN' or lms_user.role == 'MANAGER' or request.user.is_superuser %}
+                <!-- Domain 1: ACADEMIC -->
+                <div class="text-[10px] font-black text-blue-400 uppercase tracking-wider px-3 pt-1 pb-1 flex items-center justify-between">
+                    <span>Academic</span>
+                    <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-blue-400"></i>
+                </div>
+
+                <a href="{% url 'lms:dashboard' %}" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.resolver_match.url_name == 'dashboard' and not request.GET.tab and request.GET.view != 'learner' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3"></i>
+                    Dashboard
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=courses" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'courses' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="book-open" class="w-4 h-4 mr-3"></i>
+                    Courses
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=batches" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'batches' or 'batches' in request.path %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="layers" class="w-4 h-4 mr-3"></i>
+                    Batches
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=sessions" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'sessions' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="video" class="w-4 h-4 mr-3"></i>
+                    Sessions
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=materials" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'materials' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="paperclip" class="w-4 h-4 mr-3"></i>
+                    Materials
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=assessments" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'assessments' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="clipboard-check" class="w-4 h-4 mr-3"></i>
+                    Assessments
+                </a>
+
+                <!-- Domain 2: PEOPLE -->
+                <div class="text-[10px] font-black text-purple-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center justify-between">
+                    <span>People</span>
+                    <i data-lucide="users" class="w-3.5 h-3.5 text-purple-400"></i>
+                </div>
+
+                <a href="{% url 'lms:dashboard' %}?tab=students" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'students' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="user" class="w-4 h-4 mr-3"></i>
+                    Students
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=mentors" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'mentors' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="award" class="w-4 h-4 mr-3"></i>
+                    Mentors
+                </a>
+
+                <a href="{% url 'lms:teacher_student_chats' %}" class="flex items-center justify-between px-3 py-2 rounded-xl transition-all {% if request.resolver_match.url_name == 'teacher_student_chats' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center">
+                        <i data-lucide="messages-square" class="w-4 h-4 mr-3"></i>
+                        <span>Students Chat</span>
+                    </div>
+                    {% if total_unread_chat_count > 0 %}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white animate-pulse">{{ total_unread_chat_count }}</span>
+                    {% endif %}
+                </a>
+
+                <!-- Domain 3: OPERATIONS -->
+                <div class="text-[10px] font-black text-emerald-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center justify-between">
+                    <span>Operations</span>
+                    <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
+                </div>
+
+                <a href="{% url 'lms:dashboard' %}?tab=attendance" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'attendance' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="calendar-check" class="w-4 h-4 mr-3"></i>
+                    Attendance
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=payments" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'payments' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="credit-card" class="w-4 h-4 mr-3"></i>
+                    Payments
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=reports" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'reports' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 mr-3"></i>
+                    Reports
+                </a>
+
+                <!-- Domain 4: ADMINISTRATION -->
+                <div class="text-[10px] font-black text-amber-400 uppercase tracking-wider px-3 pt-3 pb-1 flex items-center justify-between">
+                    <span>Administration</span>
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i>
+                </div>
+
+                <a href="{% url 'lms:dashboard' %}?tab=users" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'users' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="users-2" class="w-4 h-4 mr-3"></i>
+                    Users &amp; Roles
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=settings" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'settings' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="sliders" class="w-4 h-4 mr-3"></i>
+                    Settings
+                </a>
+
+                <a href="{% url 'lms:dashboard' %}?tab=audit" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.GET.tab == 'audit' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-3"></i>
+                    Audit Logs
+                </a>
+
+                {% else %}
+                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-2 pb-1.5">
+                    {% if is_lms_mentor or is_mentor or lms_user.role == 'INSTRUCTOR' or lms_user.role == 'MENTOR' %}Teaching &amp; Mentorship{% else %}Learning{% endif %}
+                </div>
+
+                <a href="{% url 'lms:dashboard' %}" class="flex items-center px-3 py-2.5 rounded-xl transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 mr-3"></i>
+                    Dashboard
+                </a>
+
+                <a href="{% url 'lms:course_list' %}" class="flex items-center px-3 py-2.5 rounded-xl transition-all {% if 'courses' in request.path %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="book-open" class="w-4 h-4 mr-3"></i>
+                    Courses &amp; Syllabus
+                </a>
+
+                <a href="{% url 'lms:live_classes' %}" class="flex items-center px-3 py-2.5 rounded-xl transition-all {% if request.resolver_match.url_name == 'live_classes' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="video" class="w-4 h-4 mr-3"></i>
+                    Live Classes
+                </a>
+
+                <a href="{% url 'lms:assignments_list' %}" class="flex items-center px-3 py-2.5 rounded-xl transition-all {% if 'assignments' in request.path %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="clipboard-check" class="w-4 h-4 mr-3"></i>
+                    Assignments
+                </a>
+
+                {% if is_lms_mentor or is_mentor or lms_user.role == 'INSTRUCTOR' or lms_user.role == 'MENTOR' %}
+                <!-- For Teachers / Mentors: Show Students Chat (Faculty Mentors removed) -->
+                <a href="{% url 'lms:teacher_student_chats' %}" class="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {% if request.resolver_match.url_name == 'teacher_student_chats' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <div class="flex items-center">
+                        <i data-lucide="messages-square" class="w-4 h-4 mr-3"></i>
+                        <span>Students Chat</span>
+                    </div>
+                    {% if total_unread_chat_count > 0 %}
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500 text-white animate-pulse">{{ total_unread_chat_count }}</span>
+                    {% endif %}
+                </a>
+                {% else %}
+                <!-- For Students: Show Faculty Mentors Directory -->
+                <a href="{% url 'lms:mentors_list' %}" class="flex items-center px-3 py-2.5 rounded-xl transition-all {% if request.resolver_match.url_name == 'mentors_list' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="users" class="w-4 h-4 mr-3"></i>
+                    Faculty Mentors
+                </a>
+                {% endif %}
+
+                {% endif %}
+
+                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider px-3 pt-5 pb-1.5">Account</div>
+
+                <a href="{% url 'lms:profile' %}" class="flex items-center px-3 py-2 rounded-xl transition-all {% if request.resolver_match.url_name == 'profile' %}bg-blue-600 text-white shadow-md shadow-blue-900/40{% else %}text-slate-400 hover:text-white hover:bg-slate-800/60{% endif %}">
+                    <i data-lucide="user" class="w-4 h-4 mr-3"></i>
+                    My Profile
+                </a>
+
+                {% if user_has_pms_access %}
+                <div class="pt-4 border-t border-[#1e293b] mt-4">
+                    <a href="{% url 'landing_page' %}" class="flex items-center px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 transition-colors">
+                        <i data-lucide="arrow-left" class="w-3.5 h-3.5 mr-2.5"></i>
+                        Back to Nexus Hub
+                    </a>
+                </div>
+                {% endif %}
+            </nav>
+        </div>
+
+        <!-- Current User Profile Footer -->
+        <div class="p-3.5 border-t border-[#1e293b] bg-slate-900/80 flex items-center justify-between">
+            {% if request.user.is_authenticated %}
+            <div class="flex items-center space-x-3 overflow-hidden">
+                <img src="{{ lms_user.avatar_url|default:'https://ui-avatars.com/api/?name=User&background=1e293b&color=38bdf8' }}" alt="Avatar" class="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10 flex-shrink-0">
+                <div class="flex flex-col overflow-hidden">
+                    <span class="text-sm font-semibold text-white truncate">{{ lms_user.full_name|default:request.user.email }}</span>
+                    <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">{{ lms_user.role|default:'STUDENT' }}</span>
+                </div>
+            </div>
+            <form action="{% url 'logout' %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors" title="Logout">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                </button>
+            </form>
+            {% else %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="w-full py-2 px-3 text-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-colors">
+                Sign In
+            </a>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- Main Viewport Area (100% full width when sidebar is collapsed) -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#f8fafc]">
+        <!-- Top Navigation Bar -->
+        <header class="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between flex-shrink-0 shadow-xs z-20">
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-800 p-2 rounded-xl hover:bg-gray-100 transition-colors" title="Toggle Sidebar">
+                    <i data-lucide="panel-left" class="w-5 h-5"></i>
+                </button>
+                <div class="flex items-center space-x-2 text-sm">
+                    <span class="font-semibold text-gray-500">LearnHub LMS</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                    <span class="font-bold text-gray-900">{% block page_heading %}Dashboard{% endblock %}</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="hidden sm:flex items-center text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                    Cohort Active
+                </div>
+                {% if request.user.is_authenticated %}
+                <a href="{% url 'lms:profile' %}" class="flex items-center space-x-2.5 text-gray-700 hover:text-blue-600 transition-colors">
+                    <img src="{{ lms_user.avatar_url|default:'https://ui-avatars.com/api/?name=User&background=1e293b&color=38bdf8' }}" alt="Avatar" class="w-8 h-8 rounded-full ring-2 ring-gray-100">
+                    <span class="text-sm font-semibold hidden md:inline">{{ lms_user.first_name|default:request.user.email }}</span>
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}?next={{ request.path }}" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors">
+                    Sign In
+                </a>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        {% if messages %}
+        <div class="px-8 pt-4 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="{% if message.tags == 'success' %}check-circle-2{% elif message.tags == 'error' %}alert-circle{% else %}info{% endif %}" class="w-4 h-4"></i>
+                    <span>{{ message }}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Content Area -->
+        <main class="flex-1 overflow-y-auto px-6 sm:px-8 py-6">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Collapsible Sidebar State Manager -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            if (!sidebar) return;
+            sidebar.classList.toggle('-ml-64');
+            const isHidden = sidebar.classList.contains('-ml-64');
+            localStorage.setItem('lms_sidebar_hidden', isHidden ? 'true' : 'false');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('lms_sidebar_hidden') === 'true') {
+                document.getElementById('main-sidebar')?.classList.add('-ml-64');
+            }
+            lucide.createIcons();
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

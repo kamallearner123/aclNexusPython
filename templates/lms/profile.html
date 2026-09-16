@@ -1,0 +1,144 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}My Profile | LearnHub LMS{% endblock %}
+{% block page_heading %}User Profile Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+    <!-- Profile Header Card -->
+    <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-8 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
+        <img src="{{ lms_user.avatar_url|default:'https://ui-avatars.com/api/?name='|add:request.user.email }}" alt="Avatar" class="w-24 h-24 rounded-3xl object-cover ring-4 ring-blue-50 shadow-md">
+        <div class="space-y-1 text-center sm:text-left">
+            <div class="flex items-center justify-center sm:justify-start space-x-2">
+                <h1 class="text-2xl font-black text-slate-900">{{ lms_user.full_name|default:request.user.email }}</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                    {{ lms_user.get_role_display }}
+                </span>
+            </div>
+            <p class="text-sm text-slate-500 font-medium">{{ lms_user.email }}</p>
+            <p class="text-xs text-blue-600 font-semibold">{{ lms_user.specialization|default:'Technical Engineering Cohort Member' }}</p>
+        </div>
+    </div>
+
+    <!-- Edit Profile Form -->
+    <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+        <div class="border-b border-gray-100 pb-4">
+            <h2 class="text-lg font-bold text-slate-900">Personal Information</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Update your learning profile and cohort contact preferences.</p>
+        </div>
+
+        <form action="{% url 'lms:profile' %}" method="post" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="update_profile" value="1">
+
+            <!-- Read-Only System Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Registered Email (Read-Only)</label>
+                    <input type="text" value="{{ lms_user.email }}" readonly class="w-full px-4 py-2.5 rounded-xl bg-gray-100 text-slate-500 text-sm font-medium border border-gray-200 cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Assigned Cohort Role (Read-Only)</label>
+                    <input type="text" value="{{ lms_user.get_role_display }}" readonly class="w-full px-4 py-2.5 rounded-xl bg-gray-100 text-slate-500 text-sm font-medium border border-gray-200 cursor-not-allowed">
+                </div>
+            </div>
+
+            <!-- Editable Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">First Name</label>
+                    {{ profile_form.first_name }}
+                    {% if profile_form.first_name.errors %}
+                    <p class="text-xs text-red-600 font-semibold">{{ profile_form.first_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Last Name</label>
+                    {{ profile_form.last_name }}
+                    {% if profile_form.last_name.errors %}
+                    <p class="text-xs text-red-600 font-semibold">{{ profile_form.last_name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Phone Number</label>
+                    {{ profile_form.phone }}
+                    {% if profile_form.phone.errors %}
+                    <p class="text-xs text-red-600 font-semibold">{{ profile_form.phone.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Specialization / Focus Area</label>
+                    {{ profile_form.specialization }}
+                    {% if profile_form.specialization.errors %}
+                    <p class="text-xs text-red-600 font-semibold">{{ profile_form.specialization.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Biography &amp; Engineering Background</label>
+                {{ profile_form.bio }}
+                {% if profile_form.bio.errors %}
+                <p class="text-xs text-red-600 font-semibold">{{ profile_form.bio.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md shadow-blue-600/20">
+                    Save Profile Changes
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Password Reset Form (Section 11) -->
+    <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+        <div class="border-b border-gray-100 pb-4">
+            <h2 class="text-lg font-bold text-slate-900">Change Authentication Password</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Securely update your login credentials managed in the primary ERP identity system.</p>
+        </div>
+
+        <form action="{% url 'lms:profile' %}" method="post" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="update_password" value="1">
+
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Current Password</label>
+                {{ password_form.old_password }}
+                {% if password_form.old_password.errors %}
+                <p class="text-xs text-red-600 font-semibold">{{ password_form.old_password.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">New Password</label>
+                    {{ password_form.new_password }}
+                    {% if password_form.new_password.errors %}
+                    <p class="text-xs text-red-600 font-semibold">{{ password_form.new_password.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Confirm New Password</label>
+                    {{ password_form.confirm_password }}
+                    {% if password_form.confirm_password.errors %}
+                    <p class="text-xs text-red-600 font-semibold">{{ password_form.confirm_password.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-md">
+                    Update Password
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

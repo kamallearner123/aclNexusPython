@@ -1,0 +1,393 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}Cohort Assignments &amp; Milestones | LearnHub LMS{% endblock %}
+{% block page_heading %}Cohort Tasks &amp; Deliverables{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 pb-12">
+
+    <!-- Header Banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-6">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Registered Batch Assignments</h1>
+            <p class="text-sm text-slate-500 mt-1">Review assignments and project deliverables assigned by your teachers, submit solution repositories, and review grading feedback.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="px-3.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100 flex items-center space-x-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                <span>{{ batch_assignment_sections|length }} Registered {% if batch_assignment_sections|length == 1 %}Batch{% else %}Batches{% endif %}</span>
+            </span>
+            <span class="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-100 flex items-center space-x-1.5">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                <span>{{ total_submitted_count }} Submitted</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- Metric Strip -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Registered Batches</span>
+            <span class="text-2xl font-black text-slate-900 leading-tight block mt-1">{{ batch_assignment_sections|length }}</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Teacher Assigned Tasks</span>
+            <span class="text-2xl font-black text-indigo-600 leading-tight block mt-1">{{ total_assigned_count }}</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Completed / Submitted</span>
+            <span class="text-2xl font-black text-emerald-600 leading-tight block mt-1">{{ total_submitted_count }}</span>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/90 shadow-soft">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Assessed &amp; Graded</span>
+            <span class="text-2xl font-black text-purple-600 leading-tight block mt-1">{{ total_graded_count }}</span>
+        </div>
+    </div>
+
+    <!-- Registered Batches & Assignments -->
+    {% if batch_assignment_sections %}
+    <div class="space-y-8">
+        {% for section in batch_assignment_sections %}
+        {% with batch=section.batch %}
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft overflow-hidden">
+            <!-- Batch Header Bar -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 p-6 sm:p-7 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1.5">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="px-2.5 py-0.5 rounded-md text-xs font-black bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                            {{ batch.code }}
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            {{ batch.get_status_display }}
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-extrabold tracking-tight text-white flex items-center space-x-2">
+                        <span>{{ batch.name }}</span>
+                    </h2>
+                    {% if batch.course %}
+                    <p class="text-xs text-indigo-300 flex items-center">
+                        <i data-lucide="book-open" class="w-3.5 h-3.5 mr-1.5 flex-shrink-0"></i>
+                        <span>Curriculum: {{ batch.course.title }}</span>
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Quick Batch Links & Stats -->
+                <div class="flex flex-wrap items-center gap-2">
+                    {% if batch.github_url %}
+                    <a href="{{ batch.github_url }}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center space-x-1.5 border border-white/10">
+                        <i data-lucide="github" class="w-3.5 h-3.5"></i>
+                        <span>Repo</span>
+                    </a>
+                    {% endif %}
+                    {% if batch.gdrive_url %}
+                    <a href="{{ batch.gdrive_url }}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center space-x-1.5 border border-white/10">
+                        <i data-lucide="folder" class="w-3.5 h-3.5"></i>
+                        <span>Drive</span>
+                    </a>
+                    {% endif %}
+                    <span class="px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/10 flex items-center space-x-1.5">
+                        <i data-lucide="clipboard-list" class="w-3.5 h-3.5 text-indigo-300"></i>
+                        <span>{{ section.total_count }} Assigned {% if section.total_count == 1 %}Task{% else %}Tasks{% endif %}</span>
+                    </span>
+                    <a href="{% url 'lms:batch_detail' batch.pk %}" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all flex items-center space-x-1 shadow-xs">
+                        <span>Batch Hub</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Assignments Table / List -->
+            {% if section.assignments %}
+            <div class="divide-y divide-gray-100">
+                {% for item in section.assignments %}
+                {% with a=item.assignment att=item.assessment %}
+                <div class="p-6 sm:p-7 hover:bg-slate-50/70 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="space-y-3 flex-1">
+                        <!-- Top Meta Row -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-md text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                Task #{{ forloop.counter }}
+                            </span>
+
+                            <!-- Status Pill -->
+                            {% if item.is_graded %}
+                            <span class="px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center space-x-1">
+                                <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                                <span>Graded: {{ att.score }} / {{ att.max_score }} Pts</span>
+                            </span>
+                            {% elif item.has_submitted %}
+                            <span class="px-3 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 flex items-center space-x-1">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                <span>Submitted • Pending Evaluation</span>
+                            </span>
+                            {% elif item.is_overdue %}
+                            <span class="px-3 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center space-x-1">
+                                <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                                <span>Overdue</span>
+                            </span>
+                            {% else %}
+                            <span class="px-3 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 flex items-center space-x-1">
+                                <i data-lucide="clock-3" class="w-3.5 h-3.5"></i>
+                                <span>Pending Submission</span>
+                            </span>
+                            {% endif %}
+
+                            {% if a.target_student %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                Assigned Specifically to You
+                            </span>
+                            {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                Assigned to All Students
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Assignment Title & Problem Statement -->
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">{{ a.title }}</h3>
+                            <p class="text-xs text-slate-600 mt-1 leading-relaxed whitespace-pre-line">{{ a.description }}</p>
+                        </div>
+
+                        <!-- Details Row: Due Date, Assigned By, Starter Repo -->
+                        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
+                            {% if a.assigned_by %}
+                            <span class="flex items-center font-medium text-slate-700">
+                                <i data-lucide="user-check" class="w-3.5 h-3.5 mr-1.5 text-indigo-600"></i>
+                                Teacher: <strong class="ml-1 text-slate-900">{{ a.assigned_by.full_name }}</strong>
+                            </span>
+                            {% endif %}
+
+                            {% if a.due_date %}
+                            <span class="flex items-center {% if item.is_overdue %}text-rose-600 font-bold{% else %}text-slate-600{% endif %}">
+                                <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1.5 {% if item.is_overdue %}text-rose-500{% else %}text-indigo-600{% endif %}"></i>
+                                Due: {{ a.due_date|date:"M d, Y" }} at {{ a.due_date|time:"h:i A" }}
+                            </span>
+                            {% endif %}
+
+                            <span class="flex items-center text-slate-600">
+                                <i data-lucide="award" class="w-3.5 h-3.5 mr-1.5 text-indigo-600"></i>
+                                Max Score: {{ a.max_score }} Points
+                            </span>
+
+                            {% if a.resource_url %}
+                            <a href="{{ a.resource_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1 text-indigo-600 hover:text-indigo-800 font-bold hover:underline">
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                <span>Starter Code / GitHub Repo</span>
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <!-- Existing Submission URL & Feedback Box -->
+                        {% if att %}
+                        <div class="space-y-2 pt-2">
+                            {% if att.submission_url %}
+                            <div class="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div class="flex items-center space-x-2 min-w-0">
+                                    <i data-lucide="link" class="w-4 h-4 text-indigo-600 flex-shrink-0"></i>
+                                    <span class="text-slate-600 font-medium flex-shrink-0">Your Submitted URL:</span>
+                                    <a href="{{ att.submission_url }}" target="_blank" rel="noopener noreferrer" class="font-mono text-indigo-700 hover:underline truncate">
+                                        {{ att.submission_url }}
+                                    </a>
+                                </div>
+                                <span class="text-[11px] text-slate-400 flex-shrink-0">Last updated: {{ att.updated_at|date:"M d, H:i" }}</span>
+                            </div>
+                            {% endif %}
+
+                            {% if att.mentor_feedback %}
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-1.5 text-xs">
+                                <div class="flex items-center justify-between font-bold">
+                                    <span class="text-slate-800 flex items-center">
+                                        <i data-lucide="message-square" class="w-3.5 h-3.5 mr-1.5 text-indigo-600"></i>
+                                        Teacher / Mentor Assessment:
+                                    </span>
+                                    {% if att.score is not None %}
+                                    <span class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black">
+                                        {{ att.score }} / {{ att.max_score }} Points
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-slate-700 italic leading-relaxed whitespace-pre-line">{{ att.mentor_feedback }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Submission Action Button -->
+                    <div class="flex-shrink-0 flex items-center lg:self-center">
+                        <button type="button"
+                                onclick="openStudentSubmissionModal('{{ a.id }}', '{{ a.title|escapejs }}', '{{ batch.code|escapejs }}', '{{ att.submission_url|default:''|escapejs }}', '{{ a.max_score }}')"
+                                class="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 shadow-sm transition-all {% if item.has_submitted %}bg-slate-900 hover:bg-slate-800 text-white{% else %}bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20{% endif %}">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                            <span>{% if item.has_submitted %}Update / Revise Submission{% else %}Submit Solution{% endif %}</span>
+                        </button>
+                    </div>
+                </div>
+                {% endwith %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-10 text-center text-slate-500 space-y-2">
+                <i data-lucide="check-circle" class="w-10 h-10 mx-auto text-slate-300"></i>
+                <h4 class="text-sm font-bold text-slate-800">No batch assignments yet</h4>
+                <p class="text-xs text-slate-400 max-w-md mx-auto">Your faculty instructors have not dispatched any active tasks or milestone assignments for this cohort yet.</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-3xl border border-gray-200 p-12 text-center text-slate-500 space-y-3">
+        <i data-lucide="layers" class="w-12 h-12 mx-auto text-slate-300"></i>
+        <h3 class="text-base font-bold text-slate-800">No registered batches found</h3>
+        <p class="text-xs text-slate-400 max-w-sm mx-auto">Enroll in a course or contact academic administration to be placed into an active batch cohort.</p>
+    </div>
+    {% endif %}
+
+    <!-- Optional Curriculum Milestones Section -->
+    {% if assignment_cards %}
+    <div class="pt-8 border-t border-gray-200 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center">
+                    <i data-lucide="bookmark" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Course Curriculum Milestones (Self-Paced)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">Core curricular milestone projects aligned with course catalog syllabi.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for item in assignment_cards %}
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft hover:shadow-lg transition-all p-6 sm:p-7 flex flex-col justify-between space-y-4">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wide">
+                            {{ item.assignment.course.code }} • Milestone {{ item.assignment.order }}
+                        </span>
+
+                        {% if item.submission %}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold {% if item.submission.status == 'REVIEWED' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif item.submission.status == 'REVISION_REQUESTED' %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+                            {{ item.submission.get_status_display }}
+                        </span>
+                        {% else %}
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                            Not Submitted
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h3 class="text-base font-bold text-slate-900 leading-snug">{{ item.assignment.title }}</h3>
+                    <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">{{ item.assignment.description }}</p>
+                </div>
+
+                <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <div class="text-xs text-slate-500">
+                        <span class="block">Due: <strong class="text-slate-700">{{ item.assignment.due_date|date:"M d, Y"|default:"Open" }}</strong></span>
+                    </div>
+
+                    <a href="{% url 'lms:assignment_detail' item.assignment.id %}" class="px-4 py-2 bg-slate-900 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5 shadow-sm">
+                        <span>Details</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Student Batch Assignment Submission Modal -->
+<div id="studentBatchSubmissionModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Submit Solution Deliverable
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5" id="submissionModalSubtitle">Cohort Assignment Submission</p>
+            </div>
+            <button onclick="closeModal('studentBatchSubmissionModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="studentBatchSubmissionForm" method="post" action="" class="space-y-4">
+            {% csrf_token %}
+
+            <div class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-1">
+                <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block" id="modalBatchCode">BATCH</span>
+                <h4 class="text-sm font-bold text-slate-900" id="modalAssignmentTitle">Assignment Title</h4>
+                <span class="text-xs text-slate-500 block" id="modalMaxScore">Max Score: 100 Points</span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Solution Repository / Project URL *
+                </label>
+                <input type="url" name="submission_url" id="modalSubmissionUrlInput" required
+                       placeholder="https://github.com/yourusername/project-repo or live link"
+                       class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-[11px] text-slate-400 mt-1">Provide a public GitHub repository, Google Colab notebook, or live application link.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Notes for Teacher / Mentor (Optional)
+                </label>
+                <textarea name="student_notes" rows="3"
+                          placeholder="Highlight key architecture decisions, test coverage, or edge cases handled..."
+                          class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal('studentBatchSubmissionModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 flex items-center space-x-1.5">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Submit to Instructor</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.remove('hidden');
+        el.style.display = 'flex';
+    }
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+    }
+}
+
+function openStudentSubmissionModal(assignmentId, title, batchCode, existingUrl, maxScore) {
+    const form = document.getElementById('studentBatchSubmissionForm');
+    form.action = `/lms/assignments/batch/${assignmentId}/submit/`;
+    document.getElementById('modalBatchCode').textContent = `Cohort: ${batchCode}`;
+    document.getElementById('modalAssignmentTitle').textContent = title;
+    document.getElementById('modalMaxScore').textContent = `Max Evaluation Score: ${maxScore} Points`;
+    document.getElementById('modalSubmissionUrlInput').value = existingUrl || '';
+    document.getElementById('submissionModalSubtitle').textContent = `Submitting for: ${title}`;
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    openModal('studentBatchSubmissionModal');
+}
+</script>
+{% endblock %}

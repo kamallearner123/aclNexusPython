@@ -50,7 +50,7 @@ def pia_analyze_api(request):
         payload = json.loads(request.body.decode('utf-8') or '{}')
         result = ProjectIntelligenceAgent(request.user).analyze(
             prompt=payload.get('prompt', ''),
-            report_type=payload.get('report_type') or 'project_health',
+            report_type=payload.get('report_type') or 'portfolio',
             project_id=payload.get('project_id'),
         )
         return JsonResponse({

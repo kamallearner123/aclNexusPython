@@ -88,17 +88,14 @@
                     </p>
                 </div>
                 {% if member != request.user %}
-                <div class="ml-auto pl-2 flex-shrink-0">
-
-    {% if member.unread_count > 0 %}
-        <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-600 rounded-full">
-            {{ member.unread_count }}
-        </span>
-    {% else %}
-        <i data-lucide="message-circle" class="w-4 h-4 text-brand-600"></i>
-    {% endif %}
-
-</div>
+                <div class="ml-auto pl-2 flex-shrink-0 flex items-center gap-1.5">
+                    {% if member.unread_count > 0 %}
+                        <span class="inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 text-[11px] font-bold text-white bg-rose-600 rounded-full shadow-sm animate-pulse" title="{{ member.unread_count }} new message{% if member.unread_count > 1 %}s{% endif %}">
+                            {{ member.unread_count }}
+                        </span>
+                    {% endif %}
+                    <i data-lucide="message-circle" class="w-4 h-4 text-brand-600 group-hover:scale-110 transition-transform"></i>
+                </div>
                 </a>
                 {% else %}
                 </div>
@@ -126,9 +123,9 @@
             {% for msg in messages %}
                 {% include 'teams/partials/message.html' %}
             {% empty %}
-                <div class="flex-1 flex items-center justify-center flex-col text-gray-400 h-full opacity-50">
-                    <i data-lucide="messages-square" class="w-12 h-12 mb-3"></i>
-                    <p>No messages yet. Say hello to your team!</p>
+                <div id="no-messages-placeholder" class="flex-1 flex items-center justify-center flex-col text-gray-400 h-full opacity-60 py-12">
+                    <i data-lucide="messages-square" class="w-12 h-12 mb-3 text-gray-300"></i>
+                    <p class="font-medium">No messages yet. Say hello to your team!</p>
                 </div>
             {% endfor %}
         </div>
@@ -136,11 +133,11 @@
         <!-- Chat Input -->
         <div class="p-4 bg-white border-t border-gray-200 z-10">
             <form id="chat-form"
-      hx-post="{% url 'post_team_message' %}"
-      hx-trigger="submit"
-      hx-target="#chat-messages"
-      hx-swap="beforeend"
-      class="flex items-end gap-2 relative">
+                  hx-post="{% url 'post_team_message' %}"
+                  hx-trigger="submit"
+                  hx-target="#chat-messages"
+                  hx-swap="beforeend"
+                  class="flex items-end gap-2 relative">
                 {% csrf_token %}
                 <input type="hidden" name="team_id" value="{{ team.id }}">
                 <div class="flex-1 relative rounded-xl shadow-sm border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-500 transition-all flex flex-col">
@@ -155,7 +152,7 @@
     </div>
 </div>
 
-<!-- Auto-scroll to bottom on load -->
+<!-- Auto-scroll and Quill setup -->
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const container = document.getElementById('chat-messages');
@@ -176,32 +173,43 @@
             theme: 'snow'
         });
         
-        // Handle form submission
         const form = document.getElementById('chat-form');
         const hiddenInput = document.getElementById('hidden-content');
         
-    form.addEventListener('submit', function(e) {
-        const textContent = quill.getText().trim();
-        if (textContent.length === 0) {
-            e.preventDefault();
-            alert("Please type a message first");
-            return false;
-        }
-        document.getElementById('hidden-content').value = quill.root.innerHTML;
-    });
+        // Continuous sync so HTMX serialization always has latest HTML
+        quill.on('text-change', function() {
+            hiddenInput.value = quill.root.innerHTML;
+        });
         
-    // Clear editor and scroll after htmx request completes
-    document.body.addEventListener('htmx:afterRequest', function(evt) {
-        if (evt.target.id === 'chat-form') {
-            setTimeout(() => {
-                quill.setText('');
-                document.getElementById('hidden-content').value = '';
-                if(container){
-                    container.scrollTop = container.scrollHeight;
+        form.addEventListener('submit', function(e) {
+            const textContent = quill.getText().trim();
+            if (textContent.length === 0 && !quill.root.querySelector('img')) {
+                e.preventDefault();
+                alert("Please type a message first");
+                return false;
+            }
+            hiddenInput.value = quill.root.innerHTML;
+        });
+        
+        // Clear editor and scroll after htmx request completes
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.target.id === 'chat-form') {
+                const placeholder = document.getElementById('no-messages-placeholder');
+                if (placeholder) {
+                    placeholder.remove();
                 }
-            }, 100);
-        }
-    });
+                setTimeout(() => {
+                    quill.setText('');
+                    hiddenInput.value = '';
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                    if (window.lucide) {
+                        lucide.createIcons();
+                    }
+                }, 50);
+            }
+        });
     });
 </script>
 {% endif %}

@@ -1,0 +1,1406 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}{{ batch.code }} | Batch Hub | LearnHub LMS{% endblock %}
+{% block page_heading %}Batch Hub: {{ batch.code }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8 pb-12">
+
+    <!-- Batch Hero Card -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white p-8 md:p-10 shadow-xl border border-slate-800">
+        <div class="absolute -right-16 -top-16 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="space-y-3 max-w-2xl">
+                <div class="flex items-center space-x-2">
+                    <span class="px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-300 text-xs font-black uppercase tracking-wider border border-indigo-400/30">
+                        {{ batch.code }}
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if batch.status == 'ONGOING' %}bg-emerald-500/20 text-emerald-300 border border-emerald-400/30{% elif batch.status == 'UPCOMING' %}bg-blue-500/20 text-blue-300 border border-blue-400/30{% else %}bg-slate-700 text-slate-300{% endif %}">
+                        {{ batch.get_status_display }}
+                    </span>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">{{ batch.name }}</h1>
+                {% if batch.course %}
+                <p class="text-sm font-semibold text-blue-300 flex items-center">
+                    <i data-lucide="book-open" class="w-4 h-4 mr-1.5"></i>
+                    Associated Course: {{ batch.course.title }} ({{ batch.course.code }})
+                </p>
+                {% endif %}
+                {% if batch.description %}
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
+                    {{ batch.description }}
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Action Buttons for Admins & Mentors -->
+            <div class="flex flex-wrap items-center gap-2.5 flex-shrink-0">
+                {% if is_admin or is_mentor %}
+                <button onclick="openModal('addSessionModal')" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="video" class="w-4 h-4"></i>
+                    <span>+ Add Session</span>
+                </button>
+                <button onclick="openModal('addAssignmentModal')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="clipboard-plus" class="w-4 h-4"></i>
+                    <span>+ Give Assignment</span>
+                </button>
+                <button onclick="openAttendanceModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                    <span>📋 Mark Attendance</span>
+                </button>
+                <button onclick="openModal('addMaterialModal')" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="paperclip" class="w-4 h-4"></i>
+                    <span>+ Add Material</span>
+                </button>
+                {% endif %}
+                {% if is_admin %}
+                <button onclick="openModal('assignMembersModal')" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    <span>Manage Members</span>
+                </button>
+                {% endif %}
+                <a href="{% url 'lms:dashboard' %}?tab=batches" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all">
+                    &larr; Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cohort Resources & Schedule Bar -->
+    <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-7">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            <!-- 1. Repetitive Schedule -->
+            <div class="flex items-start space-x-3.5 pt-3 md:pt-0">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Weekly Schedule</span>
+                    <span class="text-sm font-extrabold text-slate-800 block mt-0.5">
+                        {% if batch.full_schedule %}{{ batch.full_schedule }}{% else %}Flexible / Schedule Not Set{% endif %}
+                    </span>
+                    {% if batch.schedule_days %}
+                    <span class="text-xs text-indigo-600 font-semibold mt-0.5 block">Recurring: {{ batch.schedule_days }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 2. GitHub & GDrive Repositories -->
+            <div class="flex items-start space-x-3.5 pt-3 md:pt-0 md:pl-5">
+                <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="folder" class="w-5 h-5"></i>
+                </div>
+                <div class="space-y-1.5 flex-1">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Cohort Repositories</span>
+                    <div class="flex flex-wrap items-center gap-2">
+                        {% if batch.github_path %}
+                        <a href="{{ batch.github_url|default:batch.github_path }}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center space-x-1.5 transition-all shadow-xs group" title="GitHub Repository: {{ batch.github_path }}">
+                            <i data-lucide="git-branch" class="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                            <span>GitHub Repo</span>
+                            <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+                        </a>
+                        {% else %}
+                        <span class="text-xs text-slate-400">No GitHub path set</span>
+                        {% endif %}
+
+                        {% if batch.gdrive_path %}
+                        <a href="{{ batch.gdrive_url|default:batch.gdrive_path }}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center space-x-1.5 transition-all group" title="Google Drive Folder: {{ batch.gdrive_path }}">
+                            <i data-lucide="folder" class="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform"></i>
+                            <span>Google Drive</span>
+                            <i data-lucide="external-link" class="w-3 h-3 text-blue-400"></i>
+                        </a>
+                        {% else %}
+                        <span class="text-xs text-slate-400">No GDrive path set</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Zoom Meeting Room -->
+            <div class="flex items-start space-x-3.5 pt-3 md:pt-0 md:pl-5">
+                <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="video" class="w-5 h-5"></i>
+                </div>
+                <div class="space-y-1 flex-1">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Live Meeting Room</span>
+                    {% if batch.zoom_link %}
+                    <a href="{{ batch.zoom_url|default:batch.zoom_link }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                        <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                        <span>Launch Zoom Class</span>
+                    </a>
+                    <span class="text-[10px] text-slate-400 block truncate max-w-xs">{{ batch.zoom_link }}</span>
+                    {% else %}
+                    <span class="text-xs text-slate-400 block">No recurring meeting link set</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid: Left Sessions & Materials, Right Members -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left 2 Cols: Upcoming Sessions & Learning Materials -->
+        <div class="lg:col-span-2 space-y-8">
+
+            <!-- 1. Coming Live Sessions & Links -->
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-8 space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                            <i data-lucide="video" class="w-5 h-5 mr-2 text-rose-600"></i>
+                            Coming Sessions &amp; Meeting Links
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Live class schedules, direct Google Meet/Zoom links, and agendas for this batch.</p>
+                    </div>
+                    {% if is_admin or is_mentor %}
+                    <button onclick="openModal('addSessionModal')" class="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold transition-colors">
+                        + Schedule Session
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-3">
+                    {% for s in sessions %}
+                    <div class="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-300 transition-all">
+                        <div class="space-y-1 flex-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {% if s.status == 'LIVE' %}bg-rose-100 text-rose-700 animate-pulse{% elif s.status == 'UPCOMING' %}bg-blue-100 text-blue-700{% else %}bg-slate-200 text-slate-700{% endif %}">
+                                    {{ s.get_status_display }}
+                                </span>
+                                <span class="text-xs font-bold text-slate-500">
+                                    {{ s.scheduled_date|date:"l, M d, Y" }}
+                                </span>
+                                <span class="text-xs text-slate-400">• {{ s.start_time|time:"g:i A" }} - {{ s.end_time|time:"g:i A" }} IST</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-900">{{ s.title }}</h3>
+                            {% if s.instructor %}
+                            <p class="text-xs text-slate-600">Instructor: <strong class="text-slate-800">{{ s.instructor.full_name }}</strong></p>
+                            {% endif %}
+                            {% if s.has_attendance %}
+                            <div class="flex items-center space-x-2 pt-1">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center">
+                                    <i data-lucide="check-circle" class="w-3 h-3 mr-1 text-emerald-600"></i>
+                                    Attendance: {{ s.present_count }}/{{ students.count }} Present ({{ s.attendance_pct }}%)
+                                </span>
+                            </div>
+                            {% endif %}
+                            {% if s.agenda %}
+                            <p class="text-xs text-slate-500 leading-relaxed pt-1">{{ s.agenda }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            {% if s.meeting_link %}
+                            <a href="{{ s.meeting_link }}" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center space-x-1.5">
+                                <i data-lucide="video" class="w-3.5 h-3.5"></i>
+                                <span>Join Class</span>
+                            </a>
+                            {% endif %}
+                            {% if is_admin or is_mentor %}
+                            <button type="button" onclick="openAttendanceModal('{{ s.id }}', '{{ s.title|escapejs }}')" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-xs" title="Mark session attendance">
+                                <i data-lucide="clipboard-check" class="w-3.5 h-3.5 text-indigo-600"></i>
+                                <span>Attendance</span>
+                            </button>
+                            {% endif %}
+                            {% if s.recording_link %}
+                            <a href="{{ s.recording_link }}" target="_blank" rel="noopener noreferrer" class="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-all" title="Watch Recording">
+                                <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                            </a>
+                            {% endif %}
+                            {% if is_admin or is_mentor %}
+                            <form method="post" action="{% url 'lms:delete_batch_session' s.pk %}" onsubmit="return confirm('Delete this session?');" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="Delete Session">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 rounded-2xl bg-slate-50 text-center text-slate-400 text-xs">
+                        No live sessions have been scheduled yet for this batch.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 2. Materials & File Attachments -->
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-8 space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                            <i data-lucide="paperclip" class="w-5 h-5 mr-2 text-purple-600"></i>
+                            Lecture Materials &amp; Attachments
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Downloadable code files, architecture decks, GitHub starter repos, and reading notes.</p>
+                    </div>
+                    {% if is_admin or is_mentor %}
+                    <button onclick="openModal('addMaterialModal')" class="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-bold transition-colors">
+                        + Add Material
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Pinned Primary Cohort Repositories & Cloud Drives -->
+                {% if batch.github_path or batch.gdrive_path %}
+                <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border border-indigo-500/30 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="space-y-1 text-center sm:text-left">
+                        <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-extrabold uppercase tracking-wider border border-indigo-400/30">
+                            <i data-lucide="pin" class="w-3 h-3"></i>
+                            <span>Pinned Cohort Resources</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-white">Batch Repository &amp; Cloud Drive Storage</h3>
+                        <p class="text-xs text-slate-300">Access starter code repositories, lecture notebooks, and shared assignment folders.</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2.5 flex-shrink-0">
+                        {% if batch.github_path %}
+                        <a href="{{ batch.github_url|default:batch.github_path }}" target="_blank" rel="noopener noreferrer"
+                           class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center space-x-2 border border-slate-700 transition-all shadow-sm group"
+                           title="GitHub Repository: {{ batch.github_path }}">
+                            <i data-lucide="git-branch" class="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                            <span>Open GitHub Repo</span>
+                            <i data-lucide="external-link" class="w-3 h-3 text-slate-400"></i>
+                        </a>
+                        {% endif %}
+
+                        {% if batch.gdrive_path %}
+                        <a href="{{ batch.gdrive_url|default:batch.gdrive_path }}" target="_blank" rel="noopener noreferrer"
+                           class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center space-x-2 transition-all shadow-sm group"
+                           title="Google Drive Folder: {{ batch.gdrive_path }}">
+                            <i data-lucide="folder" class="w-4 h-4 text-blue-200 group-hover:scale-110 transition-transform"></i>
+                            <span>Open Google Drive</span>
+                            <i data-lucide="external-link" class="w-3 h-3 text-blue-200"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="space-y-3">
+                    {% for m in materials %}
+                    <div class="p-4 rounded-2xl bg-purple-50/40 border border-purple-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-purple-200 transition-all">
+                        <div class="space-y-1 flex-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">
+                                    {{ m.get_material_type_display }}
+                                </span>
+                                {% if m.session %}
+                                <span class="text-xs font-semibold text-slate-500">• {{ m.session.title }}</span>
+                                {% endif %}
+                                <span class="text-[11px] text-slate-400">• {{ m.created_at|date:"M d, Y" }}</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-900">{{ m.title }}</h3>
+                            {% if m.description %}
+                            <p class="text-xs text-slate-500 leading-relaxed">{{ m.description }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            {% if m.external_url %}
+                            <a href="{{ m.external_url }}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5">
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                <span>Open Link</span>
+                            </a>
+                            {% endif %}
+                            {% if m.attachment_file %}
+                            <a href="{{ m.attachment_file.url }}" download class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Download</span>
+                            </a>
+                            {% endif %}
+                            {% if is_admin or is_mentor %}
+                            <form method="post" action="{% url 'lms:delete_batch_material' m.pk %}" onsubmit="return confirm('Delete this material?');" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="Delete Material">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 rounded-2xl bg-slate-50 text-center text-slate-400 text-xs">
+                        No materials or file attachments uploaded yet for this batch.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 3. Batch Milestone Assignments & Exercises (Send to All or Individual) -->
+            <div id="tab-assignments" class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-8 space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                            <i data-lucide="clipboard-list" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                            Milestone Assignments &amp; Labs ({{ assignments|length }})
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Tasks dispatched to the whole cohort or targeted to specific individual students.</p>
+                    </div>
+                    {% if is_admin or is_mentor %}
+                    <button onclick="openModal('addAssignmentModal')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5 self-start sm:self-auto">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>+ Give Assignment</span>
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-3">
+                    {% for a in assignments %}
+                    <div class="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-indigo-300 transition-all">
+                        <div class="space-y-1.5 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                {% if a.target_student %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200 flex items-center">
+                                    <i data-lucide="user" class="w-3 h-3 mr-1 text-purple-600"></i>
+                                    Individual Student: {{ a.target_student.full_name }}
+                                </span>
+                                {% else %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-center">
+                                    <i data-lucide="users" class="w-3 h-3 mr-1 text-indigo-600"></i>
+                                    Sent to All Students ({{ students|length }})
+                                </span>
+                                {% endif %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if a.assessed_count >= a.target_students_count and a.target_students_count > 0 %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif a.assessed_count > 0 %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-slate-100 text-slate-600{% endif %} flex items-center">
+                                    <i data-lucide="award" class="w-3 h-3 mr-1 text-purple-600"></i>
+                                    {{ a.assessed_count }} / {{ a.target_students_count }} Evaluated
+                                </span>
+                                <span class="text-xs text-slate-400">• Max Score: {{ a.max_score }} pts</span>
+                                {% if a.due_date %}
+                                <span class="text-xs font-semibold text-rose-600">• Due: {{ a.due_date|date:"M d, Y h:i A" }}</span>
+                                {% endif %}
+                            </div>
+
+                            <h3 class="text-base font-bold text-slate-900">{{ a.title }}</h3>
+                            {% if a.description %}
+                            <p class="text-xs text-slate-600 leading-relaxed">{{ a.description }}</p>
+                            {% endif %}
+                            {% if a.assigned_by %}
+                            <p class="text-[11px] text-slate-400">Assigned by {{ a.assigned_by.full_name }} • {{ a.created_at|date:"M d, Y" }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            {% if a.resource_url %}
+                            <a href="{{ a.resource_url }}" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5">
+                                <i data-lucide="github" class="w-3.5 h-3.5 text-indigo-400"></i>
+                                <span>Starter Repo</span>
+                            </a>
+                            {% endif %}
+                            {% if is_admin or is_mentor %}
+                            <button type="button" onclick="openAssessAssignmentModal('{{ a.id }}', '{{ a.title|escapejs }}', '{{ a.max_score }}', '{{ a.target_student_id|default:'' }}')" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5" title="Grade students for this assignment">
+                                <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                                <span>Assess / Grade</span>
+                            </button>
+                            <form method="post" action="{% url 'lms:delete_batch_assignment' batch.pk a.pk %}" onsubmit="return confirm('Delete this assignment?');" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors" title="Delete Assignment">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-8 rounded-2xl bg-slate-50 text-center text-slate-400 text-xs">
+                        No milestone assignments created yet for this batch. Click "+ Give Assignment" to assign a lab to everyone or an individual student.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 4. Enrolled Students & Learners Directory (Comprehensive Roster) -->
+            <div id="tab-students" class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-8 space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                            <i data-lucide="users" class="w-5 h-5 mr-2 text-blue-600"></i>
+                            Enrolled Students &amp; Learners Directory ({{ students|length }})
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Track individual attendance, milestone submissions, and assign direct student tasks.</p>
+                    </div>
+                    {% if is_admin %}
+                    <button onclick="openModal('assignStudentsModal')" class="px-3.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-xl text-xs font-bold transition-colors">
+                        Manage Roster
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for s in students %}
+                    <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 hover:border-blue-200 transition-all flex items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3.5 min-w-0">
+                            <img src="{{ s.avatar_url|default:'https://ui-avatars.com/api/?name='|add:s.email }}" class="w-10 h-10 rounded-2xl object-cover ring-1 ring-gray-200 flex-shrink-0" alt="{{ s.full_name }}">
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-bold text-slate-900 truncate">{{ s.full_name }}</h4>
+                                <span class="text-xs text-slate-400 font-mono block truncate">{{ s.email }}</span>
+                                <div class="flex flex-wrap items-center gap-2 mt-1.5 text-[11px]">
+                                    <span class="font-bold {% if s.attendance_rate >= 80 %}text-emerald-600{% elif s.attendance_rate >= 50 %}text-amber-600{% else %}text-rose-600{% endif %}">
+                                        <i data-lucide="calendar-check" class="w-3 h-3 mr-0.5 inline"></i> {{ s.attendance_rate }}% Att. ({{ s.attended_count }}/{{ total_sessions_count }})
+                                    </span>
+                                    <span class="text-slate-300">•</span>
+                                    <span class="font-bold text-purple-700">
+                                        <i data-lucide="award" class="w-3 h-3 mr-0.5 inline"></i> {{ s.assessed_tasks_count }} / {{ s.assignments_count }} Assessed
+                                        {% if s.avg_score %}(Avg: {{ s.avg_score }}/100){% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-1.5 flex-shrink-0">
+                            {% if is_admin or is_mentor %}
+                            <button type="button" onclick="openAssessForStudent('{{ s.id }}', '{{ s.full_name|escapejs }}')" class="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1" title="Give assessment for this student">
+                                <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                                <span>Assess</span>
+                            </button>
+                            <button type="button" onclick="openGiveAssignmentForStudent('{{ s.id }}', '{{ s.full_name|escapejs }}')" class="px-2.5 py-1.5 bg-white hover:bg-indigo-50 text-indigo-600 border border-slate-200 hover:border-indigo-300 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1" title="Assign individual task">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                <span>Task</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-full p-8 rounded-2xl bg-slate-50 text-center text-slate-400 text-xs">
+                        No students enrolled in this batch yet.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right 1 Col: Enrolled Students & Assigned Mentors -->
+        <div class="space-y-8">
+
+            <!-- Assigned Faculty Mentors -->
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center">
+                        <i data-lucide="award" class="w-4 h-4 mr-2 text-purple-600"></i>
+                        Assigned Mentors ({{ mentors.count }})
+                    </h3>
+                    {% if is_admin %}
+                    <button onclick="openModal('assignMentorsModal')" class="text-xs font-bold text-purple-600 hover:underline">Edit</button>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                    {% for m in mentors %}
+                    <div class="flex items-center space-x-3 p-2 rounded-xl bg-slate-50">
+                        <img src="{{ m.avatar_url|default:'https://ui-avatars.com/api/?name='|add:m.email }}" class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200" alt="Avatar">
+                        <div class="overflow-hidden">
+                            <span class="text-xs font-bold text-slate-900 block truncate">{{ m.full_name }}</span>
+                            <span class="text-[11px] text-purple-600 font-medium block truncate">{{ m.specialization|default:'Faculty Advisor' }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-slate-400 italic">No faculty mentors assigned to this batch yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Enrolled Students in Batch -->
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center">
+                        <i data-lucide="users" class="w-4 h-4 mr-2 text-indigo-600"></i>
+                        Enrolled Students ({{ students.count }})
+                    </h3>
+                    {% if is_admin %}
+                    <button onclick="openModal('assignStudentsModal')" class="text-xs font-bold text-indigo-600 hover:underline">Manage</button>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                    {% for s in students %}
+                    <div class="flex items-center space-x-3 p-2 rounded-xl bg-slate-50">
+                        <img src="{{ s.avatar_url|default:'https://ui-avatars.com/api/?name='|add:s.email }}" class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200" alt="Avatar">
+                        <div class="overflow-hidden">
+                            <span class="text-xs font-bold text-slate-900 block truncate">{{ s.full_name }}</span>
+                            <span class="text-[10px] text-slate-400 font-mono block truncate">{{ s.email }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-slate-400 italic">No students joined to this batch yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Modals for Batch Detail -->
+{% if is_admin or is_mentor %}
+<!-- Add Session Modal -->
+<div id="addSessionModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                <i data-lucide="video" class="w-5 h-5 mr-2 text-rose-600"></i>
+                Schedule Session for {{ batch.code }}
+            </h3>
+            <button onclick="closeModal('addSessionModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form id="addSessionForm_batch" method="post" action="{% url 'lms:add_batch_session' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+
+            <!-- Zoom / Google Meet Auto-Parse Box -->
+            <div class="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 mr-1 text-sky-400"></i>
+                        Paste Zoom / Meet Invite (Auto-Fill)
+                    </label>
+                    <span id="zoomParseBadge_batch" class="text-[10px] text-emerald-400 font-bold hidden">✓ Parsed Successfully</span>
+                </div>
+                <textarea id="zoomInviteInput_batch" oninput="parseZoomMeetingInvitation(this, 'addSessionForm_batch')" rows="3" placeholder="Paste full Zoom or Google Meet invitation here (Topic, Time, Join Zoom Meeting link, Meeting ID, Passcode)..." class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 font-mono outline-none focus:ring-1 focus:ring-sky-500"></textarea>
+                <div class="flex items-center justify-between text-[10px] text-slate-400">
+                    <span>Auto-detects Title, Link, Date &amp; Time</span>
+                    <button type="button" onclick="triggerZoomParse('zoomInviteInput_batch', 'addSessionForm_batch')" class="text-sky-400 hover:text-sky-300 font-bold underline">Parse Now</button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Session Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Session 2: Memory &amp; Tool Calling" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-rose-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Meeting Link (Google Meet / Zoom) *</label>
+                <input type="url" name="meeting_link" required placeholder="https://meet.google.com/..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-rose-500">
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Date *</label>
+                    <input type="date" name="scheduled_date" required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Start Time *</label>
+                    <input type="time" name="start_time" required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-rose-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">End Time *</label>
+                    <input type="time" name="end_time" required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-rose-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Lead Instructor / Mentor</label>
+                <select name="instructor" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-rose-500">
+                    <option value="">-- Select Instructor --</option>
+                    {% for m in mentors %}
+                    <option value="{{ m.id }}">{{ m.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Agenda &amp; Topics</label>
+                <textarea name="agenda" rows="2" placeholder="Key topics to cover in this session..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-rose-500"></textarea>
+            </div>
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal('addSessionModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md">Schedule Session</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Material Modal -->
+<div id="addMaterialModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                <i data-lucide="paperclip" class="w-5 h-5 mr-2 text-purple-600"></i>
+                Add Materials to {{ batch.code }}
+            </h3>
+            <button onclick="closeModal('addMaterialModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form method="post" enctype="multipart/form-data" action="{% url 'lms:add_batch_material' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Resource Title *</label>
+                <input type="text" name="title" required placeholder="e.g. Slide Deck / GitHub Repo" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Type</label>
+                    <select name="material_type" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="SLIDES">Slide Deck / Presentation</option>
+                        <option value="CODE_REPO">Source Code / GitHub Repo</option>
+                        <option value="DOCUMENT">Lecture Notes / Document</option>
+                        <option value="RECORDING">Class Video Recording</option>
+                        <option value="ATTACHMENT">File Attachment / Download</option>
+                        <option value="OTHER">Other Resource</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Link to Session</label>
+                    <select name="session" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">-- General / No Session --</option>
+                        {% for s in sessions %}
+                        <option value="{{ s.id }}">{{ s.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">External Resource Link (GitHub / Drive URL)</label>
+                <input type="url" name="external_url" placeholder="https://..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">File Attachment (PDF / ZIP / Code)</label>
+                <input type="file" name="attachment_file" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description / Notes</label>
+                <textarea name="description" rows="2" placeholder="Brief notes for students..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+            </div>
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal('addMaterialModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md">Upload Material</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if is_admin %}
+<!-- 1. Manage Enrolled Students Modal -->
+<div id="assignStudentsModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-xl w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="users" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Manage Enrolled Students: {{ batch.code }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Select learners to enroll in this cohort. Assigned faculty mentors will remain untouched.</p>
+            </div>
+            <button onclick="closeModal('assignStudentsModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'lms:assign_batch_members' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="scope" value="students">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div>
+                <div class="flex items-center justify-between text-xs text-slate-600 font-semibold mb-2">
+                    <span class="text-indigo-900 font-bold uppercase tracking-wider text-[11px]">Select Learners to Enroll</span>
+                    <span class="text-[11px] text-indigo-600">Checked students will be enrolled</span>
+                </div>
+                <div class="max-h-72 overflow-y-auto p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                    {{ assign_form.students }}
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end space-x-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('assignStudentsModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md">Save Enrolled Students</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 2. Assign Faculty Mentors Modal -->
+<div id="assignMentorsModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-xl w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="award" class="w-5 h-5 mr-2 text-purple-600"></i>
+                    Assign Faculty Mentors: {{ batch.code }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Select mentors to guide this cohort. Enrolled students will remain untouched.</p>
+            </div>
+            <button onclick="closeModal('assignMentorsModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'lms:assign_batch_members' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="scope" value="mentors">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div>
+                <div class="flex items-center justify-between text-xs text-slate-600 font-semibold mb-2">
+                    <span class="text-purple-900 font-bold uppercase tracking-wider text-[11px]">Select Faculty Mentors</span>
+                    <span class="text-[11px] text-purple-600">Checked mentors will guide this cohort</span>
+                </div>
+                <div class="max-h-60 overflow-y-auto p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                    {{ assign_form.mentors }}
+                </div>
+            </div>
+<!-- 3. Give Assignment Modal (All Students or Individual) -->
+<div id="addAssignmentModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="clipboard-plus" class="w-5 h-5 mr-2 text-indigo-600"></i>
+                    Give Assignment: {{ batch.code }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Assign milestone tasks to all students or select an individual engineer.</p>
+            </div>
+            <button onclick="closeModal('addAssignmentModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'lms:add_batch_assignment' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+
+            <!-- Recipient Selector: Send to All vs Individual -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Assign To *</label>
+                <div class="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl">
+                    <label class="flex items-center justify-center space-x-2 py-2 px-3 rounded-xl cursor-pointer text-xs font-bold transition-all" id="labelAssignAll" onclick="selectAssignTarget('ALL')">
+                        <input type="radio" name="assign_target" value="ALL" checked class="hidden" id="radioAssignAll">
+                        <i data-lucide="users" class="w-4 h-4 text-indigo-600"></i>
+                        <span>All Students ({{ students|length }})</span>
+                    </label>
+                    <label class="flex items-center justify-center space-x-2 py-2 px-3 rounded-xl cursor-pointer text-xs font-bold transition-all text-slate-500 hover:text-slate-900" id="labelAssignIndiv" onclick="selectAssignTarget('INDIVIDUAL')">
+                        <input type="radio" name="assign_target" value="INDIVIDUAL" class="hidden" id="radioAssignIndiv">
+                        <i data-lucide="user" class="w-4 h-4 text-purple-600"></i>
+                        <span>Individual Student</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Target Student Dropdown (Hidden when ALL) -->
+            <div id="targetStudentWrap" class="hidden">
+                <label class="block text-xs font-bold text-purple-800 uppercase tracking-wider mb-1">Select Student *</label>
+                <select name="target_student" id="targetStudentSelect" class="w-full px-4 py-2.5 rounded-xl border border-purple-200 bg-purple-50/50 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="">-- Choose Enrolled Student --</option>
+                    {% for s in students %}
+                    <option value="{{ s.id }}">{{ s.full_name }} ({{ s.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Assignment Title *</label>
+                <input type="text" name="title" id="assignmentTitleInput" required placeholder="e.g. Day 8 Milestone: Implement ReAct Agent Loop" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Description &amp; Acceptance Criteria *</label>
+                <textarea name="description" required rows="3" placeholder="Tasks, deliverables, architecture rules, and testing requirements..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Due Date &amp; Time</label>
+                    <input type="datetime-local" name="due_date" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Max Score (Points)</label>
+                    <input type="number" name="max_score" value="100" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Starter Repo / Colab Link</label>
+                <input type="url" name="resource_url" placeholder="https://github.com/... or Google Colab link" class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('addAssignmentModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Dispatch Assignment</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 4. Mark Session Attendance Modal -->
+<div id="markAttendanceModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-2xl w-full p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i data-lucide="clipboard-check" class="w-5 h-5 mr-2 text-emerald-600"></i>
+                    Mark Batch Attendance: {{ batch.code }}
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5" id="attendanceModalSubtitle">Select class session and mark student attendance status.</p>
+            </div>
+            <button onclick="closeModal('markAttendanceModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'lms:mark_session_attendance' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+
+            <!-- Session Selection -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Target Class Session *</label>
+                <select name="session_id" id="attendanceSessionSelect" required onchange="loadSessionAttendanceStatus(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500">
+                    {% for ses in sessions %}
+                    <option value="{{ ses.id }}">
+                        {{ ses.scheduled_date|date:"M d" }} • {{ ses.title }} ({{ ses.start_time|time:"h:i A" }})
+                    </option>
+                    {% empty %}
+                    <option value="">No sessions scheduled yet</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs">
+                <span class="font-bold text-slate-600">Quick Mark All:</span>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="markAllAttendance('PRESENT')" class="px-3 py-1 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold transition-colors">
+                        ✓ All Present
+                    </button>
+                    <button type="button" onclick="markAllAttendance('ABSENT')" class="px-3 py-1 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold transition-colors">
+                        ✗ All Absent
+                    </button>
+                    <button type="button" onclick="markAllAttendance('LATE')" class="px-3 py-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold transition-colors">
+                        ⏱ All Late
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students List with Attendance Status Pills -->
+            <div class="max-h-80 overflow-y-auto pr-1 space-y-2.5 divide-y divide-gray-100">
+                {% for s in students %}
+                <div class="pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 student-attendance-row" data-student-id="{{ s.id }}">
+                    <div class="flex items-center space-x-3 min-w-0">
+                        <img src="{{ s.avatar_url|default:'https://ui-avatars.com/api/?name='|add:s.email }}" class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 flex-shrink-0" alt="{{ s.full_name }}">
+                        <div class="min-w-0">
+                            <span class="text-xs font-bold text-slate-900 block truncate">{{ s.full_name }}</span>
+                            <span class="text-[10px] text-slate-400 font-mono block truncate">{{ s.email }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Radio Pills -->
+                    <div class="flex items-center space-x-1.5 flex-shrink-0">
+                        <label class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all status-pill-present bg-emerald-50 text-emerald-700 border-emerald-300">
+                            <input type="radio" name="status_{{ s.id }}" value="PRESENT" checked class="hidden" onchange="updateRowHighlight(this)">
+                            <span>Present</span>
+                        </label>
+                        <label class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all status-pill-absent text-slate-500 border-slate-200 hover:bg-slate-50">
+                            <input type="radio" name="status_{{ s.id }}" value="ABSENT" class="hidden" onchange="updateRowHighlight(this)">
+                            <span>Absent</span>
+                        </label>
+                        <label class="px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all status-pill-late text-slate-500 border-slate-200 hover:bg-slate-50">
+                            <input type="radio" name="status_{{ s.id }}" value="LATE" class="hidden" onchange="updateRowHighlight(this)">
+                            <span>Late</span>
+                        </label>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-400 italic p-4 text-center">No students currently enrolled in this batch.</p>
+                {% endfor %}
+            </div>
+
+            <div class="pt-3 flex justify-end space-x-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('markAttendanceModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="check-check" class="w-4 h-4"></i>
+                    <span>Save Attendance Register</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- 5. Assess & Grade Assignment Modal (Whole Cohort or Targeted) -->
+<div id="assessAssignmentModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-3xl w-full p-6 sm:p-8 space-y-5">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div>
+                <div class="flex items-center space-x-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200 uppercase tracking-wider">
+                        Instructor Assessment
+                    </span>
+                    <span id="assessMaxScoreBadge" class="text-xs font-bold text-slate-500"></span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mt-1 flex items-center">
+                    <i data-lucide="award" class="w-5 h-5 mr-2 text-purple-600"></i>
+                    Grade Task: <span id="assessAssignmentTitle" class="ml-1 text-purple-700"></span>
+                </h3>
+            </div>
+            <button onclick="closeModal('assessAssignmentModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="assessAssignmentForm" method="post" action="{% url 'lms:assess_batch_assignment' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="assignment_id" id="assessAssignmentIdInput" value="">
+            <input type="hidden" name="next" value="{{ request.path }}#tab-assignments">
+
+            <!-- Quick Auto-Fill Toolbar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-purple-50/60 rounded-2xl border border-purple-100 text-xs">
+                <span class="font-bold text-purple-900 flex items-center">
+                    <i data-lucide="sparkles" class="w-4 h-4 mr-1 text-purple-600"></i>
+                    Quick Scoring:
+                </span>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="quickFillAllScores(1.0)" class="px-2.5 py-1 rounded-lg bg-white border border-purple-200 hover:bg-purple-100 text-purple-700 font-bold text-[11px] shadow-xs">
+                        100% Score
+                    </button>
+                    <button type="button" onclick="quickFillAllScores(0.9)" class="px-2.5 py-1 rounded-lg bg-white border border-purple-200 hover:bg-purple-100 text-purple-700 font-bold text-[11px] shadow-xs">
+                        90% Score
+                    </button>
+                    <button type="button" onclick="quickFillAllScores(0.8)" class="px-2.5 py-1 rounded-lg bg-white border border-purple-200 hover:bg-purple-100 text-purple-700 font-bold text-[11px] shadow-xs">
+                        80% Score
+                    </button>
+                    <button type="button" onclick="quickClearAllScores()" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 font-bold text-[11px]">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students List with Score & Feedback Inputs -->
+            <div class="max-h-96 overflow-y-auto space-y-3 pr-1" id="assessStudentsListContainer">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <div class="pt-3 flex justify-end space-x-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('assessAssignmentModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md flex items-center space-x-1.5">
+                    <i data-lucide="check-check" class="w-4 h-4"></i>
+                    <span>Save Assessments</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 6. Assess Single Student Modal -->
+<div id="assessStudentModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full flex items-center justify-center p-4">
+    <div class="relative bg-white rounded-3xl shadow-2xl border border-gray-200 max-w-lg w-full p-6 sm:p-8 space-y-5">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                <i data-lucide="award" class="w-5 h-5 mr-2 text-purple-600"></i>
+                Assess Student: <span id="assessStudentModalName" class="ml-1 text-purple-700"></span>
+            </h3>
+            <button onclick="closeModal('assessStudentModal')" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'lms:assess_batch_assignment' batch.pk %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="student_id" id="assessSingleStudentIdInput" value="">
+            <input type="hidden" name="next" value="{{ request.path }}#tab-students">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Milestone Assignment *</label>
+                <select name="assignment_id" id="singleAssessAssignmentSelect" required onchange="loadStudentSingleAssessment(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="">-- Choose Assignment to Evaluate --</option>
+                    {% for a in assignments %}
+                    <option value="{{ a.id }}" data-max="{{ a.max_score }}">{{ a.title }} (Max: {{ a.max_score }} pts)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Awarded Score *</label>
+                    <input type="number" name="score" id="singleAssessScoreInput" required min="0" placeholder="e.g. 92" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Status *</label>
+                    <select name="status" id="singleAssessStatusSelect" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="GRADED">✓ Graded / Passed</option>
+                        <option value="REVISION_REQUESTED">⚠ Revision Needed</option>
+                        <option value="EXCUSED">Excused</option>
+                        <option value="PENDING">Pending</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mentor Feedback / Evaluation Remarks</label>
+                <textarea name="mentor_feedback" id="singleAssessFeedbackInput" rows="3" placeholder="Provide constructive feedback, code review comments, or next steps..." class="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+            </div>
+
+            <div class="pt-2 flex justify-end space-x-3">
+                <button type="button" onclick="closeModal('assessStudentModal')" class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md">Submit Assessment</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+}
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+}
+
+// Attendance Modal Trigger
+const batchAttendanceData = {
+    {% for att in attendances %}
+    "{{ att.session_id }}_{{ att.student_id }}": "{{ att.status }}",
+    {% endfor %}
+};
+
+function loadSessionAttendanceStatus(sessionId) {
+    if (!sessionId) return;
+    const rows = document.querySelectorAll('.student-attendance-row');
+    rows.forEach(row => {
+        const studentId = row.dataset.studentId;
+        const key = `${sessionId}_${studentId}`;
+        const existingStatus = batchAttendanceData[key] || 'PRESENT';
+        const radio = row.querySelector(`input[name="status_${studentId}"][value="${existingStatus}"]`);
+        if (radio) {
+            radio.checked = true;
+            updateRowHighlight(radio);
+        }
+    });
+}
+
+// Attendance Modal Trigger
+function openAttendanceModal(sessionId, sessionTitle) {
+    const modal = document.getElementById('markAttendanceModal');
+    if (!modal) return;
+    const select = document.getElementById('attendanceSessionSelect');
+    if (sessionId && select) {
+        select.value = sessionId;
+    }
+    if (sessionTitle) {
+        const sub = document.getElementById('attendanceModalSubtitle');
+        if (sub) sub.textContent = `Session: ${sessionTitle}`;
+    }
+    if (select && select.value) {
+        loadSessionAttendanceStatus(select.value);
+    }
+    modal.classList.remove('hidden');
+}
+
+// Give Assignment for specific student trigger
+function openGiveAssignmentForStudent(studentId, studentName) {
+    selectAssignTarget('INDIVIDUAL');
+    const select = document.getElementById('targetStudentSelect');
+    if (select && studentId) select.value = studentId;
+    const titleInput = document.getElementById('assignmentTitleInput');
+    if (titleInput) titleInput.placeholder = `e.g. Lab Exercise for ${studentName}`;
+    openModal('addAssignmentModal');
+}
+
+// Assign Target Toggle
+function selectAssignTarget(val) {
+    const radioAll = document.getElementById('radioAssignAll');
+    const radioIndiv = document.getElementById('radioAssignIndiv');
+    const labelAll = document.getElementById('labelAssignAll');
+    const labelIndiv = document.getElementById('labelAssignIndiv');
+    const wrap = document.getElementById('targetStudentWrap');
+    const select = document.getElementById('targetStudentSelect');
+
+    if (val === 'ALL') {
+        if (radioAll) radioAll.checked = true;
+        if (labelAll) {
+            labelAll.className = 'flex items-center justify-center space-x-2 py-2 px-3 rounded-xl cursor-pointer text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm';
+        }
+        if (labelIndiv) {
+            labelIndiv.className = 'flex items-center justify-center space-x-2 py-2 px-3 rounded-xl cursor-pointer text-xs font-bold transition-all text-slate-500 hover:text-slate-900';
+        }
+        if (wrap) wrap.classList.add('hidden');
+        if (select) select.required = false;
+    } else {
+        if (radioIndiv) radioIndiv.checked = true;
+        if (labelIndiv) {
+            labelIndiv.className = 'flex items-center justify-center space-x-2 py-2 px-3 rounded-xl cursor-pointer text-xs font-bold transition-all bg-white text-purple-700 shadow-sm';
+        }
+        if (labelAll) {
+            labelAll.className = 'flex items-center justify-center space-x-2 py-2 px-3 rounded-xl cursor-pointer text-xs font-bold transition-all text-slate-500 hover:text-slate-900';
+        }
+        if (wrap) wrap.classList.remove('hidden');
+        if (select) select.required = true;
+    }
+}
+
+// Mark All Attendance
+function markAllAttendance(status) {
+    document.querySelectorAll('.student-attendance-row').forEach(row => {
+        const radio = row.querySelector(`input[type="radio"][value="${status}"]`);
+        if (radio) {
+            radio.checked = true;
+            updateRowHighlight(radio);
+        }
+    });
+}
+
+function updateRowHighlight(radio) {
+    const parentRow = radio.closest('.student-attendance-row');
+    if (!parentRow) return;
+
+    parentRow.querySelectorAll('label').forEach(lbl => {
+        lbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all text-slate-500 border-slate-200 hover:bg-slate-50';
+    });
+
+    const activeLbl = radio.closest('label');
+    if (activeLbl) {
+        if (radio.value === 'PRESENT') {
+            activeLbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all bg-emerald-50 text-emerald-700 border-emerald-300';
+        } else if (radio.value === 'ABSENT') {
+            activeLbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all bg-rose-50 text-rose-700 border-rose-300';
+        } else if (radio.value === 'LATE') {
+            activeLbl.className = 'px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer border transition-all bg-amber-50 text-amber-700 border-amber-300';
+        }
+    }
+}
+
+// Zoom Invitation Parser
+function parseZoomMeetingInvitation(textarea, formId) {
+    const raw = (textarea.value || '').trim();
+    if (!raw) return;
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    // 1. Topic / Title
+    const topicMatch = raw.match(/Topic:\s*([^\r\n]+)/i) || raw.match(/Subject:\s*([^\r\n]+)/i) || raw.match(/Meeting:\s*([^\r\n]+)/i);
+    if (topicMatch) {
+        const titleInput = form.querySelector('input[name="title"]');
+        if (titleInput) titleInput.value = topicMatch[1].trim();
+    }
+
+    // 2. URL
+    const urlMatch = raw.match(/https:\/\/[^\s]+zoom\.us\/j\/[^\s]+/i) ||
+                     raw.match(/https:\/\/meet\.google\.com\/[a-z0-9-]+/i) ||
+                     raw.match(/https:\/\/[^\s]+zoomcrc\.com\/[^\s]+/i) ||
+                     raw.match(/(?:Join Zoom Meeting|Join Meeting)[\s\r\n]+(https?:\/\/[^\s]+)/i) ||
+                     raw.match(/https?:\/\/[^\s]+/i);
+    if (urlMatch) {
+        const linkInput = form.querySelector('input[name="meeting_link"]');
+        if (linkInput) linkInput.value = (urlMatch[1] || urlMatch[0]).trim();
+    }
+
+    // 3. Date & Start Time
+    // e.g. "Time: Sep 17, 2026 06:00 PM Mumbai, Kolkata, New Delhi"
+    const timeMatch = raw.match(/Time:\s*([A-Za-z]+ \d{1,2}, \d{4})\s+(\d{1,2}:\d{2}\s*[AP]M)/i) ||
+                      raw.match(/(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2})/);
+    if (timeMatch) {
+        const rawDateStr = timeMatch[1].trim();
+        const rawTimeStr = timeMatch[2].trim();
+
+        const parsedDate = new Date(rawDateStr);
+        if (!isNaN(parsedDate.getTime())) {
+            const year = parsedDate.getFullYear();
+            const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(parsedDate.getDate()).padStart(2, '0');
+            const dateInput = form.querySelector('input[name="scheduled_date"]');
+            if (dateInput) dateInput.value = `${year}-${month}-${day}`;
+        }
+
+        const tMatch = rawTimeStr.match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+        if (tMatch) {
+            let hours = parseInt(tMatch[1], 10);
+            const minutes = tMatch[2];
+            const ampm = tMatch[3].toUpperCase();
+            if (ampm === 'PM' && hours < 12) hours += 12;
+            if (ampm === 'AM' && hours === 12) hours = 0;
+            const formattedStart = `${String(hours).padStart(2, '0')}:${minutes}`;
+            const startTimeInput = form.querySelector('input[name="start_time"]');
+            if (startTimeInput) startTimeInput.value = formattedStart;
+
+            // End time = start + 90m
+            let endHours = hours + 1;
+            let endMins = parseInt(minutes, 10) + 30;
+            if (endMins >= 60) {
+                endHours += 1;
+                endMins -= 60;
+            }
+            if (endHours >= 24) endHours = 23;
+            const formattedEnd = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
+            const endTimeInput = form.querySelector('input[name="end_time"]');
+            if (endTimeInput) endTimeInput.value = formattedEnd;
+        }
+    }
+
+    // 4. Agenda / Meeting ID & Passcode
+    const idMatch = raw.match(/Meeting ID:\s*([^\r\n]+)/i);
+    const passMatch = raw.match(/Passcode:\s*([^\r\n]+)/i);
+    if (idMatch || passMatch) {
+        const agendaInput = form.querySelector('textarea[name="agenda"]');
+        if (agendaInput && !agendaInput.value) {
+            let extra = [];
+            if (idMatch) extra.push(`Meeting ID: ${idMatch[1].trim()}`);
+            if (passMatch) extra.push(`Passcode: ${passMatch[1].trim()}`);
+            agendaInput.value = extra.join(' | ');
+        }
+    }
+
+    const badge = document.getElementById('zoomParseBadge_batch');
+    if (badge) badge.classList.remove('hidden');
+}
+
+function triggerZoomParse(textareaId, formId) {
+    const ta = document.getElementById(textareaId);
+    if (ta) parseZoomMeetingInvitation(ta, formId);
+}
+
+// Assessment Data Stores & Handlers
+const batchAssessmentsData = {
+    {% for asm in assessments %}
+    "{{ asm.assignment_id }}_{{ asm.student_id }}": {
+        score: "{{ asm.score|default:'' }}",
+        status: "{{ asm.status }}",
+        feedback: "{{ asm.mentor_feedback|escapejs }}"
+    },
+    {% endfor %}
+};
+
+const batchStudentsList = [
+    {% for s in students %}
+    {
+        id: "{{ s.id }}",
+        name: "{{ s.full_name|escapejs }}",
+        email: "{{ s.email|escapejs }}",
+        avatar: "{{ s.avatar_url|default:'' }}"
+    },
+    {% endfor %}
+];
+
+let currentModalMaxScore = 100;
+
+function openAssessAssignmentModal(assignmentId, assignmentTitle, maxScore, targetStudentId) {
+    const modal = document.getElementById('assessAssignmentModal');
+    if (!modal) return;
+
+    currentModalMaxScore = parseInt(maxScore, 10) || 100;
+    document.getElementById('assessAssignmentIdInput').value = assignmentId;
+    document.getElementById('assessAssignmentTitle').textContent = assignmentTitle;
+    document.getElementById('assessMaxScoreBadge').textContent = `Max: ${currentModalMaxScore} pts`;
+
+    const container = document.getElementById('assessStudentsListContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const targetStudents = targetStudentId
+        ? batchStudentsList.filter(s => s.id === String(targetStudentId))
+        : batchStudentsList;
+
+    targetStudents.forEach(s => {
+        const key = `${assignmentId}_${s.id}`;
+        const existing = batchAssessmentsData[key] || {};
+        const avatarUrl = s.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}`;
+
+        const card = document.createElement('div');
+        card.className = 'p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5 hover:border-purple-200 transition-colors';
+        card.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                    <img src="${avatarUrl}" class="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200" alt="">
+                    <div class="min-w-0">
+                        <span class="text-xs font-bold text-slate-900 block truncate">${s.name}</span>
+                        <span class="text-[10px] text-slate-400 font-mono block truncate">${s.email}</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Score:</label>
+                        <input type="number" name="score_${s.id}" min="0" max="${currentModalMaxScore}"
+                               value="${existing.score || ''}"
+                               placeholder="/ ${currentModalMaxScore}"
+                               class="assess-score-field w-20 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                    </div>
+                    <select name="status_${s.id}" class="assess-status-field px-2 py-1.5 rounded-lg border border-gray-200 text-[11px] font-bold outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                        <option value="GRADED" ${existing.status === 'GRADED' ? 'selected' : ''}>✓ Graded</option>
+                        <option value="REVISION_REQUESTED" ${existing.status === 'REVISION_REQUESTED' ? 'selected' : ''}>⚠ Revision</option>
+                        <option value="EXCUSED" ${existing.status === 'EXCUSED' ? 'selected' : ''}>Excused</option>
+                        <option value="PENDING" ${existing.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <input type="text" name="feedback_${s.id}" value="${existing.feedback || ''}"
+                       placeholder="Mentor feedback / evaluation notes for ${s.name}..."
+                       class="w-full px-3 py-1.5 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-purple-500 bg-white text-slate-700 placeholder-slate-400">
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    openModal('assessAssignmentModal');
+}
+
+function quickFillAllScores(fraction) {
+    const fields = document.querySelectorAll('.assess-score-field');
+    const targetScore = Math.round(currentModalMaxScore * fraction);
+    fields.forEach(f => {
+        f.value = targetScore;
+    });
+    const statusFields = document.querySelectorAll('.assess-status-field');
+    statusFields.forEach(sf => {
+        sf.value = 'GRADED';
+    });
+}
+
+function quickClearAllScores() {
+    const fields = document.querySelectorAll('.assess-score-field');
+    fields.forEach(f => {
+        f.value = '';
+    });
+}
+
+// Single student assessment trigger
+let currentSelectedStudentId = null;
+function openAssessForStudent(studentId, studentName) {
+    currentSelectedStudentId = studentId;
+    document.getElementById('assessSingleStudentIdInput').value = studentId;
+    document.getElementById('assessStudentModalName').textContent = studentName;
+    const select = document.getElementById('singleAssessAssignmentSelect');
+    if (select) {
+        select.selectedIndex = 0;
+        document.getElementById('singleAssessScoreInput').value = '';
+        document.getElementById('singleAssessFeedbackInput').value = '';
+        document.getElementById('singleAssessStatusSelect').value = 'GRADED';
+    }
+    openModal('assessStudentModal');
+}
+
+function loadStudentSingleAssessment(assignmentId) {
+    if (!assignmentId || !currentSelectedStudentId) return;
+    const key = `${assignmentId}_${currentSelectedStudentId}`;
+    const existing = batchAssessmentsData[key] || {};
+    document.getElementById('singleAssessScoreInput').value = existing.score || '';
+    document.getElementById('singleAssessStatusSelect').value = existing.status || 'GRADED';
+    document.getElementById('singleAssessFeedbackInput').value = existing.feedback || '';
+
+    const select = document.getElementById('singleAssessAssignmentSelect');
+    const opt = select.options[select.selectedIndex];
+    if (opt && opt.dataset.max) {
+        document.getElementById('singleAssessScoreInput').max = opt.dataset.max;
+        document.getElementById('singleAssessScoreInput').placeholder = `Max: ${opt.dataset.max}`;
+    }
+}
+
+// Initial state for radio selection and URL parameters
+document.addEventListener('DOMContentLoaded', function() {
+    selectAssignTarget('ALL');
+    const urlParams = new URLSearchParams(window.location.search);
+    const markAttId = urlParams.get('mark_att');
+    if (markAttId) {
+        openAttendanceModal(markAttId);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}Course Catalog | LearnHub LMS{% endblock %}
+{% block page_heading %}Course Catalog &amp; Curricula{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- Header Banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-6">
+        <div>
+            {% if is_student %}
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">My Registered Courses &amp; Syllabus</h1>
+            <p class="text-sm text-slate-500 mt-1">Official curricula, interactive chapters, and lab materials assigned to you by administrators.</p>
+            {% else %}
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Academic Curricula &amp; Courses</h1>
+            <p class="text-sm text-slate-500 mt-1">Explore engineering courses, practical hands-on chapters, and production-grade architectures.</p>
+            {% endif %}
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
+                {{ courses|length }} {% if is_student %}Registered{% else %}Available{% endif %} Course{{ courses|length|pluralize }}
+            </span>
+            {% if is_admin %}
+            <button onclick="openImportModalGlobal()" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5">
+                <i data-lucide="folder-up" class="w-4 h-4"></i>
+                <span>Import Material from Path</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for item in courses %}
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group">
+            <div>
+                <!-- Banner Image -->
+                <div class="relative h-48 bg-slate-900 overflow-hidden">
+                    <img src="{% static 'img/lms/' %}{{ item.course.thumbnail }}" alt="{{ item.course.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent"></div>
+                    <div class="absolute top-3.5 left-3.5">
+                        <span class="px-3 py-1 rounded-full text-[11px] font-extrabold bg-slate-900/80 text-white backdrop-blur-md border border-white/20">
+                            {{ item.course.code }}
+                        </span>
+                    </div>
+                    <div class="absolute bottom-3.5 left-3.5 right-3.5 flex items-center justify-between text-white text-xs font-semibold">
+                        <span class="flex items-center">
+                            <i data-lucide="layers" class="w-3.5 h-3.5 mr-1 text-blue-400"></i>
+                            {{ item.module_count }} Modules
+                        </span>
+                        <span class="flex items-center">
+                            <i data-lucide="book-open" class="w-3.5 h-3.5 mr-1 text-emerald-400"></i>
+                            {{ item.lesson_count }} Chapters
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-600">{{ item.course.category }}</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ item.course.difficulty_level }}</span>
+                    </div>
+
+                    <h2 class="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
+                        {{ item.course.title }}
+                    </h2>
+
+                    <p class="text-xs text-slate-500 line-clamp-3 leading-relaxed">
+                        {{ item.course.description }}
+                    </p>
+
+                    <!-- Instructors -->
+                    {% if item.instructors %}
+                    <div class="pt-3 border-t border-gray-100 flex items-center space-x-2">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Faculty:</span>
+                        {% for ci in item.instructors %}
+                        <div class="flex items-center space-x-1.5 text-xs text-slate-700 font-semibold" title="{{ ci.instructor.full_name }} ({{ ci.role }})">
+                            <img src="{{ ci.instructor.avatar_url|default:'https://ui-avatars.com/api/?name='|add:ci.instructor.email }}" alt="{{ ci.instructor.full_name }}" class="w-5 h-5 rounded-full ring-1 ring-gray-200 object-cover">
+                            <span>{{ ci.instructor.full_name }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Footer / Enrollment Status -->
+            <div class="p-6 pt-0">
+                {% if item.enrollment %}
+                <div class="space-y-2 mb-3">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-700">Enrolled Status</span>
+                        <span class="font-black text-emerald-600">{{ item.enrollment.progress_percent }}% Completed</span>
+                    </div>
+                    <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-emerald-500 rounded-full" style="width: {{ item.enrollment.progress_percent }}%;"></div>
+                    </div>
+                </div>
+                <a href="{% url 'lms:course_detail' item.course.slug %}" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-sm">
+                    <span>Open Syllabus &amp; Labs</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'lms:course_detail' item.course.slug %}" class="w-full py-2.5 px-4 bg-slate-900 hover:bg-blue-600 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center space-x-2 shadow-sm">
+                    <span>View Course Details</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full bg-white rounded-3xl border border-gray-200/80 p-12 text-center text-slate-500 shadow-soft">
+            <div class="w-14 h-14 mx-auto rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                <i data-lucide="book-open" class="w-7 h-7"></i>
+            </div>
+            {% if is_student %}
+            <h3 class="text-base font-bold text-slate-800">No Courses Registered Yet</h3>
+            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                You are currently not registered in any active cohort batches. As soon as an administrator assigns you to a batch, your course curriculum and lessons will appear here.
+            </p>
+            {% else %}
+            <h3 class="text-base font-bold text-slate-800">No Courses Available</h3>
+            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                No active courses published yet. Use the admin controls to create courses or import materials.
+            </p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

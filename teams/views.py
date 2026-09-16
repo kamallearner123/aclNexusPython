@@ -56,6 +56,12 @@ def my_team(request):
     teams_as_lead = list(Team.objects.filter(lead=request.user).values_list('id', flat=True))
     all_team_ids = set(teams_as_member + teams_as_lead)
     
+    if (request.user.is_superuser or request.user.is_staff) and not all_team_ids:
+        all_my_teams = Team.objects.all()
+        all_team_ids = set(all_my_teams.values_list('id', flat=True))
+    else:
+        all_my_teams = Team.objects.filter(id__in=all_team_ids)
+        
     team_id = request.GET.get('team_id')
     if team_id and int(team_id) in all_team_ids:
         team = Team.objects.get(id=team_id)
@@ -63,8 +69,6 @@ def my_team(request):
         team = Team.objects.get(id=list(all_team_ids)[0])
     else:
         team = None
-        
-    all_my_teams = Team.objects.filter(id__in=all_team_ids)
     
     members = []
 

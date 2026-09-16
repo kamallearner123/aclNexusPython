@@ -1,75 +1,171 @@
 {% extends 'base.html' %}
 
-{% block title %}Risk Register - PPEDP{% endblock %}
+{% block title %}Risk Register - Project Management{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-4">
-    <h2 class="h3 mb-0 text-gray-800 font-bold">Risk Register</h2>
-    <a href="{% url 'risk_create' %}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Risk</a>
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Risk Register</h1>
+        <p class="text-xs text-slate-500 mt-1">Identify, assess, and monitor project risks and mitigations.</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{% url 'risk_create' %}" class="inline-flex items-center justify-center rounded-lg bg-rose-600 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-rose-500 transition-colors">
+            <i data-lucide="shield-alert" class="w-4 h-4 mr-1.5"></i> Log New Risk
+        </a>
+    </div>
 </div>
 
-<div class="bg-white shadow-soft ring-1 ring-gray-900/5 rounded-xl shadow-soft border-none">
-    <div class="p-6 p-0">
-        <div class="min-w-full divide-y divide-gray-300-responsive">
-            <table class="min-w-full divide-y divide-gray-300 table-hover align-middle mb-0">
-                <thead class="min-w-full divide-y divide-gray-300-light">
-                    <tr>
-                        <th class="ps-4">Risk ID</th>
-                        <th>Project</th>
-                        <th>Title</th>
-                        <th>Level</th>
-                        <th>Score</th>
-                        <th>Owner</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for risk in risks %}
-                    <tr>
-                        <td class="ps-4 font-semibold text-brand-600">{{ risk.risk_id }}</td>
-                        <td>{{ risk.project.code }}</td>
-                        <td>
-    <a href="{% url 'risk_detail' risk.pk %}"
-       class="text-brand-600 hover:text-brand-800 hover:underline font-semibold">
-        {{ risk.title }}
-    </a>
-</td>
-                        <td>
-                            <span class="badge {% if risk.risk_level == 'CRITICAL' %}bg-danger{% elif risk.risk_level == 'HIGH' %}bg-warning text-dark{% elif risk.risk_level == 'MEDIUM' %}bg-info{% else %}bg-secondary{% endif %}">
-                                {{ risk.get_risk_level_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <strong>{{ risk.risk_score }}</strong>
-                        </td>
-                        <td>
-                            {% if risk.owner %}
-                                {{ risk.owner.email }}
-                            {% else %}
-                                <span class="text-gray-500">Unassigned</span>
-                            {% endif %}
-                        </td>
-                        <td>
-    <form method="POST" action="{% url 'risk_delete' risk.id %}">
-        {% csrf_token %}
-
-        <button type="submit"
-                onclick="return confirm('Are you sure you want to delete this risk?')"
-                class="text-red-600 hover:text-red-800 font-semibold">
-            Delete
-        </button>
-
-    </form>
-</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center py-6 text-gray-500">No risks found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Search & Filter Bar -->
+<div class="bg-white rounded-xl shadow-soft border border-gray-200/80 p-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Search Risks</label>
+            <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                <input type="text" id="riskSearchInput" placeholder="Filter by title or risk ID..." class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-gray-300 focus:border-brand-500 focus:ring-brand-500 outline-none">
+            </div>
+        </div>
+        <div>
+            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Filter by Level</label>
+            <select id="riskLevelFilter" class="w-full py-1.5 px-3 text-xs rounded-lg border border-gray-300 focus:border-brand-500 focus:ring-brand-500 outline-none bg-white">
+                <option value="">All Levels</option>
+                <option value="CRITICAL">Critical</option>
+                <option value="HIGH">High</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="LOW">Low</option>
+            </select>
+        </div>
+        <div class="flex items-end">
+            <div class="text-xs text-slate-500 pb-2">
+                Showing <strong id="visibleRiskCount">{{ risks|length }}</strong> of {{ risks|length }} recorded risks
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Risks Table -->
+<div class="bg-white rounded-xl shadow-soft border border-gray-200/80 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-left" id="risksTable">
+            <thead class="bg-slate-50">
+                <tr>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Risk ID</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Risk Title</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Level</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Score</th>
+                    <th scope="col" class="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Owner</th>
+                    <th scope="col" class="px-5 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100 text-xs">
+                {% for risk in risks %}
+                <tr class="hover:bg-slate-50/70 transition-colors risk-row" data-level="{{ risk.risk_level }}" data-text="{{ risk.risk_id }} {{ risk.title }} {{ risk.project.name }}">
+                    <td class="px-5 py-3.5 whitespace-nowrap font-mono font-bold">
+                        <a href="{% url 'risk_detail' risk.pk %}" class="text-brand-600 hover:text-brand-800 hover:underline">
+                            {{ risk.risk_id }}
+                        </a>
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap font-medium text-slate-600">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[11px]">
+                            {{ risk.project.code }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3.5">
+                        <a href="{% url 'risk_detail' risk.pk %}" class="font-bold text-slate-900 hover:text-brand-600 transition-colors">
+                            {{ risk.title }}
+                        </a>
+                        {% if risk.description %}
+                        <p class="text-[11px] text-slate-400 truncate max-w-md mt-0.5">{{ risk.description|striptags }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap">
+                        {% if risk.risk_level == 'CRITICAL' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">Critical</span>
+                        {% elif risk.risk_level == 'HIGH' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-200">High</span>
+                        {% elif risk.risk_level == 'MEDIUM' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">Medium</span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">Low</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap">
+                        <span class="font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{ risk.risk_score }}</span>
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap text-slate-600">
+                        {% if risk.owner %}
+                            <div class="flex items-center gap-1.5">
+                                <img src="https://ui-avatars.com/api/?name={{ risk.owner.email }}&background=random" class="w-5 h-5 rounded-full" alt="Avatar">
+                                <span>{{ risk.owner.first_name|default:risk.owner.email }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-slate-400 italic">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3.5 whitespace-nowrap text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{% url 'risk_detail' risk.pk %}" class="p-1 text-slate-400 hover:text-slate-600 transition-colors" title="View Details">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </a>
+                            <a href="{% url 'risk_update' risk.pk %}" class="inline-flex items-center justify-center rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 transition-colors" title="Modify Risk">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5 mr-1"></i> Edit
+                            </a>
+                            <form method="POST" action="{% url 'risk_delete' risk.id %}" class="inline-block m-0" onsubmit="return confirm('Are you sure you want to delete this risk?');">
+                                {% csrf_token %}
+                                <button type="submit" class="p-1 text-slate-400 hover:text-rose-600 transition-colors" title="Delete Risk">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-400 text-sm">
+                        <i data-lucide="shield-check" class="w-8 h-8 mx-auto mb-2 text-slate-300"></i>
+                        No risks currently logged in the risk register.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('riskSearchInput');
+        const levelFilter = document.getElementById('riskLevelFilter');
+        const rows = document.querySelectorAll('.risk-row');
+        const countDisplay = document.getElementById('visibleRiskCount');
+
+        function filterRisks() {
+            const query = searchInput.value.toLowerCase().trim();
+            const level = levelFilter.value;
+            let visible = 0;
+
+            rows.forEach(row => {
+                const text = row.getAttribute('data-text').toLowerCase();
+                const rowLevel = row.getAttribute('data-level');
+                const matchesQuery = !query || text.includes(query);
+                const matchesLevel = !level || rowLevel === level;
+
+                if (matchesQuery && matchesLevel) {
+                    row.style.display = '';
+                    visible++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (countDisplay) {
+                countDisplay.textContent = visible;
+            }
+        }
+
+        if (searchInput) searchInput.addEventListener('input', filterRisks);
+        if (levelFilter) levelFilter.addEventListener('change', filterRisks);
+    });
+</script>
 {% endblock %}

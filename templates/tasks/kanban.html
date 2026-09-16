@@ -1,348 +1,207 @@
 {% extends 'base.html' %}
 
-{% block title %}Kanban Board - PPEDP{% endblock %}
+{% block title %}Kanban Board - {{ project.name }} - PPEDP{% endblock %}
 
 {% block content %}
 {% csrf_token %}
 <div class="flex justify-between items-center mb-4">
     <div>
-        <h2 class="h3 mb-4 text-gray-800 font-bold">Kanban Board - {{ project.name }}</h2>
-        <a href="{% url 'tasks_kanban' %}" class="text-decoration-none small text-gray-500"><i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>Back to Projects</a>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Kanban Board - {{ project.name }}</h1>
+        <a href="{% url 'tasks_kanban' %}" class="inline-flex items-center text-xs font-medium text-slate-500 hover:text-brand-600 transition-colors mt-1">
+            <i data-lucide="arrow-left" class="w-3.5 h-3.5 mr-1"></i> Back to Projects
+        </a>
     </div>
-    {% if can_create_task %}
-    <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-6 py-2 text-sm font-semibold text-white shadow-soft hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors btn-sm"><i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Task</a>
-    {% endif %}
+    <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-3 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+            <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-white border border-gray-400 mr-1.5"></span> My Tasks</span>
+            <span class="flex items-center"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 border border-slate-400 mr-1.5"></span> Other Team Members</span>
+        </div>
+        {% if can_create_task %}
+        <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="inline-flex items-center justify-center rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-soft hover:bg-brand-500 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Task
+        </a>
+        {% endif %}
+    </div>
 </div>
 
 <style>
     .cursor-grab { cursor: grab; }
     .cursor-grab:active { cursor: grabbing; }
-    .task-column { min-height: 200px; padding-bottom: 50px; }
-    .sortable-ghost { opacity: 0.4; }
+    .task-column { min-height: 250px; padding-bottom: 50px; }
+    .sortable-ghost { opacity: 0.35; transform: scale(0.98); }
 </style>
 
-<!-- Top Toolbar mimicking the screenshot -->
+<!-- Top Navigation Toolbar -->
 <div class="bg-white border-t border-b border-gray-200 px-6 py-2 mb-6 flex justify-between items-center shadow-sm -mx-6 md:-mx-10 mt-[-1rem]">
-    <div class="flex gap-8 text-sm font-semibold text-gray-500">
-        <a href="#" class="flex items-center hover:text-brand-600 transition-colors py-2"><i data-lucide="list" class="w-4 h-4 mr-2"></i> List</a>
-        <a href="{% url 'user_calendar' %}" class="flex items-center hover:text-brand-600 transition-colors py-2"><i data-lucide="calendar" class="w-4 h-4 mr-2"></i> Calendar</a>
-        <a href="#" class="flex items-center hover:text-brand-600 transition-colors py-2"><i data-lucide="bar-chart-horizontal" class="w-4 h-4 mr-2"></i> Gantt Chart</a>
-        <a href="{% url 'tasks_kanban' %}?project_id={{ project.pk }}" class="flex items-center text-brand-600 border-b-2 border-brand-600 py-2"><i data-lucide="trello" class="w-4 h-4 mr-2"></i> Kanban</a>
-    </div>
-    <div class="flex gap-6 text-sm text-gray-500">
-        <div class="flex items-center cursor-pointer hover:text-gray-700">Tasks: Open <i data-lucide="chevron-down" class="w-3 h-3 ml-1"></i></div>
-        <div class="flex items-center cursor-pointer hover:text-gray-700">Users: All <i data-lucide="chevron-down" class="w-3 h-3 ml-1"></i></div>
-        <div class="flex items-center cursor-pointer hover:text-gray-700">Tags: All <i data-lucide="chevron-down" class="w-3 h-3 ml-1"></i></div>
+    <div class="flex gap-8 text-xs font-semibold text-gray-500">
+        <a href="{% url 'user_calendar' %}" class="flex items-center hover:text-brand-600 transition-colors py-2">
+            <i data-lucide="calendar" class="w-4 h-4 mr-1.5"></i> Calendar
+        </a>
+        <a href="{% url 'tasks_kanban' %}?project_id={{ project.pk }}" class="flex items-center text-brand-600 border-b-2 border-brand-600 py-2">
+            <i data-lucide="trello" class="w-4 h-4 mr-1.5"></i> Kanban
+        </a>
+        <a href="{% url 'project_detail' project.pk %}" class="flex items-center hover:text-brand-600 transition-colors py-2">
+            <i data-lucide="folder" class="w-4 h-4 mr-1.5"></i> Project Overview
+        </a>
     </div>
 </div>
 
 <div class="flex gap-4 overflow-x-auto pb-6 items-start" style="min-height: 70vh;">
-    <!-- Backlog Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#6984c1] text-white text-center font-bold text-lg">
-            Backlog
+    
+    <!-- 1. Backlog Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#6984c1] text-white flex justify-between items-center font-bold text-sm">
+            <span>Backlog</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-BACKLOG">{{ backlog|length }}</span>
         </div>
         <div class="p-3 task-column" id="backlog-col" data-status="BACKLOG">
             {% for task in backlog %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#6984c1] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Pending</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#6984c1] h-1.5 rounded-full" style="width: 10%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#6984c1' progress_width='10%' status_label='Pending' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Planned Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#a855f7] text-white text-center font-bold text-lg">
-            Planned
+    <!-- 2. Planned Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#a855f7] text-white flex justify-between items-center font-bold text-sm">
+            <span>Planned</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-PLANNED">{{ planned|length }}</span>
         </div>
         <div class="p-3 task-column" id="planned-col" data-status="PLANNED">
             {% for task in planned %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#a855f7] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Planned</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#a855f7] h-1.5 rounded-full" style="width: 25%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#a855f7' progress_width='25%' status_label='Planned' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- In Progress Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#4bb1f4] text-white text-center font-bold text-lg">
-            In Progress
+    <!-- 3. In Progress Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#4bb1f4] text-white flex justify-between items-center font-bold text-sm">
+            <span>In Progress</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-IN_PROGRESS">{{ in_progress|length }}</span>
         </div>
         <div class="p-3 task-column" id="inprogress-col" data-status="IN_PROGRESS">
             {% for task in in_progress %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#4bb1f4] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Ongoing</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#8ac63a] h-1.5 rounded-full" style="width: 50%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#4bb1f4' progress_width='50%' status_label='Ongoing' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- In Review Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#f2a741] text-white text-center font-bold text-lg">
-            In Review
+    <!-- 4. In Review Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#f2a741] text-white flex justify-between items-center font-bold text-sm">
+            <span>In Review</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-IN_REVIEW">{{ in_review|length }}</span>
         </div>
         <div class="p-3 task-column" id="inreview-col" data-status="IN_REVIEW">
             {% for task in in_review %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#f2a741] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Reviewing</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#f2a741] h-1.5 rounded-full" style="width: 80%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#f2a741' progress_width='75%' status_label='Reviewing' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Testing Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#eab308] text-white text-center font-bold text-lg">
-            Testing
+    <!-- 5. Testing Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#eab308] text-white flex justify-between items-center font-bold text-sm">
+            <span>Testing</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-TESTING">{{ testing|length }}</span>
         </div>
         <div class="p-3 task-column" id="testing-col" data-status="TESTING">
             {% for task in testing %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#eab308] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Testing</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#eab308] h-1.5 rounded-full" style="width: 90%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#eab308' progress_width='85%' status_label='Testing' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Pending Approval Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#f97316] text-white text-center font-bold text-lg">
-            Pending Approval
+    <!-- 6. Pending Approval Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#f97316] text-white flex justify-between items-center font-bold text-sm">
+            <span>Pending Approval</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-PENDING_APPROVAL">{{ pending_approval|length }}</span>
         </div>
         <div class="p-3 task-column" id="pendingapproval-col" data-status="PENDING_APPROVAL">
             {% for task in pending_approval %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#f97316] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Pending</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#f97316] h-1.5 rounded-full" style="width: 95%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#f97316' progress_width='90%' status_label='Approval' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Completed Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#a2df6a] text-white text-center font-bold text-lg">
-            Completed
+    <!-- 7. Completed Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#a2df6a] text-white flex justify-between items-center font-bold text-sm">
+            <span>Completed</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-CLOSED">{{ completed|length }}</span>
         </div>
         <div class="p-3 task-column" id="completed-col" data-status="CLOSED">
             {% for task in completed %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#a2df6a] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Finished</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#a2df6a] h-1.5 rounded-full" style="width: 100%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#a2df6a' progress_width='100%' status_label='Finished' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Blocked Column -->
-    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200">
-        <div class="px-4 py-3 bg-[#ef4444] text-white text-center font-bold text-lg">
-            Blocked
+    <!-- 8. Blocked Column -->
+    <div class="w-[300px] flex-shrink-0 flex flex-col bg-[#f4f5f7] border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div class="px-4 py-2.5 bg-[#ef4444] text-white flex justify-between items-center font-bold text-sm">
+            <span>Blocked</span>
+            <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs" id="count-BLOCKED">{{ blocked|length }}</span>
         </div>
         <div class="p-3 task-column" id="blocked-col" data-status="BLOCKED">
             {% for task in blocked %}
-            <div class="bg-white border border-gray-200 border-l-[6px] border-l-[#ef4444] mb-3 cursor-grab task-card shadow-sm rounded-sm" data-task-id="{{ task.pk }}">
-                <div class="p-3">
-                    <h6 class="text-sm font-semibold text-gray-800 mb-3"><a href="{% url 'task_detail' task.pk %}" class="hover:text-brand-600 transition-colors">{{ task.title }}</a></h6>
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                        {% if task.assignee %}
-                            <div class="w-5 h-5 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[10px] mr-2" title="{{ task.assignee.email }}">{{ task.assignee.email|make_list|first|upper }}</div>
-                        {% else %}
-                            <div class="w-5 h-5 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-[10px] mr-2">U</div>
-                        {% endif %}
-                        <span class="mr-2 border rounded-full px-1.5 py-0.5 bg-gray-50 text-[9px]">{{ task.story_points|default:"0" }} pt</span>
-                        <span>Blocked</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-1.5 rounded-full mb-3">
-                        <div class="bg-[#ef4444] h-1.5 rounded-full" style="width: 100%"></div>
-                    </div>
-                    <div class="flex justify-end gap-2 text-gray-400">
-                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-                        <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                    </div>
-                </div>
-            </div>
+                {% include 'tasks/partials/kanban_card.html' with task=task stripe_color='#ef4444' progress_width='100%' status_label='Blocked' %}
             {% empty %}
             {% endfor %}
             
             {% if can_create_task %}
-            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-sm py-2 transition-colors">
+            <a href="{% url 'task_create' %}?project_id={{ project.pk }}" class="block text-center text-gray-400 hover:text-gray-600 font-medium text-xs py-2 transition-colors border border-dashed border-gray-300 rounded-md hover:border-gray-400 mt-1">
                 + Add Task
             </a>
             {% endif %}
@@ -363,50 +222,58 @@
                 ghostClass: 'sortable-ghost',
                 onEnd: function (evt) {
                     const itemEl = evt.item;  
-                    const toEl = evt.to;    
-                    const fromEl = evt.from;
+                    const toEl = evt.to.closest('.task-column') || evt.to;    
+                    const fromEl = evt.from.closest('.task-column') || evt.from;
                     
                     if (toEl === fromEl) return; // No change in status
 
                     const taskId = itemEl.getAttribute('data-task-id');
                     const newStatus = toEl.getAttribute('data-status');
+                    const oldStatus = fromEl.getAttribute('data-status');
                     
-                    let hoursStr = prompt("Please enter the number of hours spent on this task for this stage transition:", "0");
-                    let hoursSpent = parseFloat(hoursStr);
-                    if (isNaN(hoursSpent) || hoursSpent < 0) {
-                        hoursSpent = 0;
-                    }
+                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
                     
-                    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-                    
-                    // Update counts visually
+                    // Optimistically update column counts
                     const toCountEl = document.getElementById('count-' + newStatus);
-                    const fromCountEl = document.getElementById('count-' + fromEl.getAttribute('data-status'));
-                    if(toCountEl) toCountEl.innerText = parseInt(toCountEl.innerText) + 1;
-                    if(fromCountEl) fromCountEl.innerText = parseInt(fromCountEl.innerText) - 1;
+                    const fromCountEl = document.getElementById('count-' + oldStatus);
+                    if (toCountEl) toCountEl.innerText = Math.max(0, parseInt(toCountEl.innerText || '0') + 1);
+                    if (fromCountEl) fromCountEl.innerText = Math.max(0, parseInt(fromCountEl.innerText || '1') - 1);
 
-                    // Update backend
+                    // Update backend via fetch
                     fetch("{% url 'update_task_status' %}", {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            "X-CSRFToken": csrfToken
+                            "X-CSRFToken": csrfToken,
+                            "X-Requested-With": "XMLHttpRequest"
                         },
                         body: JSON.stringify({
                             task_id: taskId,
                             status: newStatus,
-                            hours_spent: hoursSpent
+                            hours_spent: 0
                         })
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(errData => {
+                                throw new Error(errData.error || 'Server error updating task status');
+                            });
+                        }
+                        return response.json();
+                    })
                     .then(data => {
-                        if(!data.success) {
-                            console.error("Failed to update status:", data.error);
-                            alert("Error updating task status: " + (data.error || ""));
-                            location.reload();
+                        if (!data.success) {
+                            throw new Error(data.error || 'Status update was not successful');
                         }
                     })
-                    .catch(err => console.error("Error:", err));
+                    .catch(err => {
+                        console.error("Error updating status:", err);
+                        alert("Could not update task status: " + err.message);
+                        // Revert visually on failure
+                        fromEl.appendChild(itemEl);
+                        if (toCountEl) toCountEl.innerText = Math.max(0, parseInt(toCountEl.innerText || '1') - 1);
+                        if (fromCountEl) fromCountEl.innerText = Math.max(0, parseInt(fromCountEl.innerText || '0') + 1);
+                    });
                 },
             });
         });

@@ -1,0 +1,973 @@
+{% extends 'lms/base_lms.html' %}
+{% load static %}
+
+{% block title %}Admin Hub | LearnHub LMS{% endblock %}
+{% block page_heading %}LMS Command &amp; Operations Hub{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-8">
+
+    <!-- Header Banner & Stats Overview -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-6">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-100 text-purple-800 uppercase tracking-widest">
+                    Academic Command Center
+                </span>
+                <span class="text-xs text-slate-400">• Role: {{ lms_user.get_role_display }}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">LMS Operations &amp; Curriculum Desk</h1>
+            <p class="text-xs text-slate-500 mt-1">Manage running courses, track real-time learner metrics, join students, and onboard cohort faculty.</p>
+        </div>
+
+        <!-- Tab Buttons (Clean Vanilla JS switching with URL state) -->
+        <div class="flex flex-wrap items-center bg-gray-100 p-1.5 rounded-2xl gap-1 text-xs font-bold text-slate-600 shadow-inner">
+            <button onclick="switchTab('courses')" id="tab-btn-courses" class="tab-btn px-4 py-2 rounded-xl transition-all">
+                <i data-lucide="book-open" class="w-3.5 h-3.5 inline mr-1"></i> Running Courses ({{ courses.count }})
+            </button>
+            <button onclick="switchTab('cohort')" id="tab-btn-cohort" class="tab-btn px-4 py-2 rounded-xl transition-all">
+                <i data-lucide="users" class="w-3.5 h-3.5 inline mr-1"></i> Cohort Members ({{ cohort_users.count }})
+            </button>
+            <button onclick="switchTab('enrollments')" id="tab-btn-enrollments" class="tab-btn px-4 py-2 rounded-xl transition-all">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5 inline mr-1"></i> Join Students
+            </button>
+            <button onclick="switchTab('submissions')" id="tab-btn-submissions" class="tab-btn px-4 py-2 rounded-xl transition-all">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 inline mr-1"></i> Reviews ({{ pending_submissions.count }})
+            </button>
+            <button onclick="switchTab('live')" id="tab-btn-live" class="tab-btn px-4 py-2 rounded-xl transition-all">
+                <i data-lucide="video" class="w-3.5 h-3.5 inline mr-1"></i> Live Scheduler
+            </button>
+            <button onclick="switchTab('broadcast')" id="tab-btn-broadcast" class="tab-btn px-4 py-2 rounded-xl transition-all">
+                <i data-lucide="radio" class="w-3.5 h-3.5 inline mr-1"></i> Broadcasts
+            </button>
+            <button onclick="switchTab('assignment')" id="tab-btn-assignment" class="tab-btn px-4 py-2 rounded-xl transition-all">
+                <i data-lucide="file-code" class="w-3.5 h-3.5 inline mr-1"></i> Milestones
+            </button>
+        </div>
+    </div>
+
+    <!-- Metric Counter Tiles -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-soft">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Running Courses</span>
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ total_running_courses }}</div>
+            <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">Published &amp; Active</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-soft">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Enrollments</span>
+                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ total_enrollments }}</div>
+            <div class="text-[11px] text-blue-600 font-semibold mt-0.5">Joined Students</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-soft">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Completion</span>
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <i data-lucide="trending-up" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ overall_avg_progress }}%</div>
+            <div class="text-[11px] text-indigo-600 font-semibold mt-0.5">Across All Curricula</div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-soft">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Faculty Mentors</span>
+                <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                </div>
+            </div>
+            <div class="text-2xl font-black text-slate-900 mt-2">{{ mentors.count }}</div>
+            <div class="text-[11px] text-purple-600 font-semibold mt-0.5">Instructors &amp; Advisors</div>
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- 1. RUNNING COURSES & STATS TAB (Requirement 1 & 3) -->
+    <!-- ========================================================================================= -->
+    <div id="tab-courses" class="tab-content space-y-6">
+
+        <!-- Action Header & New Course Accordion -->
+        <div class="flex items-center justify-between bg-gradient-to-r from-purple-900 to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+            <div class="relative z-10 space-y-2 max-w-xl">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-purple-100 uppercase tracking-widest backdrop-blur-sm">
+                    Curriculum Builder
+                </span>
+                <h2 class="text-2xl font-extrabold tracking-tight text-white">Manage Running Courses &amp; Real-time Stats</h2>
+                <p class="text-xs text-purple-200 leading-relaxed">
+                    Review syllabus performance, monitor student completion ratios, launch new courses, and assign faculty mentors.
+                </p>
+            </div>
+            <div class="relative z-10">
+                <button onclick="toggleElement('new-course-card')" class="px-5 py-2.5 rounded-xl bg-white hover:bg-purple-50 text-purple-900 text-xs font-bold transition-all shadow-md flex items-center space-x-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Create New Course</span>
+                </button>
+            </div>
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-purple-600/30 rounded-full blur-3xl pointer-events-none"></div>
+        </div>
+
+        <!-- Collapsible Create Course Card -->
+        <div id="new-course-card" class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6 hidden transition-all">
+            <div class="border-b border-gray-100 pb-4 flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Create New Course &amp; Join Students</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Defines a new academic course, assigns lead faculty, and can immediately enroll cohort learners.
+                    </p>
+                </div>
+                <button onclick="toggleElement('new-course-card')" class="text-slate-400 hover:text-slate-600 text-sm font-bold">Cancel</button>
+            </div>
+
+            <form action="{% url 'lms:create_course' %}" method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Course Code *</label>
+                        {{ course_create_form.code }}
+                    </div>
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Course Title *</label>
+                        {{ course_create_form.title }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Category</label>
+                        {{ course_create_form.category }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Difficulty Level</label>
+                        {{ course_create_form.difficulty_level }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Publication Status</label>
+                        {{ course_create_form.status }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">URL Slug (Optional)</label>
+                        {{ course_create_form.slug }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Short Tagline Summary</label>
+                        {{ course_create_form.short_description }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Assign Lead Mentor / Teacher</label>
+                        {{ course_create_form.lead_instructor }}
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Full Syllabus Scope &amp; Deliverables</label>
+                    {{ course_create_form.description }}
+                </div>
+
+                <!-- Auto-Join Students Option -->
+                <div class="p-4 bg-purple-50/70 rounded-2xl border border-purple-100 flex items-center space-x-3">
+                    {{ course_create_form.enroll_all_students }}
+                    <label for="{{ course_create_form.enroll_all_students.id_for_label }}" class="text-xs font-bold text-purple-900 cursor-pointer">
+                        {{ course_create_form.enroll_all_students.label }} ({{ students.count }} active learners)
+                    </label>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 flex items-center space-x-2">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                        <span>Create Course &amp; Launch</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Running Courses Detailed Cards -->
+        <div class="space-y-6">
+            {% for cdata in courses_stats %}
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft overflow-hidden">
+                <!-- Course Card Header -->
+                <div class="p-6 sm:p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2.5">
+                            <span class="px-2.5 py-1 rounded-xl text-xs font-black bg-slate-900 text-white">
+                                {{ cdata.course.code }}
+                            </span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if cdata.is_running %}bg-emerald-100 text-emerald-800 border border-emerald-200{% else %}bg-amber-100 text-amber-800 border border-amber-200{% endif %}">
+                                {% if cdata.is_running %}&bull; Running / Published{% else %}&bull; {{ cdata.course.get_status_display }}{% endif %}
+                            </span>
+                            <span class="text-xs text-slate-400 font-medium">• {{ cdata.course.category }} • {{ cdata.course.difficulty_level }}</span>
+                        </div>
+                        <h3 class="text-xl font-black text-slate-900">{{ cdata.course.title }}</h3>
+                        <p class="text-xs text-slate-500 max-w-3xl leading-relaxed">{{ cdata.course.short_description }}</p>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <a href="{% url 'lms:course_detail' slug=cdata.course.slug %}" target="_blank" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all flex items-center space-x-1.5">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            <span>View Course</span>
+                        </a>
+                        <button onclick="switchTab('enrollments'); document.getElementById('enroll-course-select').value='{{ cdata.course.id }}';" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5">
+                            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                            <span>Join Students ({{ cdata.total_enrolled }})</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Detailed Statistics Grid for the Course -->
+                <div class="p-6 sm:p-8 grid grid-cols-2 md:grid-cols-5 gap-6 border-b border-gray-100">
+                    <!-- Stat 1: Student Enrollment & Progress -->
+                    <div class="space-y-1 md:col-span-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-700">Enrolled Learners</span>
+                            <span class="font-extrabold text-blue-600">{{ cdata.total_enrolled }} Students</span>
+                        </div>
+                        <!-- Progress Visual -->
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between text-[11px] text-slate-500">
+                                <span>Avg. Completion: <b>{{ cdata.avg_progress }}%</b></span>
+                                <span>{{ cdata.completed_count }} Completed / {{ cdata.active_count }} Active</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500" style="width: {{ cdata.avg_progress }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stat 2: Curriculum Structure -->
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Syllabus</span>
+                        <div class="text-lg font-black text-slate-900">{{ cdata.modules_count }} Modules</div>
+                        <div class="text-xs text-slate-500">{{ cdata.lessons_count }} Lessons ({{ cdata.required_lessons }} req.)</div>
+                    </div>
+
+                    <!-- Stat 3: Live Classes -->
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Live Sessions</span>
+                        <div class="text-lg font-black text-slate-900">{{ cdata.upcoming_live_count }} Upcoming</div>
+                        <div class="text-xs text-slate-500">Scheduled in IST</div>
+                    </div>
+
+                    <!-- Stat 4: Deliverables & Milestones -->
+                    <div class="space-y-1">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Deliverables</span>
+                        <div class="text-lg font-black text-slate-900">{{ cdata.assignments_count }} Milestones</div>
+                        <div class="text-xs {% if cdata.pending_submissions_count > 0 %}text-amber-600 font-bold{% else %}text-slate-500{% endif %}">
+                            {{ cdata.pending_submissions_count }} Pending Review
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assigned Instructors & Enrolled Students Preview -->
+                <div class="p-6 sm:p-8 bg-gray-50/40 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+                    <!-- Faculty -->
+                    <div class="flex items-center space-x-3">
+                        <span class="font-bold text-slate-700">Faculty Mentors:</span>
+                        <div class="flex items-center space-x-2">
+                            {% for inst in cdata.instructors %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-slate-800 font-semibold shadow-2xs">
+                                <i data-lucide="user-check" class="w-3 h-3 mr-1 text-purple-600"></i>
+                                {{ inst.instructor.full_name }} ({{ inst.get_role_display }})
+                            </span>
+                            {% empty %}
+                            <span class="text-slate-400 italic">No faculty mentors assigned yet.</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Enrolled Students Quick Count -->
+                    <div class="text-slate-500">
+                        {% if cdata.enrolled_students %}
+                        <span class="font-medium">Active Learners:</span>
+                        {% for s in cdata.enrolled_students|slice:":5" %}
+                        <span class="inline-block px-1.5 py-0.5 rounded bg-white border border-gray-200 text-slate-700 text-[11px] font-mono mr-1">
+                            {{ s.name }} ({{ s.progress_percent }}%)
+                        </span>
+                        {% endfor %}
+                        {% if cdata.enrolled_students|length > 5 %}
+                        <span class="text-[11px] font-bold text-purple-600">+{{ cdata.enrolled_students|length|add:"-5" }} more</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-amber-600 font-bold">No students enrolled yet. Use "Join Students" to add students!</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="bg-white rounded-3xl p-12 text-center text-slate-400 border border-gray-200">
+                <i data-lucide="book-open" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
+                <p class="text-base font-bold text-slate-700">No courses available.</p>
+                <p class="text-xs mt-1">Click "Create New Course" above to create your first curriculum.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- 2. COHORT USERS TAB (Requirement 2: Add Students, Mentors, Managers) -->
+    <!-- ========================================================================================= -->
+    <div id="tab-cohort" class="tab-content space-y-6 hidden">
+
+        <!-- Add User Card -->
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+            <div class="border-b border-gray-100 pb-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Add Cohort Member (Student, Mentor, Manager, Admin)</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Creates the authentication account in the central directory and sets up the learner or faculty profile in the LMS.
+                    </p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
+                    Default Password: AclMission@123
+                </span>
+            </div>
+
+            <form action="{% url 'lms:add_cohort_user' %}" method="post" class="space-y-6">
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Email Address *</label>
+                        {{ user_create_form.email }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">First Name *</label>
+                        {{ user_create_form.first_name }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Last Name *</label>
+                        {{ user_create_form.last_name }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Cohort Role *</label>
+                        {{ user_create_form.role }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Custom Password (Optional)</label>
+                        {{ user_create_form.password }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Specialization / Domain</label>
+                        {{ user_create_form.specialization }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Phone Number</label>
+                        {{ user_create_form.phone }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Short Bio</label>
+                        {{ user_create_form.bio }}
+                    </div>
+                </div>
+
+                <!-- Associate / Join Courses immediately -->
+                <div class="space-y-2 p-4 bg-purple-50/60 rounded-2xl border border-purple-100">
+                    <label class="block text-xs font-bold text-purple-900 uppercase tracking-wider">
+                        Associate / Join Courses Immediately
+                    </label>
+                    <p class="text-[11px] text-purple-700 mb-2">
+                        If role is <b>Student</b>, this will enroll them immediately. If role is <b>Mentor</b>, this assigns them as course instructor.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {{ user_create_form.courses_to_enroll }}
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 flex items-center space-x-2">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Create &amp; Provision Member Account</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Cohort Roster Table with Role Filter Pills -->
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-8 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Enrolled Cohort Roster ({{ cohort_users.count }})</h3>
+                    <p class="text-xs text-slate-500">Students, faculty mentors, academic managers, and system administrators.</p>
+                </div>
+
+                <!-- Filter Pills -->
+                <div class="flex items-center gap-1.5 text-xs font-bold">
+                    <button onclick="filterCohort('ALL')" class="cohort-filter-btn px-3 py-1 rounded-xl bg-slate-900 text-white shadow-2xs">All ({{ cohort_users.count }})</button>
+                    <button onclick="filterCohort('STUDENT')" class="cohort-filter-btn px-3 py-1 rounded-xl bg-gray-100 text-slate-600 hover:bg-gray-200">Students ({{ students.count }})</button>
+                    <button onclick="filterCohort('MENTOR')" class="cohort-filter-btn px-3 py-1 rounded-xl bg-gray-100 text-slate-600 hover:bg-gray-200">Mentors ({{ mentors.count }})</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-slate-400 uppercase font-bold text-[10px] tracking-wider">
+                            <th class="py-3 px-2">Member</th>
+                            <th class="py-3 px-2">Email</th>
+                            <th class="py-3 px-2">Role</th>
+                            <th class="py-3 px-2">Specialization</th>
+                            <th class="py-3 px-2">Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 font-medium text-slate-700">
+                        {% for u in cohort_users %}
+                        <tr class="cohort-row" data-role="{{ u.role }}">
+                            <td class="py-3 px-2 flex items-center space-x-2.5">
+                                <img src="https://ui-avatars.com/api/?name={{ u.full_name }}&background=6366f1&color=fff" class="w-7 h-7 rounded-lg object-cover">
+                                <span class="font-bold text-slate-900">{{ u.full_name }}</span>
+                            </td>
+                            <td class="py-3 px-2 text-slate-600 font-mono">{{ u.email }}</td>
+                            <td class="py-3 px-2">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {% if u.role == 'ADMIN' %}bg-red-100 text-red-800{% elif u.role == 'MANAGER' %}bg-purple-100 text-purple-800{% elif u.role == 'MENTOR' %}bg-blue-100 text-blue-800{% else %}bg-emerald-100 text-emerald-800{% endif %}">
+                                    {{ u.role }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-2 text-slate-500">{{ u.specialization|default:'—' }}</td>
+                            <td class="py-3 px-2 text-slate-400">{{ u.created_at|date:"M d, Y" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- 3. JOIN STUDENTS DESK TAB (Requirement 3: Join students to courses) -->
+    <!-- ========================================================================================= -->
+    <div id="tab-enrollments" class="tab-content space-y-6 hidden">
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+            <div class="border-b border-gray-100 pb-4">
+                <h2 class="text-lg font-bold text-slate-900">Course Enrollment Desk: Join Students to Courses</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Select a course to view currently enrolled learners, join all active cohort students with one click, or join individual learners.
+                </p>
+            </div>
+
+            <!-- Course Selector -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 rounded-2xl border border-gray-200/80">
+                <div class="flex items-center space-x-3 flex-1">
+                    <label class="text-xs font-bold text-slate-700 uppercase tracking-wider whitespace-nowrap">Target Course:</label>
+                    <select id="enroll-course-select" onchange="showEnrollmentCourse(this.value)" class="w-full max-w-md px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 outline-none">
+                        {% for cdata in courses_stats %}
+                        <option value="{{ cdata.course.id }}">[{{ cdata.course.code }}] {{ cdata.course.title }} ({{ cdata.total_enrolled }} Enrolled)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- One-Click Enroll All Button -->
+                {% for cdata in courses_stats %}
+                <form id="enroll-all-form-{{ cdata.course.id }}" action="{% url 'lms:join_students' %}" method="post" class="enroll-action-pane {% if not forloop.first %}hidden{% endif %} m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="enroll_all">
+                    <input type="hidden" name="course_id" value="{{ cdata.course.id }}">
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md flex items-center space-x-2">
+                        <i data-lucide="check-check" class="w-4 h-4"></i>
+                        <span>Join All Active Students ({{ students.count }})</span>
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+
+            <!-- Course-Specific Student Enrollment Tables -->
+            {% for cdata in courses_stats %}
+            <div id="course-enroll-table-{{ cdata.course.id }}" class="enroll-action-pane {% if not forloop.first %}hidden{% endif %} space-y-6">
+
+                <!-- Enrolled Students Table -->
+                <div class="space-y-3">
+                    <h3 class="text-sm font-extrabold text-slate-900 flex items-center">
+                        <i data-lucide="user-check" class="w-4 h-4 mr-1.5 text-emerald-600"></i>
+                        Currently Enrolled Students in [{{ cdata.course.code }}] ({{ cdata.total_enrolled }})
+                    </h3>
+
+                    <div class="overflow-x-auto rounded-2xl border border-gray-200">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-50 text-slate-500 font-bold uppercase text-[10px]">
+                                <tr>
+                                    <th class="py-3 px-3">Student Name</th>
+                                    <th class="py-3 px-3">Email</th>
+                                    <th class="py-3 px-3">Curriculum Progress</th>
+                                    <th class="py-3 px-3">Status</th>
+                                    <th class="py-3 px-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 font-medium text-slate-700">
+                                {% for s in cdata.enrolled_students %}
+                                <tr>
+                                    <td class="py-3 px-3 font-bold text-slate-900">{{ s.name }}</td>
+                                    <td class="py-3 px-3 font-mono text-slate-500">{{ s.email }}</td>
+                                    <td class="py-3 px-3">
+                                        <div class="flex items-center space-x-2">
+                                            <div class="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                <div class="h-full bg-blue-600 rounded-full" style="width: {{ s.progress_percent }}%;"></div>
+                                            </div>
+                                            <span class="font-extrabold text-blue-600 text-[11px]">{{ s.progress_percent }}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                            {{ s.status }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 text-right">
+                                        <form action="{% url 'lms:join_students' %}" method="post" class="m-0 inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="unenroll">
+                                            <input type="hidden" name="course_id" value="{{ cdata.course.id }}">
+                                            <input type="hidden" name="enrollment_id" value="{{ s.enrollment_id }}">
+                                            <button type="submit" onclick="return confirm('Remove student from course?')" class="text-xs text-red-600 hover:text-red-800 font-bold">
+                                                Remove
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="py-6 text-center text-slate-400 italic">No students are currently enrolled in this course.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Available Cohort Students to Join -->
+                <div class="space-y-3 pt-4 border-t border-gray-100">
+                    <h3 class="text-sm font-extrabold text-slate-900 flex items-center">
+                        <i data-lucide="user-plus" class="w-4 h-4 mr-1.5 text-blue-600"></i>
+                        Available Cohort Students (Click to Join)
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {% for st in students %}
+                        <div class="p-3.5 rounded-2xl border border-gray-200 bg-white hover:border-purple-300 transition-all flex items-center justify-between">
+                            <div class="space-y-0.5 overflow-hidden pr-2">
+                                <div class="font-bold text-slate-900 truncate">{{ st.full_name }}</div>
+                                <div class="text-[11px] font-mono text-slate-400 truncate">{{ st.email }}</div>
+                            </div>
+                            <form action="{% url 'lms:join_students' %}" method="post" class="m-0 flex-shrink-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="enroll_single">
+                                <input type="hidden" name="course_id" value="{{ cdata.course.id }}">
+                                <input type="hidden" name="student_id" value="{{ st.id }}">
+                                <button type="submit" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-xs font-bold transition-all">
+                                    Join Course &rarr;
+                                </button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Assign Faculty Mentors / Teachers to Course -->
+                <div class="space-y-3 pt-4 border-t border-gray-100">
+                    <h3 class="text-sm font-extrabold text-slate-900 flex items-center">
+                        <i data-lucide="award" class="w-4 h-4 mr-1.5 text-purple-600"></i>
+                        Assign Faculty Mentors / Teachers to [{{ cdata.course.code }}]
+                    </h3>
+
+                    <form action="{% url 'lms:join_students' %}" method="post" class="flex flex-wrap items-center gap-3 p-4 bg-purple-50/50 rounded-2xl border border-purple-100">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="assign_instructor">
+                        <input type="hidden" name="course_id" value="{{ cdata.course.id }}">
+
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Select Faculty Member</label>
+                            <select name="instructor_id" class="px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold text-slate-900 outline-none">
+                                {% for m in mentors %}
+                                <option value="{{ m.id }}">{{ m.full_name }} ({{ m.role }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Faculty Role</label>
+                            <select name="role" class="px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold text-slate-900 outline-none">
+                                <option value="LEAD">Lead Instructor</option>
+                                <option value="ASSISTANT">Assistant Mentor</option>
+                                <option value="ADVISOR">Technical Advisor</option>
+                            </select>
+                        </div>
+
+                        <div class="pt-5">
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-sm">
+                                Assign Mentor
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- 4. DELIVERABLE VERIFICATION & GRADING DESK -->
+    <!-- ========================================================================================= -->
+    <div id="tab-submissions" class="tab-content space-y-6 hidden">
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+            <div class="border-b border-gray-100 pb-4">
+                <h2 class="text-lg font-bold text-slate-900">Deliverable Verification &amp; Mentor Grading Desk</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Review student repositories, evaluate implementation architecture, and assign scores with constructive feedback.
+                </p>
+            </div>
+
+            {% if pending_submissions %}
+            <div class="space-y-6">
+                {% for sub in pending_submissions %}
+                <div class="border border-gray-200/90 rounded-2xl p-6 bg-slate-50/50 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/60 pb-3">
+                        <div>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 uppercase tracking-wider">
+                                {{ sub.assignment.course.code }}
+                            </span>
+                            <h3 class="text-base font-bold text-slate-900 mt-1">{{ sub.assignment.title }}</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-600">Student External ID: {{ sub.external_user_id }}</span>
+                            <span class="block text-[11px] text-slate-400">Submitted: {{ sub.submitted_at|date:"M d, H:i" }} IST</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">Repository / Artifact Link:</span>
+                            <a href="{{ sub.submission_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-mono ml-1">
+                                {{ sub.submission_url }} &rarr;
+                            </a>
+                        </div>
+                        {% if sub.submission_text %}
+                        <div class="p-3 bg-white rounded-xl border border-gray-200/60 text-slate-600 leading-relaxed font-sans">
+                            <span class="font-bold text-slate-700 block mb-1">Student Architectural Notes:</span>
+                            {{ sub.submission_text|linebreaksbr }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Grading Form -->
+                    <form action="{% url 'lms:assignment_grade' submission_id=sub.id %}" method="post" class="space-y-3 pt-2">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Score (Max: {{ sub.assignment.max_score }})</label>
+                                <input type="number" name="grade_score" min="0" max="{{ sub.assignment.max_score }}" required class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs font-bold text-slate-900 outline-none">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Mentor Feedback</label>
+                                <input type="text" name="mentor_feedback" placeholder="Constructive guidance and architectural feedback..." class="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs outline-none">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-2">
+                            <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm">
+                                Submit Grade &amp; Update Student Progress
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="py-12 text-center text-slate-400 italic">
+                <i data-lucide="check-circle" class="w-10 h-10 mx-auto mb-2 text-emerald-500 opacity-60"></i>
+                <p>All student deliverables have been verified and graded! No pending submissions.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- 5. LIVE CLASS SCHEDULER -->
+    <!-- ========================================================================================= -->
+    <div id="tab-live" class="tab-content space-y-6 hidden">
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+            <div class="border-b border-gray-100 pb-4">
+                <h2 class="text-lg font-bold text-slate-900">Schedule Live Architecture Lab / Class</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Configure live interactive classes scheduled in Asia/Kolkata timezone with meeting links and agenda.
+                </p>
+            </div>
+
+            <form action="{% url 'lms:schedule_live_class' %}" method="post" class="space-y-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Course</label>
+                        {{ live_class_form.course }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Faculty Instructor</label>
+                        {{ live_class_form.instructor }}
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Session Title</label>
+                    {{ live_class_form.title }}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Scheduled Date</label>
+                        {{ live_class_form.scheduled_date }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Start Time (IST)</label>
+                        {{ live_class_form.start_time }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">End Time (IST)</label>
+                        {{ live_class_form.end_time }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Meeting URL</label>
+                        {{ live_class_form.meeting_url }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Status</label>
+                        {{ live_class_form.status }}
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Session Agenda</label>
+                    {{ live_class_form.description }}
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 flex items-center space-x-2">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span>Schedule Live Session</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- 6. BROADCAST MESSAGES -->
+    <!-- ========================================================================================= -->
+    <div id="tab-broadcast" class="tab-content space-y-6 hidden">
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+            <div class="border-b border-gray-100 pb-4">
+                <h2 class="text-lg font-bold text-slate-900">Publish Course Command Broadcast</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Dispatches a real-time message to enrolled students with prior class takeaways and the upcoming live meeting agenda.
+                </p>
+            </div>
+
+            <form action="{% url 'lms:create_command_message' %}" method="post" class="space-y-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Target Course</label>
+                        {{ command_form.course }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Broadcast Headline</label>
+                        {{ command_form.title }}
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Previous Class Architectural Recap &amp; Takeaways</label>
+                    {{ command_form.previous_session_summary }}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Previous Session Recording URL</label>
+                        {{ command_form.previous_session_recording_url }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Next Session Agenda / Topic</label>
+                        {{ command_form.next_class_topic }}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Next Session Date &amp; Time (IST)</label>
+                        {{ command_form.next_class_datetime }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Next Session Meeting URL</label>
+                        {{ command_form.next_class_link }}
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 flex items-center space-x-2">
+                        <i data-lucide="radio" class="w-4 h-4"></i>
+                        <span>Publish Command Message</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================================= -->
+    <!-- 7. ASSIGNMENT STUDIO -->
+    <!-- ========================================================================================= -->
+    <div id="tab-assignment" class="tab-content space-y-6 hidden">
+        <div class="bg-white rounded-3xl border border-gray-200/90 shadow-soft p-6 sm:p-10 space-y-6">
+            <div class="border-b border-gray-100 pb-4">
+                <h2 class="text-lg font-bold text-slate-900">Milestone Deliverable Studio</h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Define hands-on milestones, starter repository references, due dates, and grading weights.
+                </p>
+            </div>
+
+            <form action="{% url 'lms:create_assignment' %}" method="post" class="space-y-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Target Course</label>
+                        {{ assignment_form.course }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Deliverable Title</label>
+                        {{ assignment_form.title }}
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Specifications &amp; Instructions</label>
+                    {{ assignment_form.description }}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Due Date</label>
+                        {{ assignment_form.due_date }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Max Points</label>
+                        {{ assignment_form.max_score }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Order</label>
+                        {{ assignment_form.order }}
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Status</label>
+                        {{ assignment_form.status }}
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Starter Repository URL</label>
+                    {{ assignment_form.resource_url }}
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 flex items-center space-x-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Publish Deliverable</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<!-- Client-side Tab Switcher & Dynamic Filter Scripts -->
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        const targetTab = document.getElementById('tab-' + tabId);
+        if (targetTab) {
+            targetTab.classList.remove('hidden');
+        }
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+            btn.classList.add('hover:text-slate-900');
+        });
+
+        const activeBtn = document.getElementById('tab-btn-' + tabId);
+        if (activeBtn) {
+            activeBtn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+            activeBtn.classList.remove('hover:text-slate-900');
+        }
+
+        // Update URL query string without reloading
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabId);
+        window.history.replaceState({}, '', url);
+    }
+
+    function toggleElement(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.toggle('hidden');
+        }
+    }
+
+    function showEnrollmentCourse(courseId) {
+        document.querySelectorAll('.enroll-action-pane').forEach(el => el.classList.add('hidden'));
+        const targetTable = document.getElementById('course-enroll-table-' + courseId);
+        if (targetTable) targetTable.classList.remove('hidden');
+        const targetForm = document.getElementById('enroll-all-form-' + courseId);
+        if (targetForm) targetForm.classList.remove('hidden');
+    }
+
+    function filterCohort(role) {
+        document.querySelectorAll('.cohort-filter-btn').forEach(btn => {
+            btn.classList.remove('bg-slate-900', 'text-white', 'shadow-2xs');
+            btn.classList.add('bg-gray-100', 'text-slate-600');
+        });
+        event.target.classList.add('bg-slate-900', 'text-white', 'shadow-2xs');
+        event.target.classList.remove('bg-gray-100', 'text-slate-600');
+
+        document.querySelectorAll('.cohort-row').forEach(row => {
+            if (role === 'ALL' || row.getAttribute('data-role') === role) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Initialize initial tab on load
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab') || '{{ active_tab|default:"courses" }}';
+        switchTab(tab);
+
+        const courseIdParam = urlParams.get('course_id');
+        if (courseIdParam) {
+            const selectEl = document.getElementById('enroll-course-select');
+            if (selectEl) {
+                selectEl.value = courseIdParam;
+                showEnrollmentCourse(courseIdParam);
+            }
+        }
+    });
+</script>
+{% endblock %}

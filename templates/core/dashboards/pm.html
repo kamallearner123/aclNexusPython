@@ -14,10 +14,13 @@
         <p class="text-sm font-medium text-gray-500">Open Tasks in My Projects</p>
         <p class="mt-2 text-3xl font-semibold text-gray-900">{{ open_tasks }}</p>
     </div>
-    <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
-        <p class="text-sm font-medium text-gray-500">High Risks in My Projects</p>
-        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ high_risks }}</p>
-    </div>
+    <a href="{% url 'risks_register' %}" class="bg-white p-5 rounded-xl shadow-soft border border-gray-100 hover:shadow-elevated transition-shadow group block">
+        <div class="flex justify-between items-center">
+            <p class="text-sm font-medium text-gray-500 group-hover:text-brand-600 transition-colors">Total Risks</p>
+            <span class="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">{{ high_risks }} High</span>
+        </div>
+        <p class="mt-2 text-3xl font-semibold text-gray-900">{{ total_risks }}</p>
+    </a>
     <div class="bg-white p-5 rounded-xl shadow-soft border border-gray-100">
         <p class="text-sm font-medium text-gray-500">Open Issues in My Projects</p>
         <p class="mt-2 text-3xl font-semibold text-gray-900">{{ open_issues }}</p>

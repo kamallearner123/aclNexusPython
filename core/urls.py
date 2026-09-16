@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('', views.landing_page, name='landing_page'),
+    path('login-redirect/', views.login_dispatcher, name='login_dispatcher'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard/pm/', views.pm_dashboard, name='pm_dashboard'),
     path('dashboard/architect/', views.architect_dashboard, name='architect_dashboard'),

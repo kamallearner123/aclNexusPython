@@ -20,7 +20,7 @@ class ProjectIntelligenceAgent:
         self.executor = Executor(user)
         self.response_generator = ResponseGenerator()
 
-    def analyze(self, prompt, report_type='project_health', project_id=None, use_llm=True):
+    def analyze(self, prompt, report_type='portfolio', project_id=None, use_llm=True):
         prompt = (prompt or '').strip()
         state = AgentState(
             question=prompt,

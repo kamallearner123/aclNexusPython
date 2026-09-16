@@ -63,6 +63,7 @@
             <span class="font-bold text-xl tracking-tight text-gray-900">Apt Computing Labs</span>
         </div>
         <div class="flex items-center space-x-4">
+            {% if request.user.is_authenticated %}
             <div class="flex items-center p-2 rounded-full bg-white shadow-soft ring-1 ring-gray-900/5 px-4 py-2">
                 <img src="https://ui-avatars.com/api/?name={{ request.user.email }}&background=random" alt="Avatar" class="h-6 w-6 rounded-full mr-2">
                 <span class="text-sm font-medium">{{ request.user.first_name|default:request.user.email }}</span>
@@ -71,11 +72,25 @@
                     <button type="submit" class="text-sm text-gray-500 hover:text-red-600 font-medium transition-colors">Logout</button>
                 </form>
             </div>
+            {% endif %}
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col items-center justify-center z-10 w-full px-4 py-12">
+        {% if messages %}
+        <div class="w-full max-w-5xl mx-auto mb-6 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between shadow-sm {% if message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="{% if message.tags == 'success' %}check-circle-2{% elif message.tags == 'error' %}alert-circle{% else %}info{% endif %}" class="w-4 h-4"></i>
+                    <span>{{ message }}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% block content %}
         {% endblock %}
     </main>

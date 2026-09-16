@@ -9,17 +9,17 @@ from .tools import get_accessible_projects
 class PIAAnalysisForm(forms.Form):
     report_type = forms.ChoiceField(
         choices=[(key, value['label']) for key, value in REPORT_PRESETS.items()],
-        initial='project_health',
+        initial='portfolio',
     )
     project = forms.ModelChoiceField(
         queryset=Project.objects.none(),
         required=False,
-        empty_label='Portfolio / auto-select',
+        empty_label='All Projects (Scan All)',
     )
     prompt = forms.CharField(
         widget=forms.Textarea(attrs={
             'rows': 4,
-            'placeholder': 'Ask PIA for a project health assessment, sprint report, workload analysis, risk review, or weekly summary...',
+            'placeholder': 'Ask PIA for a portfolio scan, project health assessment, sprint report, workload analysis, risk review, or weekly summary...',
         }),
         required=False,
     )
