@@ -1,10 +1,27 @@
-asgiref==3.11.1
-crispy-bootstrap5==2026.3
-crispy-tailwind==1.0.3
+# ============================================================
+# ACL Nexus ERP — Python Dependencies
+# Python 3.12+ / Django 6.x
+# ============================================================
+
+# ── Django Core ─────────────────────────────────────────────
 Django==6.0.6
-django-crispy-forms==2.6
-djangorestframework==3.17.1
-openai==2.32.0
-psycopg2-binary==2.9.12
+asgiref==3.11.1
 sqlparse==0.5.5
-Pillow
+
+# ── Django Third-Party Apps ─────────────────────────────────
+djangorestframework==3.17.1
+django-crispy-forms==2.6
+crispy-tailwind==1.0.3
+
+# ── Database Drivers ────────────────────────────────────────
+psycopg2-binary==2.9.12        # PostgreSQL (production)
+
+# ── AI / LLM Providers ──────────────────────────────────────
+openai==2.32.0                 # OpenAI API + Grok (via OpenAI-compatible client)
+
+# ── File & Image Handling ────────────────────────────────────
+Pillow==11.1.0                 # Image processing (avatars, certificates, uploads)
+
+# ── Production Server ────────────────────────────────────────
+gunicorn==23.0.0               # WSGI server for production deployment
+whitenoise==6.9.0              # Serve static files in production without a CDN
