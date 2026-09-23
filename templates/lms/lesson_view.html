@@ -586,6 +586,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
@@ -610,7 +611,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const classes = ((codeElem.className || '') + ' ' + (pre.className || '')).toLowerCase();
         
-        if (classes.includes('javascript') || classes.includes('language-js') || classes.includes('lang-js')) {
+        if (classes.includes('language-c') || classes.includes('lang-c') || classes.includes('language-cpp') || classes.includes('lang-cpp') || classes.includes('language-h')) {
+            cmMode = 'text/x-csrc';
+            langBadge = classes.includes('cpp') ? 'C++' : 'EMBEDDED C';
+            isPython = false;
+        } else if (classes.includes('javascript') || classes.includes('language-js') || classes.includes('lang-js')) {
             cmMode = 'javascript';
             langBadge = 'JAVASCRIPT';
             isPython = false;
@@ -647,6 +652,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (rawCode.startsWith('{') && rawCode.endsWith('}')) {
                 cmMode = { name: 'javascript', json: true };
                 langBadge = 'JSON';
+                isPython = false;
+            } else if (rawCode.includes('#include') || rawCode.includes('uint32_t') || rawCode.includes('int main(') || rawCode.includes('volatile ')) {
+                cmMode = 'text/x-csrc';
+                langBadge = 'EMBEDDED C';
                 isPython = false;
             } else {
                 cmMode = 'python';

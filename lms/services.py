@@ -314,13 +314,157 @@ def import_course_materials_from_path(course, directory_path, batch=None):
     if not day_files:
         return {'success': False, 'error': f"No lesson or chapter files found in '{directory_path}'."}
 
-    # Define 4 core phases / modules for a comprehensive engineering masterclass
-    phase_defs = [
-        (1, 8, "Phase 1: Foundations & Deterministic Loops", "Python fundamentals, LLM mechanics, prompt engineering, structured outputs, and autonomous problem solver CLI capstone."),
-        (9, 16, "Phase 2: Autonomous Reasoning, RAG & Tool Orchestration", "ReAct loops, semantic registries, vector RAG pipelines, LangChain, n8n automation, and multi-silo knowledge agent capstone."),
-        (17, 20, "Phase 3: Stateful Graphs & Multi-Agent Swarms", "LangGraph cyclic graphs, checkpoint persistence, memory, swarm architectures, security guardrails, and human-in-the-loop gates."),
-        (21, 24, "Phase 4: Production, Security, CI/CD & Enterprise Deployment", "FastAPI streaming UI, multi-stage Docker, observability, evaluations, CI/CD pipelines, and enterprise automotive assistant grand capstone."),
-    ]
+    # Check if this is Embedded C Programming or Embedded Systems or AI course
+    is_embedded_c = (
+        any('embedded c' in s.lower() or 'embedded-c' in s.lower() for s in [course.code, course.title, directory_path])
+        or any(f.startswith('topic_') for f in os.listdir(directory_path) if f.endswith('.html'))
+    )
+    is_embedded_sys = not is_embedded_c and any('embedded' in s.lower() for s in [course.code, course.title, directory_path])
+
+    if is_embedded_c:
+        embedded_c_modules = [
+            (1, "Module 1: Foundations & Discipline", "Constrained systems prelude, C history and tools, best practices, error taxonomy, assertions, logging, unit testing, and hardware diagnostics milestone.",
+             [("intro.html", False, 45), ("topic_01.html", False, 45), ("topic_02.html", False, 45), ("topic_03.html", False, 45), ("topic_04.html", False, 45), ("topic_05.html", False, 45), ("project_01.html", True, 120)]),
+            (2, "Module 2: Toolchains & Binaries", "The complete compilation pipeline, GCC cross-compilers, binary utilities (objdump, size, nm, GDB), Make and CMake, Git workflows, and linker script milestone.",
+             [("topic_06.html", False, 45), ("topic_07.html", False, 45), ("topic_08.html", False, 45), ("topic_09.html", False, 45), ("topic_10.html", False, 45), ("project_02.html", True, 120)]),
+            (3, "Module 3: Reactive & Event-Driven Systems", "Event loop design, polling versus interrupts, asynchronous hardware callbacks, software timers, non-blocking firmware execution, and ring buffer milestone.",
+             [("topic_11.html", False, 45), ("topic_12.html", False, 45), ("topic_13.html", False, 45), ("topic_14.html", False, 45), ("project_03.html", True, 120)]),
+            (4, "Module 4: Standards & State Machines", "Firmware style conventions, defensive programming patterns, Doxygen documentation, MISRA-C safety guidelines, finite state machines, state transition tables, and defensive controller milestone.",
+             [("topic_15.html", False, 45), ("topic_16.html", False, 45), ("topic_17.html", False, 45), ("topic_18.html", False, 45), ("topic_19.html", False, 45), ("topic_20.html", False, 45), ("project_04.html", True, 120)]),
+            (5, "Module 5: Architecture & Integration", "Modular header and source decoupling, hardware abstraction interfaces, reusable component libraries, Application/Driver/HAL/BSP layering, and integrated production firmware capstone.",
+             [("topic_21.html", False, 45), ("topic_22.html", False, 45), ("topic_23.html", False, 45), ("topic_24.html", False, 45), ("topic_25.html", False, 45), ("project_05.html", True, 120)]),
+            (6, "Module 6: Hardware & Engineering Reference Compendium", "Comprehensive hardware reference compendium: Silicon architectures (MCU vs MPU), sensors and transducers, actuators and power drivers, 20 industrial hardware architectures, and protocol standards.",
+             [("reference.html", False, 60), ("ref_sensors.html", False, 45), ("ref_actuators.html", False, 45), ("ref_silicon.html", False, 45), ("ref_devices.html", False, 60), ("ref_standards.html", False, 45)]),
+            (7, "Module 7: Interactive Lab & Capstone", "The complete STM32 firmware execution journey: from C source compilation and linker mapping down to reset vectors, SRAM initialization, register manipulation, and interactive hardware simulation.",
+             [("stm32-firmware-journey.html", True, 180)]),
+        ]
+
+        modules_by_file = {}
+        file_metadata = {}
+        global_order = 0
+        for mod_order, title, desc, items in embedded_c_modules:
+            mod, _ = Module.objects.update_or_create(
+                course=course,
+                order=mod_order,
+                defaults={'title': title, 'description': desc, 'is_active': True}
+            )
+            for fname, is_lab, duration in items:
+                global_order += 1
+                modules_by_file[fname] = mod
+                file_metadata[fname] = (global_order, is_lab, duration)
+
+        ordered_files = [fname for _, _, _, items in embedded_c_modules for fname, _, _ in items]
+        available_files = [f for f in ordered_files if os.path.exists(os.path.join(directory_path, f))]
+
+        lessons_created = 0
+        lessons_updated = 0
+        if not batch:
+            batch = course.batches.first()
+
+        for fname in available_files:
+            file_path = os.path.join(directory_path, fname)
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='replace') as fp:
+                    raw_html = fp.read()
+            except Exception:
+                continue
+
+            soup = BeautifulSoup(raw_html, 'html.parser')
+            t_tag = soup.find('title')
+            h1_tag = soup.find('h1')
+            if t_tag and t_tag.string:
+                title = t_tag.string.strip()
+            elif h1_tag:
+                title = h1_tag.get_text().strip()
+            else:
+                title = fname.replace('.html', '').replace('_', ' ').title()
+
+            clean_title = re.sub(r'\s*-\s*Embedded C Programming.*$', '', title, flags=re.I).strip()
+
+            if fname == 'stm32-firmware-journey.html':
+                main_tag = soup.find('main', class_=re.compile(r'content-area', re.I)) or soup.find('main') or soup.find('body')
+                style_tag = soup.find('style')
+                script_tag = soup.find('script', src=None)
+                parts = []
+                if style_tag:
+                    parts.append(str(style_tag))
+                if main_tag:
+                    tb = main_tag.find('button', id='theme-btn')
+                    if tb:
+                        tb.decompose()
+                    parts.append(str(main_tag))
+                else:
+                    parts.append(raw_html)
+                if script_tag:
+                    parts.append(str(script_tag))
+                lesson_content = "\n".join(parts)
+            else:
+                art = soup.find('article', class_=re.compile(r'book-page|content', re.I)) or soup.find('article') or soup.find('main')
+                if art:
+                    for bad in art.find_all(['nav', 'header', 'noscript']):
+                        bad.decompose()
+                    for btn in art.find_all('button', class_='mcq-submit'):
+                        btn.decompose()
+                    lesson_content = str(art)
+                else:
+                    lesson_content = raw_html
+
+            lesson_content = re.sub(r'src=["\'](?:\.?/)?images/', 'src="/static/img/courses/embedded-c/', lesson_content)
+
+            lesson_order, is_lab, duration = file_metadata.get(fname, (lessons_created + 1, False, 45))
+            lesson_type = 'LAB' if is_lab else 'ARTICLE'
+            target_module = modules_by_file.get(fname)
+
+            lesson, created = Lesson.objects.update_or_create(
+                module=target_module,
+                order=lesson_order,
+                defaults={
+                    'title': clean_title,
+                    'lesson_type': lesson_type,
+                    'duration_minutes': duration,
+                    'content': lesson_content,
+                    'is_required': True,
+                    'is_active': True,
+                }
+            )
+            if created:
+                lessons_created += 1
+            else:
+                lessons_updated += 1
+
+            if batch:
+                BatchMaterial.objects.update_or_create(
+                    batch=batch,
+                    title=f"{clean_title} (Course Material)",
+                    defaults={
+                        'material_type': 'DOCUMENT',
+                        'description': f"Official curriculum readings and labs for {clean_title}.",
+                        'external_url': f"file://{file_path}",
+                        'is_active': True,
+                    }
+                )
+
+        return {
+            'success': True,
+            'lessons_created': lessons_created,
+            'lessons_updated': lessons_updated,
+            'modules_count': course.modules.count(),
+        }
+
+    elif is_embedded_sys:
+        phase_defs = [
+            (1, 8, "Module 1: Embedded C Foundations & Hardware Fundamentals", "Bare-metal C programming, memory architectures, register manipulation, GPIO, interrupts, timers, ADC/DAC, and communication protocols."),
+            (9, 16, "Module 2: RTOS, Peripherals & Communication Protocols", "FreeRTOS fundamentals, task scheduling, synchronization primitives, DMA, automotive CAN bus, USB/wireless, bootloaders, and RTOS sensor hub capstone."),
+            (17, 24, "Module 3: Advanced Topics, Safety, Debugging & Capstone", "Low-power system design, Flash/EEPROM/FatFS, MISRA-C safety-critical firmware, JTAG/SWD debugging, unit testing with Unity/CMock, embedded Linux, and automotive ECU grand capstone."),
+        ]
+    else:
+        # 4 core phases / modules for Agentic AI engineering masterclass
+        phase_defs = [
+            (1, 8, "Phase 1: Foundations & Deterministic Loops", "Python fundamentals, LLM mechanics, prompt engineering, structured outputs, and autonomous problem solver CLI capstone."),
+            (9, 16, "Phase 2: Autonomous Reasoning, RAG & Tool Orchestration", "ReAct loops, semantic registries, vector RAG pipelines, LangChain, n8n automation, and multi-silo knowledge agent capstone."),
+            (17, 20, "Phase 3: Stateful Graphs & Multi-Agent Swarms", "LangGraph cyclic graphs, checkpoint persistence, memory, swarm architectures, security guardrails, and human-in-the-loop gates."),
+            (21, 24, "Phase 4: Production, Security, CI/CD & Enterprise Deployment", "FastAPI streaming UI, multi-stage Docker, observability, evaluations, CI/CD pipelines, and enterprise automotive assistant grand capstone."),
+        ]
 
     modules_by_day = {}
     for mod_order, (start_d, end_d, title, desc) in enumerate(phase_defs, start=1):

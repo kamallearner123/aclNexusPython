@@ -8,3 +8,4 @@ venv/
 .venv/
 *.recent.sqlite3
 .DS_Store
+lms_db.sqlite3
